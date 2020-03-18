@@ -1,0 +1,244 @@
+---
+title: "Provo Maze Pilot"
+output: github_document
+---
+
+
+```{r, include=F}
+knitr::opts_chunk$set(echo = FALSE, warning=F)
+options(knitr.table.format = "html")
+library(tidyverse)
+library(readr)
+library(brms)
+library(lme4)
+library(rstan)
+library(tidybayes)
+theme_set(theme_bw())
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
+```
+
+A pilot for using Maze on Provo. 
+
+# Experiment overview
+Materials are taken from the Provo corpus. The corpus contains 55 paragraphs each consisting of 1-4 sentences, about 50 words per paragraph. There are 134 sentences total, with 2689 words total. For this experiment, each participant sees a randomly selected 25 of the paragraphs, split into 5 blocks of 5. These are preceded by a practice block of 8 practice sentences. 
+
+I had intended to recruit 30 subjects, but stopped pushing HITs after 20 subjects worth had started because I was afraid results weren't writing; turned out that participants where slower to start/finish the experiment than I thought.
+
+These were all presented using the Maze paradigm, with participants having to redo mistakes (ie, if they press the button for the wrong answer, an error message is displayed and they must press the other/correct key to continue with the sentence). 
+
+# Data prep
+
+<!-- Something screwed up with group number on critical items (looks fine? for practice, def not otherwise). Looks like either in pushing the items, or in recording the results the groups for the ones that were pushed are just the first digit (not sure how that happened). I should try to trouble-shoot this, but for this it means we can't use that to join and have to use other sources of information. -->
+
+```{r}
+#file of sentences/words labelled with length, word frequency and surprisal
+#created by prep.Rmd, note that 0's in surprisal are really NAs
+surprisal <- read_rds("../Materials/surprisal.rds") %>% 
+  mutate(word_num=Word_In_Paragraph_Number-1,
+         )
+
+
+data <- read_rds("../Data/provo_pilot_1.rds") %>% 
+  filter(native=="yes" & residence=="yes") %>% 
+  select(-native, -residence) %>% 
+  rename(Text=sentence, Word=word) %>% 
+  left_join(surprisal, by=c("word_num","Text","Word")) %>% 
+  mutate(Text_ID=ifelse(type=="practice",group,Text_ID)) %>%  #for practice sentences, have 101 etc numbers 
+  select(-group) %>% 
+  mutate(word_num_mistake=ifelse(correct=="no", word_num,NA),word_num_mistake2=word_num_mistake) %>% 
+  group_by(Text_ID, subject) %>% fill(word_num_mistake) %>% 
+  mutate(after_mistake=word_num-word_num_mistake,
+         after_mistake=ifelse(is.na(after_mistake),0,after_mistake)) %>% 
+  ungroup() %>% 
+  write_rds("../Data/provo_pilot_1_labelled.rds")
+```
+
+19 subjects remaining after non-native, non-resident exclusion
+
+# Overall RT, errors
+
+How many words did each participant see?
+
+```{r}
+
+ data %>% group_by(subject) %>% tally() #how many words / participant
+
+
+by_part_error_rate <- data %>% group_by(subject) %>%
+  mutate(corr.num=ifelse(correct=="yes", 1,0)) %>%
+  summarize(fraction_correct=sum(corr.num)/n(), median_rt=median(rt), total_rt=sum(rt)/60000) 
+
+ggplot(by_part_error_rate, aes(x=fraction_correct, y=median_rt))+
+  geom_point()+
+  coord_cartesian(x=c(0,1), y=c(0,1000))+
+  labs(title="By participant error rates versus median rt")
+
+ggplot(by_part_error_rate, aes(x=fraction_correct, y=total_rt))+
+  geom_point()+
+  coord_cartesian(x=c(0,1), y=c(0,40))+
+  labs(title="By participant error rates versus summed rt")
+
+```
+
+Each participant saw roughly 1300 words. All but two participants were attentive. Total reading time is the sum of recorded reading times in minutes, but does not include time to read instructions, do demographics, take pauses or correct mistakes. It thus should be taken as a lower bound on how long this took (but reading instructions, etc can reasonably be estimated to take no more than a couple minutes). Task was estimated to take 20 minutes, looks like that was about right, but given variance, we should pay fair wage for 25 or 30 minutes.
+
+Would be an interesting question to look into how to get more of the sample from the attentive end and not the inattentive (in ORC pilot, qualitatively same distribution but the inattentive clump was much bigger). Could also be task effects, maybe this was less frustrating, easier to do "correctly"??
+
+# Error rate
+
+Label who's attentive v not for future sorting.
+
+```{r}
+data_sort <- data %>% left_join(by_part_error_rate, by="subject") %>% 
+  mutate(is.attentive=ifelse(fraction_correct>.75,TRUE,F),
+         is.correct=ifelse(correct=="yes",T,F)) %>% 
+  filter(is.attentive)
+
+```
+
+Of attentive participants, what after mistake data can we trust? As a rough proxy, we'll consider it trustworthy if it had the same RT profile as elsewhere. (This may not be the best proxy for reliability.)
+
+```{r}
+
+after_mistake <- data_sort %>% 
+  filter(type=="critical") %>% 
+  filter(rt>100) %>% 
+  filter(rt<5000) %>% 
+  filter(is.correct) %>% 
+  mutate(after_mistake_group=ifelse(after_mistake>10, 11, after_mistake),
+         after_mistake_fct=as_factor(after_mistake_group),
+         word_num_fct=as_factor(word_num)) 
+
+ggplot(after_mistake, aes(x=after_mistake_fct,y=rt))+geom_boxplot()+coord_cartesian(ylim=c(500,1500))+labs(x="Position relative to last mistake, 0=before mistake, 1=word after mistake", title="Does being directly after a mistake inflate RT?")
+
+#ggplot(after_mistake, aes(group=word_num_fct,x=word_num_fct, y=rt))+geom_boxplot()+coord_cartesian(ylim=c(0,2000))+labs(title="Position in sentence v RT")
+
+after_mistake_summ <- after_mistake %>% 
+  group_by(after_mistake_fct) %>% 
+  summarize(mean_rt=mean(rt),
+            median_rt=median(rt))
+  
+after_mistake_summ
+```
+
+It looks like the word after a mistake is higher, but after that it's fine. For the after mistake, the 11 category is really 11+ and contains words from farther along as well. 
+
+  
+
+# Relevant analysis
+
+The critical analysis here is whether RT reflects known gross RT effects, namely longer, less frequent, more surprising words reading more slowly.
+
+For this pilot, we operationalize all of these in easy to calculate ways.
+
+- frequency is  log10 of the number of occurances over 10^9 words in text (as calculated for the python wordfreq package). So,coefficient represents how RT changes  per going up a factor of 10 in word frequency.
+- length is length in letters. Coefficient represents change in RT from increasing length by one letter.
+- surprisal is determined by the Gulordava lstm model and represented in bits of surprisal. Coefficient represents how RT changes when expectation of the word is halved (i.e. going up one bit of surprisal).
+
+All of these variables were centered, to make for a more interpretable intercept, but have their original scales. 
+
+While these do correlate with each other somewhat, we'd like to see them all acting independently at once. 
+
+
+Data exclusions:
+Words where errors were made are excluded along with words immediately after errors. All other after mistake data is included. 
+
+In order to have reasonable analyses using RT as the dependent measure (untransformed), we want to do light exclusions so that outliers don't have too much pull. Here we exclude <100 ms (which is unreasonably short if you're doing any processing at all) and >5000 ms (which excludes things where someone paused to do somehthing else, but doesn't exclude any of the main curve of data). These two exclusions together exclude 50 data points, which isn't very many. 
+
+Data points are also implicitly excluded if we don't have frequency and surprisal values for them (formula implicitly excluded NAs). Among other things, this excludes the first word of every sentence. 
+
+```{r}
+data_correct <- data_sort %>% 
+  filter(is.correct==T) %>% 
+  filter(type=="critical") %>% 
+  filter(rt<5000) %>% #eliminates 40 data points
+  filter(rt>100) %>% #eliminates 10 data points
+  filter(after_mistake!=1) %>% 
+  select(word_num, Word, rt, subject, Text_ID, Sentence_Number, Word_In_Sentence_Number, freq_cent, surp_cent, word_len_cent) %>%
+  ungroup() %>% 
+  mutate(word_num_fct=as_factor(word_num),
+         Text_ID_fct=as_factor(Text_ID))
+
+ggplot(data_correct) +geom_density(aes(rt))+labs("Density distribution of remaining RTs")
+
+  
+```
+
+We do the models first with lm without hierarchical structure, and then repeat with appropriate mixed effects in brms.
+
+```{r}
+
+m1_all_no_interact <- lm(rt~ freq_cent+surp_cent+word_len_cent, data_correct)
+
+
+m1_all <- lm(rt~ freq_cent*surp_cent*word_len_cent, data_correct)
+
+summary(m1_all_no_interact)
+
+summary(m1_all)
+
+
+```
+
+ Structure wise, we want to nest by subject (some could be more or less sensitive to any of this stuff), and word_num nested within Text_ID. Unclear if Text_ID is really a natural category, but words within the same passage have the same topic (which might contribute to difficulty?). Of course, individual words may have lots of unmeasured properties such as errors in the surprisal/etc or properties of their distractor. 
+
+```{r}
+
+show_summary <- function(model){
+  intervals <- gather_draws(model, `b_.*`, regex=T) %>% mean_qi()
+  stats <- gather_draws(model, `b_.*`, regex=T) %>% mutate(above_0=ifelse(.value>0, 1,0)) %>% group_by(.variable) %>% summarize(pct_above_0=mean(above_0)) %>% mutate(pval_equiv = signif(2*pmin(pct_above_0,1-pct_above_0), digits=2)) %>% left_join(intervals, by=".variable") %>% select(term=.variable, estimate=.value, lower=.lower, upper=.upper, pval_equiv)
+  
+  stats
+}
+
+```
+
+```{r}
+priors <- c(
+    set_prior("normal(1000, 1000)", class="Intercept"),
+    set_prior("normal(0, 500)", class="b"),
+    set_prior("normal(0, 500)", class="sd"),
+    set_prior("lkj(1)",       class="cor"))
+
+m3_all_no_interact <- brm(rt ~ freq_cent+surp_cent+word_len_cent+
+                            (freq_cent+surp_cent+word_len_cent|subject)+
+                            (freq_cent+surp_cent+word_len_cent|Text_ID_fct/word_num_fct),
+                          prior=priors, data=data_correct, file="m3_all_no_interact")
+  
+
+
+m3_all <- brm(rt ~ freq_cent*surp_cent*word_len_cent+
+                (freq_cent*surp_cent*word_len_cent|subject)+
+                (freq_cent*surp_cent*word_len_cent|Text_ID_fct/word_num_fct),
+              prior=priors, data=data_correct, file="m3_all")
+```
+
+
+
+```{r} 
+summary(m3_all_no_interact)
+
+summary(m3_all)
+
+
+a <- show_summary(m3_all_no_interact)
+a
+
+b <- show_summary(m3_all)
+b
+```
+
+In general, there's reasonable agreement among the models. The intercept is somewhere around 900 ms, each additional bit of surprisal add about 20 ms. Frequency has a negative coefficient (although there's a lot of uncertainty about what the magnitude is), length has a positive effect of about 5 ms per character (although this isn't significant when interaction terms are present, and shows up in surprisal/length and three way interactions). 
+
+# Future TODOs, questions
+
+- What is the right way to determine how much margin to leave after a mistake?
+
+- TODO: use the error patterns to identify points of improvement for the auto-generation task. 
+          
+- Should there be interaction terms?
+
+- What other models of surprisal or frequency should I be testing?
+
+- Should I try non-linear models of RT?

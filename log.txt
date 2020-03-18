@@ -1,0 +1,4 @@
+
+Ran ./automate_new.py provo_pre_maze.txt provo_out.txt --model gulordava --freq wordfreq --format basic --num_to_test 100 --min_abs 25 --min_rel 15 >log.txt
+
+2020-03-10: mturk 20 people pilot, estimated 20 minutes, paying 3.50 each (was originally going for 30, but freaked out that results weren't writing quickly and stopped posting early, after 20)
