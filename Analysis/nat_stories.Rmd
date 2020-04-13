@@ -1,0 +1,245 @@
+---
+title: "Natural Stories"
+output: github_document
+---
+```{r, include=F}
+knitr::opts_chunk$set(echo = FALSE, warning=F)
+options(knitr.table.format = "html")
+library(tidyverse)
+library(readr)
+library(brms)
+library(lme4)
+library(rstan)
+library(tidybayes)
+library(knitr)
+theme_set(theme_bw())
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
+```
+
+# Experiment
+
+Motivation: The point of this experiment was to determine if Maze works on naturalistic text. Do participants comprehend what they are reading while doing this task? Do frequency, length and surprisal effects show up in the reading times? 
+
+To this end, we tested participants on stories from the Natural Stories corpus. The corpus consists of 10 stories (some fiction, some non-fiction) each about 1000 words, and has 6 comprehension questions for each. It has previously been run as SPR, where freq/surprisal/length show up and we have the comprehension question accuracies, so we have something to compare to. 
+
+1000 words is a lot for Maze especially when it needs to be done in one chunk (whereas we'd put pause screens in previous maze experiments, I didn't here because it could disrupt the story), so we had each participant only read one story. This was prefaced by a short practice item (~100 words) that I wrote, which had 2 practice questions. 
+
+At the end, we collected some optional demographics and debriefed participants. 
+
+We recruited 100 participants, across the 10 stories. (Stories were randomized, but not balanced, so we'll see how balanced the data is.) We estimated that this would take around 20 minutes (given how long past studies had taken) and paid 3.50. 
+
+# Assorted preliminaries
+
+
+```{r participants}
+
+data <- read_rds("../Data/cleaned.rds")
+
+data_filt <- data %>% filter(native %in% c("ENG", "English", "ENGLISH", "english")) #I peeked at what people put that semantically maps to english
+```
+
+We got data from `r data %>% select(subject) %>% unique() %>% nrow()` subjects, after exluding those with a reported native language other than English, `r data_filt %>% select(subject) %>% unique() %>% nrow()` remain. 
+
+```{r stories}
+
+data_stories <- data_filt %>% 
+  select(type, subject) %>% 
+  unique() %>% 
+  group_by(type) %>% 
+  tally() %>% 
+  filter(type!="practice")
+
+```
+
+Within the filtered data, each story was read between `r min(data_stories$n)` and `r max(data_stories$n)` times. This seems like decent distribution. 
+
+## Error rates
+
+There's lots of ways to try to get at participant diligence that we might want to use for exclusions. IN particular, it appears that mean accuracy is correlated with mean rt -- people with high accuracy take longer than people who look like they are randomly guessing. In this experiment, we have an additional source of insight into diligence -- comprehension question accuracy. In the SPR natural stories experiment, they used 5 out of 6 comprehension questions correct as their threshold for data inclusion. 
+
+The below plot shows how accurate participants were on the task (measured per word), versus mean reaction time (note that a filter of rt<5000 was used to exclude times when a participant got distracted or paused in doing the experiment). Coloring indicates how many of the comprehension questions (out of 6) they got right, and the grids are faceted on the SPR exclusion criteria for comparison. (Practice items and practice questions are not included here.)
+
+
+
+```{r errors}
+
+data_error_summ <- data_filt %>% 
+  mutate(correct.num=ifelse(correct=="yes", 1,0)) %>% 
+  group_by(subject, critical, practice) %>%
+  filter(type!="practice") %>% 
+  filter(rt<5000) %>% 
+  summarize(mean_rt=mean(rt),
+            pct_correct=mean(correct.num)) %>% 
+  mutate(critical_factor=as.character(critical*6),
+         good_comp=ifelse(critical>.8,"5 or 6 correct","4 or fewer correct"))
+
+ggplot(data_error_summ, aes(x=pct_correct, y=mean_rt, color=critical_factor))+
+  geom_point()+
+  facet_grid(.~good_comp)+
+  labs(title="Relationship between error rate, RT, and comp ? accuracy",
+       x="Percent maze correct",
+       y="Mean reaction time",
+       color="?s correct")
+
+
+```
+
+It appears that it is indeed possible to comprehend these stories while doing the maze task. There's clearly a correlation between accuracy on comprehension questions and accuracy on maze, although there is some variability. When the task is done well, average RT is between 600 and 1200 -- average RTs below 500 are unlikely to be attentive. 
+
+Unclear what the correct thresholds for exclusions should be, although I'm tempted by an 80% accuracy cut-off (for RT stuff at least). If measures of interest are about comprehension, comprehension questions seem reasonable. 
+
+## Experiment length, pay
+The other point of interest is how long the experiment takes overall; we're curious about this for designing appropriate length experiments and compensating adequately in the future. This takes into account all the time spent doing maze, including practice items and correcting mistakes. It does not include time to read instructions, answer comprehension questions or fill out demographics. 
+
+```{r total-rt}
+
+total_time <- data_filt %>% 
+  mutate(correct.num=ifelse(correct=="yes", 1,0)) %>% 
+  group_by(subject, critical, practice) %>%
+  summarize(total_rt=sum(total_rt)/60000,
+            pct_correct=mean(correct.num)) %>% 
+  mutate(critical_factor=as.character(critical*6),
+         good_comp=ifelse(critical>.8,"5 or 6 correct","4 or fewer correct"))
+
+ggplot(total_time, aes(x=pct_correct, y=total_rt, color=critical_factor))+
+  geom_point()+
+  facet_grid(.~good_comp)+
+  labs(title="How long does this take",
+       x="Percent maze correct",
+       y="Total maze time",
+       color="?s correct")
+
+
+```
+
+It seems like 20 minutes isn't a horribly off estimate, but that 25 minutes is more reasonable if we want an upper bound accounting for some time to do demographics. 
+
+In the random questions at the end section, particpants were asked how much they thought this should pay, common answers where 3.50, 4, and 5. (Experiment paid 3.50, maybe we should consider upping it a little, depending on what the timing data is.)
+
+```{r pay}
+pay <- data_filt %>% select(subject, pay) %>% unique() %>% 
+  mutate(pay.numeric=as.numeric(str_remove_all(pay, "[^0-9.]"))) %>% 
+  group_by(pay.numeric) %>% tally()
+
+kable(pay) 
+```
+
+Taking these two pieces together, paying 4 or 5 dollars is probably better. 
+
+## Participants experience
+
+What participants thought: participants were both asked what they thought the experiment was about and whether they used any strategies. (Second question was prompted from hearing that other people running maze get answers like "look at one side, only check the other if it doesn't seem plausible" and the like.)
+
+```{r experience}
+#TODO waiting for by participant error rate data
+
+thoughts <- data_filt %>% select(subject, topic, strategy) %>% 
+  unique() %>% 
+  left_join(data_error_summ, by="subject") %>% 
+  arrange(desc(pct_correct)) %>% select(pct_correct, topic, strategy)
+
+kable(thoughts)
+```
+
+Mostly no one mentions strategies, some read out loud, stories are followable. (There's certainly some correlation between longer/more coherent/good faith answers and higher accuracies...)
+
+# Comprehension question accuracy
+
+We want to compare how good our participants were on the comprehension questions to how good people were on the SPR experiment reported in Futrell et al (2017). They had each story read about 100 times across 181 participants (participants generally read 5 stories). This means they have about 10 times as much data as we do. However, reading times in a story were excluded based on the comprehension of that story, so it makes sense to compare per-story accuracies with our per-story accuracies.
+
+Here I plot the distribution of accuracies (number correct out of 6) for their participants (SPR), all of our participants (all Maze), and a restricted set of our participants who got at least 80% of the words right (Maze >80% correct), an exclusion threshold I would consider using. 
+
+```{r spr, include=F}
+#want to compare to SPR data from paper
+
+spr <- read_csv("../ns_spr_1.csv") %>% 
+  union(read_csv("../ns_spr_2.csv")) %>% 
+  select(WorkerId, correct, item) %>% 
+  unique() %>% 
+  group_by(correct) %>% 
+  tally() %>% 
+  mutate(pct=n/988) %>% 
+  mutate(source="SPR") %>% 
+  select(source,correct,pct)
+
+all <- data_filt %>% select(subject, critical) %>% 
+  unique() %>% 
+  mutate(correct=critical*6) %>% 
+   group_by(correct) %>% 
+  tally() %>% 
+  mutate(pct=n/95) %>% 
+  mutate(source="all Maze") %>% 
+  select(source,correct, pct)
+
+some <- data_filt %>% select(subject, critical) %>% 
+  unique() %>% 
+  left_join(data_error_summ, by=c("subject", "critical")) %>% 
+  filter(pct_correct>.8) %>% 
+  mutate(correct=critical*6) %>% 
+   group_by(correct) %>% 
+  tally() %>% 
+  mutate(pct=n/63) %>% 
+  mutate(source="Maze >80% correct") %>% 
+  select(source,correct, pct)
+
+to_plot <- all %>% union(some) %>% union(spr)
+
+ggplot(to_plot, aes(x=correct, y=pct, fill=source))+geom_col(position="dodge")+facet_grid(.~source)+labs(title="Comprehension question accuracy", x="Number correct", y="Percent of participants")
+
+  
+```
+
+We're not getting as good comprehension as they did on SPR. They got 90% with 5 or 6 correct, we get 59%, which rises to 79% if we only include participants who were getting at least 80% of the words right. However, we also have to remember that it's about 3 times slower reading Maze well than doing SPR (they report average reading times around 330 ms), so the memory delay is greater with Maze. But we do still get some participants who do it. (There's also the fact that despite both studies sourcing participants from Mturk, the demographics have changed in between when the studies were run.) 
+
+# How do errors affect participants and when do they occur
+
+From here on, we're only going to consider participants who got 80% correct on the maze. 
+
+```{r exclusion}
+data_good <- data_filt %>% 
+  left_join(data_error_summ, by=c("subject", "critical")) %>% 
+  filter(type!="practice") %>% 
+  filter(pct_correct>.8) %>% 
+  mutate(is.correct=ifelse(correct=="yes",1,0))
+
+```
+This includes data from `r data_good %>% select(subject) %>% unique() %>% nrow()` participants.
+
+When in sentences do errors occur?
+
+```{r when-error}
+
+when <- data_good %>% group_by(word_num) %>% 
+  summarize(error_rate=1-mean(is.correct),
+            count=n())
+
+ggplot(when, aes(x=word_num, y=error_rate, size=count))+
+  geom_point()+
+  labs(title="Errors are relatively evenly distributed",
+       x="Word number in sentence, 0 is not a real choice",
+       y="By position error rate",
+       size="Data quantity")
+```
+
+The 2nd and 3rd words in a sentence seem to be more error-prone than other words, perhaps due to worse distractors, but there isn't a huge difference.
+
+We're also interested in how rapidly participants fix their mistakes, as this may give us insight into how many post-mistake words to exclude. In the below, each data point is a mistake, plotted on the x axis for the time to press the incorrect button and on the y on the *additional* time before pressing the correct button. 
+
+```{r after}
+
+timing <- data_good %>% 
+  filter(!is.correct) %>% 
+  mutate(time_to_correct=total_rt-rt) %>% 
+  filter(rt>100 & rt<5000& time_to_correct>0 & time_to_correct<5000)
+
+ggplot(timing, aes(x=rt, y=time_to_correct))+geom_point(alpha=.1)+
+  labs(title="How long does it take to correct a mistake?",
+       x="Time to make mistake",
+       y="Time to correct mistake")
+```
+
+It's quick to correct mistakes; it tends to take less time to correct a mistake than to read a new word, usually less than a second. 
+
+Given that, it seems like we don't need to exclude much data after a mistake. Two words seems safe. (This is totally arbitrary and hopeful no analysis is sensitive to it.)
+
