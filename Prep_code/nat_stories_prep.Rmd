@@ -1,0 +1,145 @@
+---
+title: "R Notebook"
+output: github_document
+---
+
+
+```{r}
+library(tidyverse)
+library(readr)
+```
+# Initial
+These are used to set things up that exist in other saved files.
+```{r}
+#Paragraph format it
+
+# data <- read_delim("natural_stories_words.tsv",delim="\t", col_names = c("key","value")) %>% 
+#   separate(key, into=c("Story", "word_num", "col3")) %>% 
+#   filter(col3=="whole") %>% 
+#   select(-col3) %>% 
+#   separate("value", into=c("a","b","c","d","e","f","g"), sep=" ") %>% 
+#   unite(col="Word",-Story,-word_num, sep="", na.rm=T) %>% 
+#   group_by(Story) %>%
+#   pivot_wider(names_from=word_num,values_from=Word) %>%
+#   unite(col="Text", -Story, sep=" ", na.rm=T) %>%
+#   write_delim("../Materials/natural_stories_draft.tsv", delim="\t")
+```
+
+```{r words}
+
+words <- read_delim("natural_stories_words.tsv",delim="\t", col_names = c("key","value")) %>% 
+  separate(key, into=c("Story_Num", "Word_In_Story_Num", "col3"), convert=T) %>% 
+  filter(col3=="whole") %>% 
+  select(-col3) %>% 
+  separate("value", into=c("a","b","c","d","e","f","g"), sep=" ") %>% 
+  unite(col="Word",-Story_Num,-Word_In_Story_Num, sep="", na.rm=T)
+
+nums <- 1:64%>% as.character()
+
+labelled <- read_delim("../Materials/natural_stories_sentences.tsv", delim="\t") %>% 
+  separate(Sentence, into=nums, sep=" ") %>% 
+  pivot_longer(cols=`1`:`64`, names_to="Word_In_Sentence_Num",values_to="Word") %>% 
+  mutate(Word_In_Sentence_Num=as.integer(Word_In_Sentence_Num)-1) %>% 
+  filter(!is.na(Word)) %>% 
+  group_by(Story_Num) %>% 
+  mutate("Word_In_Story_Num"=row_number()) %>% 
+  left_join(words,by=c("Story_Num","Word","Word_In_Story_Num"))
+    
+```
+
+
+# For Maze
+
+```{r}
+# takes sentences, writes into format to do maze (also other things)
+for_maze <- read_delim("../Materials/natural_stories_sentences.tsv", delim="\t") %>%
+  mutate(label=str_c(Story_Num, Sentence_Num, sep="_"), item=row_number()) %>% 
+  select(label, item, Sentence) %>% 
+   write_delim("ns_pre_maze.txt", delim=";", col_names=F, quote_escape = F)
+
+```
+
+# Parsing surprisals, etc
+
+
+```{r grnn}
+
+grnn <- read_delim("grnn_out_all.txt", delim="\t", col_names=c("model_token","grnn_surp")) %>% 
+  filter(model_token!="<eos>") %>% 
+  mutate(num=row_number())
+
+grnn_translator <- read_delim("ns_tokens_trans.txt", delim="\t", col_names=c("Item","Word_In_Sentence_Num", "Word","token"), col_types=c(col_character(),col_integer(), col_character(),col_character())) %>% 
+  mutate(num=row_number()) %>% 
+  left_join(grnn, by="num") %>% 
+  mutate(grnn_surp=ifelse(model_token==token & grnn_surp>0, grnn_surp, NA)) %>% 
+  select(-model_token, -num) %>% 
+  separate(Item, into=c("Story_Num","Sentence_Num"), convert=T) %>% 
+  left_join(labelled, by=c("Story_Num", "Sentence_Num","Word_In_Sentence_Num", "Word")) %>% 
+  group_by(Story_Num, Sentence_Num,Word_In_Sentence_Num,Word,Word_In_Story_Num) %>% 
+  summarize(grnn_surp=sum(grnn_surp))
+
+```
+
+```{r ngram}
+ngram <- read_delim("ngram_out_all.txt", skip=3,delim="\t", col_names=c("sentence_no","token_no","model_token","ngram_surp")) %>% 
+  mutate(num=row_number())
+
+ngram_translator <- read_delim("ns_lower_trans.txt", delim="\t", col_names=c("Item","Word_In_Sentence_Num", "Word","token"), col_types=c(col_character(),col_integer(), col_character(),col_character())) %>% 
+  mutate(num=row_number()) %>% 
+  left_join(ngram, by="num") %>% 
+  mutate(ngram_surp=ifelse(model_token==token & ngram_surp>0, ngram_surp, NA)) %>% 
+  select(-model_token, -num, -sentence_no, -token_no) %>% 
+  separate(Item, into=c("Story_Num","Sentence_Num"), convert=T) %>% 
+  left_join(labelled, by=c("Story_Num", "Sentence_Num","Word_In_Sentence_Num", "Word")) %>% 
+  group_by(Story_Num, Sentence_Num,Word_In_Sentence_Num,Word,Word_In_Story_Num) %>% 
+  summarize(ngram_surp=sum(ngram_surp))
+```
+
+```{r txl}
+txl <- read_delim("txl_out_all.txt", delim="\t", col_names=c("model_token","txl_surp")) %>% 
+  filter(model_token!="<eos>") %>% 
+  mutate(num=row_number())
+
+txl_translator <- read_delim("ns_tokens_moses_trans.txt", delim="\t", 
+                             col_names=c("Item","Word_In_Sentence_Num", "Word","token"), 
+                             col_types=c(col_character(),col_integer(), col_character(),col_character())) %>% 
+  mutate(num=row_number()) %>% 
+  left_join(txl, by="num") %>% 
+  mutate(txl_surp=ifelse(model_token==token & txl_surp, txl_surp, NA)) %>% 
+  select(-model_token, -num) %>% 
+  separate(Item, into=c("Story_Num","Sentence_Num"), convert=T) %>% 
+  left_join(labelled, by=c("Story_Num", "Sentence_Num","Word_In_Sentence_Num", "Word")) %>% 
+  group_by(Story_Num, Sentence_Num,Word_In_Sentence_Num,Word,Word_In_Story_Num) %>% 
+  summarize(txl_surp=sum(txl_surp))
+```
+
+```{r freq}
+
+freq <- read_delim("ns_freq.txt", delim="\t",
+                   col_names=c("Item","Word_In_Sentence_Num","Word","freq","length"), 
+                   col_types=c(col_character(),col_integer(),col_character(),col_double(), col_integer())) %>% 
+  mutate(freq=ifelse(freq>0, freq, NA)) %>% 
+  separate(Item, into=c("Story_Num","Sentence_Num"), convert=T) %>% 
+  left_join(labelled, by=c("Story_Num", "Sentence_Num","Word_In_Sentence_Num", "Word"))
+
+
+```
+
+```{r conglomerate}
+all <- txl_translator %>% 
+  left_join(ngram_translator, by=c("Story_Num", "Sentence_Num","Word_In_Sentence_Num", "Word", "Word_In_Story_Num")) %>% 
+  left_join(grnn_translator, by=c("Story_Num", "Sentence_Num","Word_In_Sentence_Num", "Word", "Word_In_Story_Num")) %>%
+  left_join(freq, by=c("Story_Num", "Sentence_Num","Word_In_Sentence_Num", "Word", "Word_In_Story_Num")) %>% 
+  filter(Word_In_Sentence_Num!=0) %>% 
+  ungroup() %>% 
+  mutate(txl_center=txl_surp-mean(txl_surp, na.rm=T),
+         ngram_center=ngram_surp-mean(ngram_surp, na.rm=T),
+         grnn_center=grnn_surp-mean(grnn_surp, na.rm=T),
+         freq_center=freq-mean(freq, na.rm=T),
+         length_center=length-mean(length, na.rm=T)) %>% 
+  write_rds("natural_stories_surprisals.rds")
+
+```
+
+Note that word 0's of sentences will be removed b/c we definitely don't trust them
+  
