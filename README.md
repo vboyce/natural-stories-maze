@@ -18,11 +18,8 @@ Data
  - cleaned.rds
  
 Materials
- - practice_post_maze.txt - practice items + distractors
  - practice.txt - practice items + questions
  - natural_stories_sentences.tsv - sentence formatting of natural stories
- - ibex_questions.txt - natural stories questions ready for ibex
- - for_ibex.txt - natural stories with distractors
  - for_ns.js - experiment file as run
  
 Prep_code
