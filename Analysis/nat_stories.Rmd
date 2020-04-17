@@ -243,3 +243,40 @@ It's quick to correct mistakes; it tends to take less time to correct a mistake 
 
 Given that, it seems like we don't need to exclude much data after a mistake. Two words seems safe. (This is totally arbitrary and hopeful no analysis is sensitive to it.)
 
+While we are planning on analysing data after mistakes, it might be interesting to know how much of the data is pre-mistake, and how many of the sentences are completed error-free.
+
+```{r before}
+
+data_non_error <- data_good %>% 
+  filter(is.correct==1) %>% 
+  filter(word_num>0)
+
+data_before <- data_good %>% 
+  mutate(word_num_mistake=ifelse(correct=="no", word_num,NA)) %>% 
+  group_by(sentence, subject) %>% 
+  fill(word_num_mistake) %>% ungroup() %>% 
+  mutate(after_mistake=word_num-word_num_mistake,
+         after_mistake=ifelse(is.na(after_mistake),0,after_mistake)) %>% 
+  filter(after_mistake==0) %>% 
+  filter(is.correct==1) %>% 
+  filter(word_num>0)
+
+
+```
+
+If we only exclude the errors and the first words of sentences, there are `r nrow(data_non_error)` words. If we also exclude all words after mistakes, there are `r nrow(data_before)` words. We will exclude only a couple of words after each mistake, but we could also opt to analyse only the pre-error sections. 
+
+```{r complete}
+
+data_sentence <- data_before <- data_good %>% 
+  mutate(word_num_mistake=ifelse(correct=="no", word_num,NA)) %>% 
+  group_by(sentence, subject) %>% 
+  fill(word_num_mistake) %>% ungroup() %>% 
+  mutate(after_mistake=word_num-word_num_mistake,
+         after_mistake=ifelse(is.na(after_mistake),0,after_mistake)) %>% 
+  group_by(sentence, subject) %>% 
+  summarize(total_mistake=sum(after_mistake)) %>% 
+  mutate(sent.correct=ifelse(total_mistake==0,1,0))
+```
+
+Of the `r nrow(data_sentence)` sentences that good participants completed, `r filter(data_sentence, sent.correct==1) %>% nrow()` were completed entirely correctly. 

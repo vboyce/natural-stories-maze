@@ -2588,3 +2588,15 @@ mistake than to read a new word, usually less than a second.
 Given that, it seems like we don’t need to exclude much data after a
 mistake. Two words seems safe. (This is totally arbitrary and hopeful no
 analysis is sensitive to it.)
+
+While we are planning on analysing data after mistakes, it might be
+interesting to know how much of the data is pre-mistake, and how many of
+the sentences are completed error-free.
+
+If we only exclude the errors and the first words of sentences, there
+are 59441 words. If we also exclude all words after mistakes, there are
+40862 words. We will exclude only a couple of words after each mistake,
+but we could also opt to analyse only the pre-error sections.
+
+Of the 2969 sentences that good participants completed, 1658 were
+completed entirely correctly.

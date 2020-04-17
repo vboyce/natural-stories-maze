@@ -1,0 +1,250 @@
+---
+title: "Natural Stories LM analysis"
+output: github_document
+---
+```{r, include=F}
+knitr::opts_chunk$set(echo = FALSE, warning=F)
+options(knitr.table.format = "html")
+library(tidyverse)
+library(readr)
+library(brms)
+library(lme4)
+library(rstan)
+library(tidybayes)
+library(knitr)
+library(mgcv)
+theme_set(theme_bw())
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
+```
+
+```{r participants}
+
+data <- read_rds("../Data/cleaned.rds")
+
+data_filt <- data %>% filter(native %in% c("ENG", "English", "ENGLISH", "english")) #I peeked at what people put that semantically maps to english
+
+data_error_summ <- data_filt %>% 
+  mutate(correct.num=ifelse(correct=="yes", 1,0)) %>% 
+  group_by(subject, critical, practice) %>%
+  filter(type!="practice") %>% 
+  filter(rt<5000) %>% 
+  summarize(pct_correct=mean(correct.num)) %>% 
+  ungroup() %>% 
+  mutate(is.attentive=ifelse(pct_correct>.8, T,F)) %>% 
+  select(subject, is.attentive)
+
+data_low_error <- data_filt %>% 
+  left_join(data_error_summ, by="subject") %>% 
+  filter(is.attentive) %>% 
+  filter(type!="practice")
+
+data_error_free <- data_low_error %>% 
+  mutate(word_num_mistake=ifelse(correct=="no", word_num,NA)) %>% 
+  group_by(sentence, subject) %>% fill(word_num_mistake) %>% ungroup() %>% 
+  mutate(after_mistake=word_num-word_num_mistake,
+         after_mistake=ifelse(is.na(after_mistake),0,after_mistake)) %>% 
+  filter(correct=="yes") %>% 
+  filter(!after_mistake %in% c(1,2))
+  
+data_no_first <- data_error_free %>% filter(word_num!=0)
+
+data_ready <- data_no_first %>% filter(rt>100 & rt<5000) %>% 
+  select(subject, word_num, word, rt, sentence, type)
+
+data_stories <- data_ready %>% select(type, subject) %>% 
+  unique() %>% 
+  group_by(type) %>% 
+  tally()
+```
+
+# Overview
+
+`r data %>% select(subject) %>% unique() %>% nrow()` participants read naturalistic stories from the natural stories corpus. Each participant read 1 story. 
+
+We exclude
+
+- participants who do not report English as a native language (`r data_filt %>% select(subject) %>% unique() %>% nrow()` remaining)
+- participants who do not get 80% of the words correct (`r data_low_error %>% select(subject) %>% unique() %>% nrow()` remaining)
+- practice items (`r data_low_error %>% nrow()` words remaining)
+- words that were wrong or were within two after a mistake (`r data_error_free %>% nrow()` words remaining)
+- the first word of every sentence (didn't have a real distractor, RT is measured slightly differently) (`r data_no_first %>% nrow()` words remaining)
+- words with RTs <100 or >5000 (<100 we think is likely a recording error, or at least not reading the words at all, >5000 is likely getting distracted) (`r data_ready %>% nrow()` words remaining)
+
+Within the filtered data, each story was read between `r min(data_stories$n)` and `r max(data_stories$n)` times, for an average of `r mean(data_stories$n)`.
+
+We use as predictors:
+
+Definition: "stripped word" refers to the word after start and end punctuation (commas, periods, quotes, parens, etc) have been removed. 
+
+- length in characters of stripped word
+- unigram frequency of stripped word. Frequencies for words are calculated using word_tokenize on the gulordava train data and counting up instances. (This tends to tokenize off punctuation, but is capitalization sensitive). Frequencies are represented as log2 of the expected occurances in 1 billion words. 
+
+Surprisals are measured in bits TODO: double check with Jenn about these being in bits, model specs/cites!
+
+- ngram (5-gram KN smoothed)
+- GRNN
+- Transformer-XL
+
+All predictors are centered at 0, but they are not rescaled, so they are still interpretable.
+
+Centering differences:
+
+- txl -8.66
+- ngram -10.32
+- grnn -7.94
+- freq -18.75
+- length -4.49
+
+
+```{r labels}
+labs <- read_rds("../Prep_code/natural_stories_surprisals.rds") %>% left_join(read_delim("../Materials/natural_stories_sentences.tsv", delim="\t")) %>% 
+  select(word_num=Word_In_Sentence_Num, word=Word, sentence=Sentence, everything())
+
+past_word <- labs %>% 
+  mutate(word_num=word_num+1) %>% 
+  rename(past_txl=txl_center, past_ngram=ngram_center, past_grnn=grnn_center, past_freq=freq, past_length=length) %>% 
+  select(sentence,Story_Num,Sentence_Num, word_num, starts_with("past")) %>% 
+  left_join(labs, by=c("Story_Num","Sentence_Num","sentence", "word_num"))
+
+
+labelled <- data_ready %>% left_join(past_word, by=c("word_num", "word", "sentence")) %>%
+  filter(word_num>1) %>% 
+  select(rt, subject, Word_In_Story_Num, Story_Num,txl_center,ngram_center,grnn_center, freq_center,length_center, starts_with("past")) %>% 
+  mutate(Word_ID=as_factor(str_c(Story_Num, Word_In_Story_Num, sep="_"))) %>% 
+  select(-Word_In_Story_Num, -Story_Num) %>% write_rds("../Data/for_modelling.Rds")
+
+```
+
+# Rough pass with lmer
+
+Given past experience, lmer probably will choke on the full heirarchical effects structure, but we can do a first pass with lm anyway as a test.
+
+I'm copying model formula from the syntax gym paper, so frequency and length interact but surprisal doesn't, and both current and past word predictors are considered. 
+
+```{r lm}
+
+lm_ngram_model <- lm(rt ~ ngram_center + freq_center * length_center+ past_ngram + past_freq*past_length, data=labelled)
+
+lm_txl_model <- lm(rt ~ txl_center + freq_center * length_center+ past_txl + past_freq*past_length, data=labelled)
+
+lm_grnn_model <- lm(rt ~ grnn_center + freq_center * length_center+ past_grnn + past_freq*past_length, data=labelled)
+
+```
+
+```{r lm_summary}
+
+summary(lm_ngram_model)
+
+summary(lm_txl_model)
+
+summary(lm_grnn_model)
+
+```
+<!--
+# Now with heirarchy
+
+Not yet run in most cases, will be computation-time consuming!
+
+Questions:
+
+ - should there be interaction terms
+ - should there be previous word terms
+ - how important is Word_ID intercept? (We have up to 8 observations per each of 10000ish)
+ 
+ 
+We'll run these models again using brms with full mixed effects. 
+
+The mixed effects are
+
+- everything gets to vary by subject
+- intercept  by Word_ID (where word_id is different for every token in the texts)
+
+Priors:
+
+- normal(1000,1000) for intercept -- we think RTs are about 1 second usually
+- normal(0,500) for beta and sd -- we don't really know what effects are
+- lkj(1) for correlations -- we don't have reason to think correlations might go any particular way -->
+
+
+```{r}
+  priors <- c(
+      set_prior("normal(1000, 1000)", class="Intercept"),
+      set_prior("normal(0, 500)", class="b"),
+      set_prior("normal(0, 500)", class="sd"),
+      set_prior("lkj(1)",       class="cor"))
+  
+  # brm_ngram_model <- brm(rt ~ ngram_center * freq_center * length_center +
+  #                          (ngram_center * freq_center * length_center|subject)+
+  #                          (1|Word_ID), data=labelled, file="brm_ngram", prior=priors)
+  # 
+  # brm_txl_model <- brm(rt ~ txl_center * freq_center * length_center +
+  #                          (txl_center * freq_center * length_center|subject)+
+  #                          (1|Word_ID), data=labelled, file="brm_txl", prior=priors)
+  # 
+  # brm_grnn_model <- brm(rt ~ grnn_center * freq_center * length_center +
+  #                          (grnn_center * freq_center * length_center|subject)+
+  #                          (1|Word_ID), data=labelled, file="brm_grnn", prior=priors)
+
+```
+
+```{r}
+
+# show_summary <- function(model){
+#   intervals <- gather_draws(model, `b_.*`, regex=T) %>% mean_qi()
+#   stats <- gather_draws(model, `b_.*`, regex=T) %>% mutate(above_0=ifelse(.value>0, 1,0)) %>% group_by(.variable) %>% summarize(pct_above_0=mean(above_0)) %>% mutate(pval_equiv = signif(2*pmin(pct_above_0,1-pct_above_0), digits=2)) %>% left_join(intervals, by=".variable") %>% select(term=.variable, estimate=.value, lower=.lower, upper=.upper, pval_equiv)
+#   
+#   stats
+# }
+
+```
+
+```{r}
+# brm_ngram_model <- brm(rt ~ ngram_center * freq_center * length_center +
+#                          (ngram_center * freq_center * length_center|subject), data=labelled, file="brm_ngram", prior=priors)
+# 
+# summary(brm_ngram_model)
+# 
+# kable(show_summary(brm_ngram_model))
+```
+
+# GAMs
+
+This is still using centered values, although we may want to switch back to non-centered eventually (translate by about 8-10 for surprisals). 
+
+```{r practice}
+
+gam_ngram <- gam(rt ~ s(ngram_center, bs="cr", k=20)+ te(freq_center, length_center, bs="cr")+s(past_ngram, bs="cr", k=20)+te(past_freq, past_length, bs="cr"), data=labelled)
+
+gam_txl <- gam(rt ~ s(txl_center, bs="cr", k=20)+ te(freq_center, length_center, bs="cr")+s(past_txl, bs="cr", k=20)+te(past_freq, past_length, bs="cr"), data=labelled)
+
+gam_grnn <- gam(rt ~ s(grnn_center, bs="cr", k=20)+ te(freq_center, length_center, bs="cr")+s(past_grnn, bs="cr", k=20)+te(past_freq, past_length, bs="cr"), data=filter(labelled))
+
+```
+
+```{r}
+ plot.gam(gam_ngram, select =1)
+plot.gam(gam_ngram, select =3)
+
+ plot.gam(gam_txl, select =1)
+plot.gam(gam_txl, select =3)
+
+ plot.gam(gam_grnn, select =1)
+plot.gam(gam_grnn, select =3)
+
+```
+
+Some of these seem surprising, especially in relation to the lm output. One important check on the odd behavior for high surprisals is how reliable these might be, so I checked what the density of surprisals is and compared it with surprisals reported elsewhere (syntax gym reports up to 15 bits, Smith and Levy down to 10^-6, which is around 20 bits). Note that some of these high surprisals may come from adding together surprisals from multi-token word with punctuation (like quotemarks). 
+
+So, we see a linear pattern of same-word surprisal and little effect of previous word surprisal over the same interval (remember due to centering, that's looking at up to around 10 on these scales), but then weird things happen after that, when there is little data and it might be unreliable. 
+
+```{r density}
+
+ggplot(labelled, aes(x=ngram_center))+geom_density()
+
+ggplot(labelled, aes(x=txl_center))+geom_density()
+
+ggplot(labelled, aes(x=grnn_center))+geom_density()
+
+
+```
