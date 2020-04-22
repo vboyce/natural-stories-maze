@@ -76,7 +76,8 @@ grnn_translator <- read_delim("ns_tokens_trans.txt", delim="\t", col_names=c("It
   separate(Item, into=c("Story_Num","Sentence_Num"), convert=T) %>% 
   left_join(labelled, by=c("Story_Num", "Sentence_Num","Word_In_Sentence_Num", "Word")) %>% 
   group_by(Story_Num, Sentence_Num,Word_In_Sentence_Num,Word,Word_In_Story_Num) %>% 
-  summarize(grnn_surp=sum(grnn_surp))
+  summarize(grnn_surp=sum(grnn_surp),
+            grnn_token_count=n())
 
 ```
 
@@ -92,7 +93,8 @@ ngram_translator <- read_delim("ns_lower_trans.txt", delim="\t", col_names=c("It
   separate(Item, into=c("Story_Num","Sentence_Num"), convert=T) %>% 
   left_join(labelled, by=c("Story_Num", "Sentence_Num","Word_In_Sentence_Num", "Word")) %>% 
   group_by(Story_Num, Sentence_Num,Word_In_Sentence_Num,Word,Word_In_Story_Num) %>% 
-  summarize(ngram_surp=sum(ngram_surp))
+  summarize(ngram_surp=sum(ngram_surp),
+            ngram_token_count=n())
 ```
 
 ```{r txl}
@@ -110,7 +112,8 @@ txl_translator <- read_delim("ns_tokens_moses_trans.txt", delim="\t",
   separate(Item, into=c("Story_Num","Sentence_Num"), convert=T) %>% 
   left_join(labelled, by=c("Story_Num", "Sentence_Num","Word_In_Sentence_Num", "Word")) %>% 
   group_by(Story_Num, Sentence_Num,Word_In_Sentence_Num,Word,Word_In_Story_Num) %>% 
-  summarize(txl_surp=sum(txl_surp))
+  summarize(txl_surp=sum(txl_surp),
+            txl_token_count=n())
 ```
 
 ```{r freq}
