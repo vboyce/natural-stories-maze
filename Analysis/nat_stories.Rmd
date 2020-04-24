@@ -12,6 +12,7 @@ library(lme4)
 library(rstan)
 library(tidybayes)
 library(knitr)
+library(viridis)
 theme_set(theme_bw())
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
@@ -81,6 +82,47 @@ ggplot(data_error_summ, aes(x=pct_correct, y=mean_rt, color=critical_factor))+
        x="Percent maze correct",
        y="Mean reaction time",
        color="?s correct")
+
+
+```
+## Graphs for abstract
+```{r error_abstract}
+for_plot <- data_error_summ %>% 
+  mutate(num_correct=case_when(
+    critical_factor %in% c("1","2","3") ~ "3 or fewer",
+    T ~ critical_factor)) %>% 
+    mutate(accurate=ifelse(pct_correct>.8,">80% correct", "<80% correct"))
+
+
+ggplot(for_plot, aes(x=pct_correct, y=mean_rt, color=accurate))+
+  geom_point(size=1)+
+  scale_color_viridis(discrete=T)+
+  labs(x="Fraction words selected correctly",
+       y="Mean reaction time",
+       color="?s correct")+
+  coord_cartesian(xlim=c(0.4,1), ylim=c(0,1600))+
+    scale_color_manual(values=c(">80% correct"="darkgreen","<80% correct"="darkred"))+
+  guides(color=FALSE)
+
+
+ggsave("../Papers/error.pdf", width=3, height=2, unit="in")
+
+
+some <- data_filt %>% select(subject, critical) %>% 
+  unique() %>% 
+  left_join(data_error_summ, by=c("subject", "critical")) %>% 
+  mutate(accurate=ifelse(pct_correct>.8,">80% correct", "<80% correct")) %>% 
+  mutate(correct=critical*6) %>% 
+  group_by(correct,accurate)
+
+ggplot(some, aes(x=correct,fill=accurate))+
+  geom_bar(position="dodge")+
+  facet_grid(.~accurate)+
+  labs(x="Comp. questions correct (out of 6)", y="Participants")+
+  scale_fill_manual(values=c(">80% correct"="darkgreen","<80% correct"="darkred"))+
+guides(fill=FALSE)
+
+ggsave("../Papers/comp.pdf", width=3, height=1.5, unit="in")
 
 
 ```

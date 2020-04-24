@@ -13,6 +13,7 @@ library(rstan)
 library(tidybayes)
 library(knitr)
 library(mgcv)
+library(mgcViz)
 theme_set(theme_bw())
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
@@ -39,13 +40,13 @@ data_low_error <- data_filt %>%
   filter(is.attentive) %>% 
   filter(type!="practice")
 
-data_error_free <- data_low_error %>% 
-  mutate(word_num_mistake=ifelse(correct=="no", word_num,NA)) %>% 
-  group_by(sentence, subject) %>% fill(word_num_mistake) %>% ungroup() %>% 
-  mutate(after_mistake=word_num-word_num_mistake,
-         after_mistake=ifelse(is.na(after_mistake),0,after_mistake)) %>% 
-  filter(correct=="yes") %>% 
-  filter(!after_mistake %in% c(1,2))
+  data_error_free <- data_low_error %>% 
+    mutate(word_num_mistake=ifelse(correct=="no", word_num,NA)) %>% 
+    group_by(sentence, subject) %>% fill(word_num_mistake) %>% ungroup() %>% 
+    mutate(after_mistake=word_num-word_num_mistake,
+           after_mistake=ifelse(is.na(after_mistake),0,after_mistake)) %>% 
+    filter(correct=="yes") %>% 
+    filter(!after_mistake %in% c(1,2))
   
 data_no_first <- data_error_free %>% filter(word_num!=0)
 
@@ -101,20 +102,22 @@ Centering differences:
 labs <- read_rds("../Prep_code/natural_stories_surprisals.rds") %>% left_join(read_delim("../Materials/natural_stories_sentences.tsv", delim="\t")) %>% 
   select(word_num=Word_In_Sentence_Num, word=Word, sentence=Sentence, everything())
 
-past_word <- labs %>% 
-  mutate(word_num=word_num+1) %>% 
-  rename(past_txl=txl_center, past_ngram=ngram_center, past_grnn=grnn_center, past_freq=freq, past_length=length) %>% 
-  select(sentence,Story_Num,Sentence_Num, word_num, starts_with("past")) %>% 
-  left_join(labs, by=c("Story_Num","Sentence_Num","sentence", "word_num"))
+# past_word <- labs %>% 
+#   mutate(word_num=word_num+1) %>% 
+#   rename(past_txl=txl_center, past_ngram=ngram_center, past_grnn=grnn_center, past_freq=freq, past_length=length) %>% 
+#   select(sentence,Story_Num,Sentence_Num, word_num, starts_with("past")) %>% 
+#   left_join(labs, by=c("Story_Num","Sentence_Num","sentence", "word_num"))
 
 
-labelled <- data_ready %>% left_join(past_word, by=c("word_num", "word", "sentence")) %>%
-  filter(word_num>1) %>% 
-  select(rt, subject, Word_In_Story_Num, Story_Num,txl_center,ngram_center,grnn_center, freq_center,length_center, starts_with("past")) %>% 
-  mutate(Word_ID=as_factor(str_c(Story_Num, Word_In_Story_Num, sep="_"))) %>% 
-  select(-Word_In_Story_Num, -Story_Num) %>% write_rds("../Data/for_modelling.Rds")
+# labelled <- data_ready %>% left_join(past_word, by=c("word_num", "word", "sentence")) %>%
+#   filter(word_num>1) %>% 
+#   select(rt, subject, Word_In_Story_Num, Story_Num,txl_center,ngram_center,grnn_center, freq_center,length_center, starts_with("past")) %>% 
+#   mutate(Word_ID=as_factor(str_c(Story_Num, Word_In_Story_Num, sep="_"))) %>% 
+#   select(-Word_In_Story_Num, -Story_Num) %>% write_rds("../Data/for_modelling.Rds")
 
 ```
+
+
 
 # Rough pass with lmer
 
@@ -122,25 +125,7 @@ Given past experience, lmer probably will choke on the full heirarchical effects
 
 I'm copying model formula from the syntax gym paper, so frequency and length interact but surprisal doesn't, and both current and past word predictors are considered. 
 
-```{r lm}
 
-lm_ngram_model <- lm(rt ~ ngram_center + freq_center * length_center+ past_ngram + past_freq*past_length, data=labelled)
-
-lm_txl_model <- lm(rt ~ txl_center + freq_center * length_center+ past_txl + past_freq*past_length, data=labelled)
-
-lm_grnn_model <- lm(rt ~ grnn_center + freq_center * length_center+ past_grnn + past_freq*past_length, data=labelled)
-
-```
-
-```{r lm_summary}
-
-summary(lm_ngram_model)
-
-summary(lm_txl_model)
-
-summary(lm_grnn_model)
-
-```
 <!--
 # Now with heirarchy
 
@@ -190,12 +175,12 @@ Priors:
 
 ```{r}
 
-# show_summary <- function(model){
-#   intervals <- gather_draws(model, `b_.*`, regex=T) %>% mean_qi()
-#   stats <- gather_draws(model, `b_.*`, regex=T) %>% mutate(above_0=ifelse(.value>0, 1,0)) %>% group_by(.variable) %>% summarize(pct_above_0=mean(above_0)) %>% mutate(pval_equiv = signif(2*pmin(pct_above_0,1-pct_above_0), digits=2)) %>% left_join(intervals, by=".variable") %>% select(term=.variable, estimate=.value, lower=.lower, upper=.upper, pval_equiv)
-#   
-#   stats
-# }
+show_summary <- function(model){
+  intervals <- gather_draws(model, `b_.*`, regex=T) %>% mean_qi()
+  stats <- gather_draws(model, `b_.*`, regex=T) %>% mutate(above_0=ifelse(.value>0, 1,0)) %>% group_by(.variable) %>% summarize(pct_above_0=mean(above_0)) %>% mutate(pval_equiv = signif(2*pmin(pct_above_0,1-pct_above_0), digits=2)) %>% left_join(intervals, by=".variable") %>% select(term=.variable, estimate=.value, lower=.lower, upper=.upper, pval_equiv)
+
+  stats
+}
 
 ```
 
@@ -214,23 +199,23 @@ This is still using centered values, although we may want to switch back to non-
 
 ```{r practice}
 
-gam_ngram <- gam(rt ~ s(ngram_center, bs="cr", k=20)+ te(freq_center, length_center, bs="cr")+s(past_ngram, bs="cr", k=20)+te(past_freq, past_length, bs="cr"), data=labelled)
-
-gam_txl <- gam(rt ~ s(txl_center, bs="cr", k=20)+ te(freq_center, length_center, bs="cr")+s(past_txl, bs="cr", k=20)+te(past_freq, past_length, bs="cr"), data=labelled)
-
-gam_grnn <- gam(rt ~ s(grnn_center, bs="cr", k=20)+ te(freq_center, length_center, bs="cr")+s(past_grnn, bs="cr", k=20)+te(past_freq, past_length, bs="cr"), data=filter(labelled))
+# gam_ngram <- gam(rt ~ s(ngram_center, bs="cr", k=20)+ te(freq_center, length_center, bs="cr")+s(past_ngram, bs="cr", k=20)+te(past_freq, past_length, bs="cr"), data=labelled)
+# 
+# gam_txl <- gam(rt ~ s(txl_center, bs="cr", k=20)+ te(freq_center, length_center, bs="cr")+s(past_txl, bs="cr", k=20)+te(past_freq, past_length, bs="cr"), data=labelled)
+# 
+# gam_grnn <- gam(rt ~ s(grnn_center, bs="cr", k=20)+ te(freq_center, length_center, bs="cr")+s(past_grnn, bs="cr", k=20)+te(past_freq, past_length, bs="cr"), data=filter(labelled))
 
 ```
 
 ```{r}
- plot.gam(gam_ngram, select =1)
-plot.gam(gam_ngram, select =3)
-
- plot.gam(gam_txl, select =1)
-plot.gam(gam_txl, select =3)
-
- plot.gam(gam_grnn, select =1)
-plot.gam(gam_grnn, select =3)
+#  plot.gam(gam_ngram, select =1)
+# plot.gam(gam_ngram, select =3)
+# 
+#  plot.gam(gam_txl, select =1)
+# plot.gam(gam_txl, select =3)
+# 
+#  plot.gam(gam_grnn, select =1)
+# plot.gam(gam_grnn, select =3)
 
 ```
 
@@ -239,12 +224,184 @@ Some of these seem surprising, especially in relation to the lm output. One impo
 So, we see a linear pattern of same-word surprisal and little effect of previous word surprisal over the same interval (remember due to centering, that's looking at up to around 10 on these scales), but then weird things happen after that, when there is little data and it might be unreliable. 
 
 ```{r density}
-
-ggplot(labelled, aes(x=ngram_center))+geom_density()
-
-ggplot(labelled, aes(x=txl_center))+geom_density()
-
-ggplot(labelled, aes(x=grnn_center))+geom_density()
+# 
+# ggplot(labelled, aes(x=ngram_center))+geom_density()
+# 
+# ggplot(labelled, aes(x=txl_center))+geom_density()
+# 
+# ggplot(labelled, aes(x=grnn_center))+geom_density()
 
 
 ```
+
+# Second approach, being more selective
+This time around we only include words that are single tokens in *all* the models and that have full data. We need the full data both for previous word and current word for the models. 
+
+We try both on pre-error only data and on all data (modulo exclusions). This is all uncentered. 
+
+```{r labs2}
+# A more selective approach
+
+select_labs <- labs %>% 
+  filter(ngram_token_count==1 & txl_token_count==1 & grnn_token_count==1) %>% 
+  filter(!is.na(txl_surp) & !is.na(ngram_surp) & !is.na(grnn_surp) & !is.na(freq) & !is.na(length)) %>% 
+    mutate(txl_center=txl_surp-mean(txl_surp, na.rm=T),
+         ngram_center=ngram_surp-mean(ngram_surp, na.rm=T),
+         grnn_center=grnn_surp-mean(grnn_surp, na.rm=T),
+         freq_center=freq-mean(freq, na.rm=T),
+         length_center=length-mean(length, na.rm=T))
+
+past_word <- select_labs %>% 
+  mutate(word_num=word_num+1) %>% 
+  rename(past_txl=txl_surp, past_ngram=ngram_surp, past_grnn=grnn_surp, past_freq=freq, past_length=length,past_c_txl=txl_center, past_c_ngram=ngram_center, past_c_grnn=grnn_center, past_c_freq=freq_center, past_c_length=length_center) %>% 
+  select(sentence,Story_Num,Sentence_Num, word_num, starts_with("past")) %>% 
+  left_join(select_labs, by=c("Story_Num","Sentence_Num","sentence", "word_num"))
+
+data_pre_error <- data_no_first %>% filter(rt>100 & rt<5000) %>% 
+  filter(after_mistake==0) %>% 
+  select(subject, word_num, word, rt, sentence, type)
+
+data_ready <- data_no_first %>% filter(rt>100 & rt<5000) %>% 
+  select(subject, word_num, word, rt, sentence, type)
+
+labelled_pre_error <- data_pre_error %>% inner_join(past_word, by=c("word_num", "word", "sentence")) %>%
+  filter(word_num>1) %>% 
+  select(rt, subject, Word_In_Story_Num, Story_Num,txl_surp,ngram_surp,grnn_surp, freq,length,
+         txl_center, ngram_center,grnn_center,freq_center, length_center, starts_with("past")) %>% 
+  mutate(Word_ID=as_factor(str_c(Story_Num, Word_In_Story_Num, sep="_"))) %>% 
+  select(-Word_In_Story_Num, -Story_Num) %>% write_rds("pre_error.rds")
+
+labelled_post_error <- data_ready %>% inner_join(past_word, by=c("word_num", "word", "sentence")) %>%
+  filter(word_num>1) %>% 
+select(rt, subject, Word_In_Story_Num, Story_Num,txl_surp,ngram_surp,grnn_surp, freq,length,
+         txl_center, ngram_center,grnn_center,freq_center, length_center, starts_with("past")) %>% 
+  mutate(Word_ID=as_factor(str_c(Story_Num, Word_In_Story_Num, sep="_"))) %>% 
+  select(-Word_In_Story_Num, -Story_Num) %>% write_rds("post_error.rds")
+
+```
+
+## Linear models
+
+Using pre-error data only.
+
+```{r lm-2}
+
+lm_ngram_model_1 <- lm(rt ~ ngram_surp + freq * length+ past_ngram + past_freq*past_length, data=labelled_pre_error)
+
+lm_txl_model_1 <- lm(rt ~ txl_surp + freq * length+ past_txl + past_freq*past_length, data=labelled_pre_error)
+
+lm_grnn_model_1 <- lm(rt ~ grnn_surp + freq * length + past_grnn + past_freq*past_length, data=labelled_pre_error)
+
+```
+
+```{r lm_summary-2}
+
+summary(lm_ngram_model_1)
+
+summary(lm_txl_model_1)
+
+summary(lm_grnn_model_1)
+
+```
+Including post-error data. 
+
+```{r lm-3}
+
+lm_ngram_model_2 <- lm(rt ~ ngram_surp + freq * length+ past_ngram + past_freq*past_length, data=labelled_post_error)
+
+lm_txl_model_2 <- lm(rt ~ txl_surp + freq * length+ past_txl + past_freq*past_length, data=labelled_post_error)
+
+lm_grnn_model_2 <- lm(rt ~ grnn_surp + freq * length + past_grnn + past_freq*past_length, data=labelled_post_error)
+
+```
+
+```{r lm_summary-3}
+
+summary(lm_ngram_model_2)
+
+summary(lm_txl_model_2)
+
+summary(lm_grnn_model_2)
+
+```
+
+## GAMs
+
+Using only pre-error data.
+
+```{r gams-2}
+gam_ngram_1 <- gam(rt ~ s(ngram_surp, bs="cr", k=20)+ te(freq, length, bs="cr")+s(past_ngram, bs="cr", k=20)+te(past_freq, past_length, bs="cr"), data=labelled_pre_error)
+
+gam_txl_1 <- gam(rt ~ s(txl_surp, bs="cr", k=20)+ te(freq, length, bs="cr")+s(past_txl, bs="cr", k=20)+te(past_freq, past_length, bs="cr"), data=labelled_pre_error)
+
+gam_grnn_1 <- gam(rt ~ s(grnn_surp, bs="cr", k=20)+ te(freq, length, bs="cr")+s(past_grnn, bs="cr", k=20)+te(past_freq, past_length, bs="cr"), data=labelled_pre_error)
+
+```
+
+```{r plot_gam-2}
+ plot.gam(gam_ngram_1, select =1)
+plot.gam(gam_ngram_1, select =3)
+
+ plot.gam(gam_txl_1, select =1)
+plot.gam(gam_txl_1, select =3)
+
+ plot.gam(gam_grnn_1, select =1)
+plot.gam(gam_grnn_1, select =3)
+
+```
+
+Including post-error data. 
+
+```{r gams-3}
+gam_ngram_2 <- gam(rt ~ s(ngram_surp, bs="cr", k=20)+ te(freq, length, bs="cr")+s(past_ngram, bs="cr", k=20)+te(past_freq, past_length, bs="cr"), data=labelled_post_error)
+
+gam_txl_2 <- gam(rt ~ s(txl_surp, bs="cr", k=20)+ te(freq, length, bs="cr")+s(past_txl, bs="cr", k=20)+te(past_freq, past_length, bs="cr"), data=labelled_post_error)
+
+gam_grnn_2 <- gam(rt ~ s(grnn_surp, bs="cr", k=20)+ te(freq, length, bs="cr")+s(past_grnn, bs="cr", k=20)+te(past_freq, past_length, bs="cr"), data=labelled_post_error)
+
+```
+
+```{r plot_gam-3}
+ plot.gam(gam_ngram_2, select =1)
+plot.gam(gam_ngram_2, select =3)
+
+
+plot_smooths(model=gam_ngram_2,series=ngram_surp)
+plot_smooths(model=gam_ngram_2,series=past_ngram)
+
+ plot.gam(gam_txl_2, select =1)
+plot.gam(gam_txl_2, select =3)
+
+plot_smooths(model=gam_txl_2,series=txl_surp)
+plot_smooths(model=gam_txl_2,series=past_txl)
+
+ plot.gam(gam_grnn_2, select =1)
+plot.gam(gam_grnn_2, select =3)
+
+ v <- seq(0,25, by=1)
+a <- predict(gam_ngram_2, type="terms")
+
+b <- predict_gam(gam_ngram_2, exclude_terms="te(freq,length)",length_out=2)
+
+summary(gam_ngram_2)
+```
+
+This is much more reassuring. We do want to check with brms though.
+
+```{r}
+
+priors <- c(
+  set_prior("normal(1000, 1000)", class="Intercept"),
+  set_prior("normal(0, 500)", class="b"),
+  set_prior("normal(0, 500)", class="sd"),
+  set_prior("lkj(1)",       class="cor"))
+
+brm_ngram_model <- brm(rt ~ ngram_surp + freq * length + past_ngram + past_freq*past_length + 
+                         (ngram_surp + freq * length + past_ngram + past_freq*past_length|subject), data=labelled_pre_error, file="brm_ngram_pre", prior=priors)
+
+summary(brm_ngram_model)
+
+show_summary(brm_ngram_model)
+```
+
+  

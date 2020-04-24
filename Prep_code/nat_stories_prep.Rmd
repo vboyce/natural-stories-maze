@@ -135,11 +135,6 @@ all <- txl_translator %>%
   left_join(freq, by=c("Story_Num", "Sentence_Num","Word_In_Sentence_Num", "Word", "Word_In_Story_Num")) %>% 
   filter(Word_In_Sentence_Num!=0) %>% 
   ungroup() %>% 
-  mutate(txl_center=txl_surp-mean(txl_surp, na.rm=T),
-         ngram_center=ngram_surp-mean(ngram_surp, na.rm=T),
-         grnn_center=grnn_surp-mean(grnn_surp, na.rm=T),
-         freq_center=freq-mean(freq, na.rm=T),
-         length_center=length-mean(length, na.rm=T)) %>% 
   write_rds("natural_stories_surprisals.rds")
 
 ```
