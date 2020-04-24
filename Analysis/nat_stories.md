@@ -67,7 +67,15 @@ variability. When the task is done well, average RT is between 600 and
 Unclear what the correct thresholds for exclusions should be, although
 I’m tempted by an 80% accuracy cut-off (for RT stuff at least). If
 measures of interest are about comprehension, comprehension questions
-seem reasonable.
+seem
+    reasonable.
+
+## Graphs for abstract
+
+    ## Scale for 'colour' is already present. Adding another scale for 'colour',
+    ## which will replace the existing scale.
+
+![](nat_stories_files/figure-gfm/error_abstract-1.png)<!-- -->![](nat_stories_files/figure-gfm/error_abstract-2.png)<!-- -->
 
 ## Experiment length, pay
 

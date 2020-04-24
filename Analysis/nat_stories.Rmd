@@ -85,8 +85,15 @@ ggplot(data_error_summ, aes(x=pct_correct, y=mean_rt, color=critical_factor))+
 
 
 ```
+
+It appears that it is indeed possible to comprehend these stories while doing the maze task. There's clearly a correlation between accuracy on comprehension questions and accuracy on maze, although there is some variability. When the task is done well, average RT is between 600 and 1200 -- average RTs below 500 are unlikely to be attentive. 
+
+Unclear what the correct thresholds for exclusions should be, although I'm tempted by an 80% accuracy cut-off (for RT stuff at least). If measures of interest are about comprehension, comprehension questions seem reasonable. 
+
 ## Graphs for abstract
+
 ```{r error_abstract}
+
 for_plot <- data_error_summ %>% 
   mutate(num_correct=case_when(
     critical_factor %in% c("1","2","3") ~ "3 or fewer",
@@ -124,12 +131,11 @@ guides(fill=FALSE)
 
 ggsave("../Papers/comp.pdf", width=3, height=1.5, unit="in")
 
+b <- cor(some$pct_correct, some$correct)
 
 ```
 
-It appears that it is indeed possible to comprehend these stories while doing the maze task. There's clearly a correlation between accuracy on comprehension questions and accuracy on maze, although there is some variability. When the task is done well, average RT is between 600 and 1200 -- average RTs below 500 are unlikely to be attentive. 
 
-Unclear what the correct thresholds for exclusions should be, although I'm tempted by an 80% accuracy cut-off (for RT stuff at least). If measures of interest are about comprehension, comprehension questions seem reasonable. 
 
 ## Experiment length, pay
 The other point of interest is how long the experiment takes overall; we're curious about this for designing appropriate length experiments and compensating adequately in the future. This takes into account all the time spent doing maze, including practice items and correcting mistakes. It does not include time to read instructions, answer comprehension questions or fill out demographics. 
