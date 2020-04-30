@@ -40,7 +40,7 @@ This seems like decent distribution.
 ## Error rates
 
 There’s lots of ways to try to get at participant diligence that we
-might want to use for exclusions. IN particular, it appears that mean
+might want to use for exclusions. In particular, it appears that mean
 accuracy is correlated with mean rt – people with high accuracy take
 longer than people who look like they are randomly guessing. In this
 experiment, we have an additional source of insight into diligence –
@@ -2566,6 +2566,13 @@ so the memory delay is greater with Maze. But we do still get some
 participants who do it. (There’s also the fact that despite both studies
 sourcing participants from Mturk, the demographics have changed in
 between when the studies were run.)
+
+# Error analysis
+
+![](nat_stories_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
+
+Even more evidence some participants are taking the random button
+pressing; also more evidence that some others are doing quite well.
 
 # How do errors affect participants and when do they occur
 

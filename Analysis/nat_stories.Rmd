@@ -13,6 +13,7 @@ library(rstan)
 library(tidybayes)
 library(knitr)
 library(viridis)
+library(cowplot)
 theme_set(theme_bw())
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
@@ -57,7 +58,7 @@ Within the filtered data, each story was read between `r min(data_stories$n)` an
 
 ## Error rates
 
-There's lots of ways to try to get at participant diligence that we might want to use for exclusions. IN particular, it appears that mean accuracy is correlated with mean rt -- people with high accuracy take longer than people who look like they are randomly guessing. In this experiment, we have an additional source of insight into diligence -- comprehension question accuracy. In the SPR natural stories experiment, they used 5 out of 6 comprehension questions correct as their threshold for data inclusion. 
+There's lots of ways to try to get at participant diligence that we might want to use for exclusions. In particular, it appears that mean accuracy is correlated with mean rt -- people with high accuracy take longer than people who look like they are randomly guessing. In this experiment, we have an additional source of insight into diligence -- comprehension question accuracy. In the SPR natural stories experiment, they used 5 out of 6 comprehension questions correct as their threshold for data inclusion. 
 
 The below plot shows how accurate participants were on the task (measured per word), versus mean reaction time (note that a filter of rt<5000 was used to exclude times when a participant got distracted or paused in doing the experiment). Coloring indicates how many of the comprehension questions (out of 6) they got right, and the grids are faceted on the SPR exclusion criteria for comparison. (Practice items and practice questions are not included here.)
 
@@ -100,19 +101,19 @@ for_plot <- data_error_summ %>%
     T ~ critical_factor)) %>% 
     mutate(accurate=ifelse(pct_correct>.8,">80% correct", "<80% correct"))
 
-
+  
 ggplot(for_plot, aes(x=pct_correct, y=mean_rt, color=accurate))+
   geom_point(size=1)+
   scale_color_viridis(discrete=T)+
   labs(x="Fraction words selected correctly",
-       y="Mean reaction time",
+       y="Mean Reaction Time (ms)",
        color="?s correct")+
   coord_cartesian(xlim=c(0.4,1), ylim=c(0,1600))+
     scale_color_manual(values=c(">80% correct"="darkgreen","<80% correct"="darkred"))+
   guides(color=FALSE)
 
 
-ggsave("../Papers/error.pdf", width=3, height=2, unit="in")
+ggsave("../Papers/error.pdf", width=3, height=2.1, unit="in")
 
 
 some <- data_filt %>% select(subject, critical) %>% 
@@ -134,6 +135,7 @@ ggsave("../Papers/comp.pdf", width=3, height=1.5, unit="in")
 b <- cor(some$pct_correct, some$correct)
 
 ```
+
 
 
 
@@ -239,6 +241,43 @@ ggplot(to_plot, aes(x=correct, y=pct, fill=source))+geom_col(position="dodge")+f
 ```
 
 We're not getting as good comprehension as they did on SPR. They got 90% with 5 or 6 correct, we get 59%, which rises to 79% if we only include participants who were getting at least 80% of the words right. However, we also have to remember that it's about 3 times slower reading Maze well than doing SPR (they report average reading times around 330 ms), so the memory delay is greater with Maze. But we do still get some participants who do it. (There's also the fact that despite both studies sourcing participants from Mturk, the demographics have changed in between when the studies were run.) 
+
+# Error analysis 
+
+```{r}
+
+b <- data_filt %>% filter(correct=="no") %>%
+  filter(type!="practice") %>%
+  select(word_num, subject, sentence) %>%
+  group_by(subject, sentence) %>%
+  mutate(row_num=row_number()) %>%
+  filter(row_num==1) %>%
+  select(-row_num) %>%
+  left_join(for_plot, by="subject")
+
+c <- data_filt %>% filter(type!=practice) %>%
+  group_by(subject, sentence) %>%
+  mutate(is.error=ifelse(correct=="no",1,0)) %>%
+  summarize(mistakes=sum(is.error)) %>%
+  mutate(no_mistake=ifelse(mistakes==0,"Error-free","Errorful")) %>%
+  select(subject, sentence, no_mistake) %>%
+  left_join(for_plot, by="subject")
+
+a <- ggplot(b, aes(x=word_num, fill=accurate))+geom_bar()+facet_grid(.~accurate)+scale_fill_manual(values=c(">80% correct"="darkgreen","<80% correct"="darkred"))+
+  labs(title="Locations of first mistakes", x="Word position (0 is a fake choice), x-axis cut at 30")+coord_cartesian(xlim=c(0,30))+
+  guides(fill=F)
+
+
+
+d <- ggplot(c, aes(x=no_mistake, fill=accurate))+geom_bar()+facet_grid(.~accurate)+scale_fill_manual(values=c(">80% correct"="darkgreen","<80% correct"="darkred"))+
+  labs(title="Number of sentences completed correctly", x=NULL)+
+  guides(fill=F)
+
+plot_grid(a,d,ncol=1, rel_heights=c(1,.75))
+
+```
+
+Even more evidence some participants are taking the random button pressing; also more evidence that some others are doing quite well. 
 
 # How do errors affect participants and when do they occur
 
