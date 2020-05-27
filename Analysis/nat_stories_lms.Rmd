@@ -54,6 +54,10 @@ data_no_first <- data_error_free %>% filter(word_num!=0)
 data_ready <- data_no_first %>% filter(rt>100 & rt<5000) %>% 
   select(subject, word_num, word, rt, sentence, type)
 
+data_post_only <- data_no_first %>% filter(rt>100 & rt<5000) %>% 
+  filter(!after_mistake==0) %>% 
+    select(subject, word_num, word, rt, sentence, type)
+
 data_pre_error <- data_no_first %>% filter(rt>100 & rt<5000) %>% 
   filter(after_mistake==0) %>% 
   select(subject, word_num, word, rt, sentence, type)
@@ -135,7 +139,14 @@ select(rt, subject, Word_In_Story_Num, Story_Num,txl_surp,ngram_surp,grnn_surp, 
   mutate(Word_ID=as_factor(str_c(Story_Num, Word_In_Story_Num, sep="_"))) %>% 
   select(-Word_In_Story_Num, -Story_Num) %>% write_rds("post_error.rds")
 
+labelled_post_only <- data_post_only %>% inner_join(past_word, by=c("word_num", "word", "sentence")) %>%
+  filter(word_num>1) %>% 
+select(rt, subject, Word_In_Story_Num, Story_Num,txl_surp,ngram_surp,grnn_surp, freq,length,
+         txl_center, ngram_center,grnn_center,freq_center, length_center, starts_with("past")) %>% 
+  mutate(Word_ID=as_factor(str_c(Story_Num, Word_In_Story_Num, sep="_"))) %>% 
+  select(-Word_In_Story_Num, -Story_Num)
 ```
+
 ```{r}
 
 lab_summary <- select_labs %>% summarize_at(c("length","freq","txl_surp","grnn_surp","ngram_surp"), list(mean=mean, stdev=sd, min=min, max=max)) %>% 
@@ -353,6 +364,29 @@ ggplot(for_graph_2, aes(x=data, y=rt))+
          facet_grid(type~model)+
         labs(x="Surprisal (bits)", y="Reaction Time (ms)")
 
+ggsave("../Papers/gam2.pdf", width=3.5, height=2, unit="in")
+
+for_graph_3 <- labelled_post_only %>% 
+  select(rt, txl_surp, ngram_surp, grnn_surp, past_txl, past_grnn, past_ngram) %>%
+  pivot_longer(cols=`txl_surp`:`past_ngram`,names_to="label", values_to="data") %>% 
+  mutate(type=case_when(
+         label %in% c("past_ngram", "past_txl", "past_grnn")~"Previous",
+         T~"Current"),
+         model=case_when(
+           label %in% c("txl_surp", "past_txl")~"TXL",
+           label %in% c("grnn_surp", "past_grnn")~"GRNN",
+           T ~ "5-gram"
+         ))
+
+ggplot(for_graph_3, aes(x=data, y=rt))+
+         geom_smooth(method="gam",formula= y~s(x, bs="cr", k=20),color="black")+
+         facet_grid(type~model)+
+        labs(x="Surprisal (bits)", y="Reaction Time (ms)")
+
+ggsave("../Papers/gam3.pdf", width=3.5, height=2, unit="in")
+
+
+
 ```
 
 
@@ -361,5 +395,4 @@ ggplot(for_graph_2, aes(x=data, y=rt))+
 In terms of surprisal analyses, the possible next steps are doing GAM analysis more robustly (with mixed effects, presenting results from the models) and doing DTSR. 
 
 We could also try looking at the specific syntactic features that are in the dataset (the point of natural stories was to have a bunch of idioms and weird syntax); we could maybe analyse those?
-
   

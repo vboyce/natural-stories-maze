@@ -115,6 +115,17 @@ ggplot(for_plot, aes(x=pct_correct, y=mean_rt, color=accurate))+
 
 ggsave("../Papers/error.pdf", width=3, height=2.1, unit="in")
 
+ggplot(for_plot, aes(x=pct_correct, y=mean_rt))+
+  geom_point()+
+  scale_color_viridis(discrete=T)+
+  labs(x="Fraction words selected correctly",
+       y="Mean Reaction Time (ms)",
+       color="?s correct")+
+  coord_cartesian(xlim=c(0.4,1), ylim=c(0,1600))+
+    #scale_color_manual(values=c(">80% correct"="darkgreen","<80% correct"="darkred"))+
+  guides(color=FALSE)
+
+ggsave("../error.jpg", width=5, height=3, unit="in")
 
 some <- data_filt %>% select(subject, critical) %>% 
   unique() %>% 

@@ -200,7 +200,7 @@ Maze well suited to run on the web
 \end{itemize} 
 \pause
 
-In Boyce et al. (2020) we replicate Witzel et al. (2012)
+Test by replicating Witzel et al. (2012)
 \begin{itemize}
 	\item Witzel et al (2012): Comparison of eye-tracking, SPR, L-maze, G-maze (all in-lab)
 	\item Got materials and data from Witzel
@@ -296,7 +296,9 @@ Surprisal: negative log probability
 \end{tikzpicture}
 \end{frame}
 
-\begin{frame}{Can we use LMs to choose distractors?} Idea: Use high surprisal according to LM as a proxy for really bad in context
+\begin{frame}{Can we use LMs to choose distractors?} 
+
+Use high surprisal according to LM as a proxy for bad in context
 \medskip
 
 \pause
@@ -310,10 +312,9 @@ Surprisal: negative log probability
 Want quality control on distractors
 \pause
 \begin{itemize}
-	\item Restrict to a list of possible distractors
-	\item Only consider distractors of same length, frequency as target wrd
-	\item Check distractors until we find one with high surprisal
-	\item Match to real word punctuation
+	\item Restrict to a list of possible distractors \pause
+	\item Only consider distractors of same length, frequency as target word \pause
+	\item Check distractors until we find one with high surprisal \pause
 \end{itemize}
 
 \end{frame}
@@ -373,24 +374,25 @@ Either way, lots of data loss.
 
 \end{frame}
 
+\section{Experiment 2}
+
 \begin{frame}{Potential improvements}
 
-{\large Option 1: Choose better distractors.}
+{\large Option 1: Choose better distractors.} \pause
 \begin{itemize}
-	\item Tweak thresholds of distractor selection.
-	\item Could search for optimal thresholds.
-	\item Could manually check and fix distractors.
+	\item Tweak thresholds of distractor selection. \pause
+	\item Could search for optimal thresholds. \pause
+	\item Could manually check and fix distractors. 
 \end{itemize}
 
 \end{frame}
 
 \begin{frame}{Potential improvements}
 
-{\large Option 2: Be forgiving.}
+{\large Option 2: Be forgiving.} \pause
 \begin{itemize}
-	\item Just don't terminate on mistakes.
-	\item Instead have participant correct mistake and continue. 
-	\item Easy to implement in Ibex framework.
+	\item Just don't terminate on mistakes. \pause
+	\item Instead have participant correct mistake and continue.
 	\end{itemize}
 \end{frame}
 
@@ -419,7 +421,7 @@ Either way, lots of data loss.
 
 \begin{frame}{Maze with Error Correction}
 
-{\large The ``solution'' to our problems!}
+{\large The ``solution'' to our problems!} \pause
 
 \begin{columns}
 	\begin{column}{0.3\textwidth}
@@ -431,9 +433,9 @@ Either way, lots of data loss.
 	\begin{column}{0.7\textwidth} 
 		\begin{center}
 			\begin{itemize}
-				\item Can be toggled in Ibex
-				\item Have all the data
-				\item Identify bad participants v bad distractors
+				\item Easily implemented as a toggle in Ibex \pause
+				\item Have all the data \pause
+				\item Identify bad participants v bad distractors 
 			\end{itemize}
 		\end{center}
 	\end{column}
@@ -444,7 +446,7 @@ Either way, lots of data loss.
 Side effect: Can now run multi-sentence items!
 \end{frame}
 
-\section{Experiment 2} %TODO: Needs work from here on!
+ %TODO: Needs work from here on!
 
 \begin{frame}{Natural Stories}
 Natural stories corpus (Futrell et al. 2017)
@@ -504,49 +506,54 @@ Checks on RT data
 \begin{frame}{Surprisal Effects}
 
 Use 3 LMs to estimate surprisal: smoothed 5-gram, Gulordava RNN, Transformer-XL (Gulordava et al. 2018, Dai et al. 2019)
+\pause
 
-\includegraphics[width=.9\textwidth]{gam.pdf}	
-
-Only on single token words.
+Fit GAMs on pre-error data.
+\begin{itemize}
+	\item Limit to single-token words.
+	\item Fit to both current and past word surprisal.
+\end{itemize}
 
 \end{frame}
 
+\begin{frame}{Surprisal Effects}
+\includegraphics[width=.9\textwidth]{gam.pdf}	
+\end{frame}
 \begin{frame}{What about post-mistake data?}
 Exclude data from mistakes or the two words after a mistake. 
 
 \includegraphics[width=.9\textwidth]{gam2.pdf}	
 \end{frame}
 
-\begin{frame}{Result Summary}
-\begin{itemize}
-	\item People will read in the Maze task for 15-20 minutes
-	\item It's possible to comprehend during Maze
-	\item Distractors are generally good enough
-	\item Find expected RT patterns
+\begin{frame}{Summary}
+\begin{itemize}\pause
+	\item People will read in the Maze task for 15-20 minutes \pause
+	\item It's possible to comprehend during Maze \pause
+	\item Distractors are generally good enough \pause
+	\item Find expected RT patterns \pause
 	\item Very little spillover
 \end{itemize}
 \end{frame}
 \section{Conclusion}
 
 \begin{frame}{Use A-maze!}
-Easy to use!
+Easy to use! \pause
 \begin{itemize}
-	\item Runs on command line 
-	\item Match distractors across minimal pair sentences
-	\item Customize surprisal thresholds, vocabulary lists
+	\item Runs on command line \pause
+	\item Match distractors across minimal pair sentences \pause
+	\item Customize surprisal thresholds, vocabulary lists \pause
 	\item Can output pre-formatted for Ibex
-	\item Lots of documentation at vboyce@github.io/Maze
 \end{itemize}
 \medskip
 \pause
 \end{frame}
 
-\begin{frame}{Use A-maze!}
-Contribute to A-maze!:
+\begin{frame}{Use A-maze!} \pause
+Contribute to A-maze:
 \begin{itemize}
-	\item Written in Python 3
-	\item Add more language models
-	\item Add more frequency sources
+	\item Written in Python 3 \pause
+	\item Interface with other language models \pause
+	\item Add more frequency sources \pause
 	\item Extend to non-English languages
 \end{itemize}
 
@@ -555,7 +562,7 @@ Contribute to A-maze!:
 
 \begin{frame}{}
 
-\textcolor{ForestGreen}{\large Documentation: vboyce@github.io/Maze}
+\textcolor{ForestGreen}{\large Documentation: vboyce.github.io/Maze}
 
 with links to the following:
 \begin{itemize}
@@ -565,6 +572,8 @@ with links to the following:
 \item Web-maze code: github.com/vboyce/Ibex-with-Maze
 
 \item Sample task: syntaxgym.org:666
+
+\item Paper: psyarxiv.com/b7nqd/
 \end{itemize}
 \end{frame}
 
