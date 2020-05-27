@@ -1,0 +1,12 @@
+.Rhistory
+*.aux
+*.log
+*.out
+*.gz
+*~
+*.toc
+*.nav
+*.snm
+*.bbl
+*.blg
+.Rproj.user
