@@ -54,7 +54,10 @@ rt\<5000 was used to exclude times when a participant got distracted or
 paused in doing the experiment). Coloring indicates how many of the
 comprehension questions (out of 6) they got right, and the grids are
 faceted on the SPR exclusion criteria for comparison. (Practice items
-and practice questions are not included here.)
+and practice questions are not included
+    here.)
+
+    ## `summarise()` regrouping output by 'subject' (override with `.groups` argument)
 
 ![](nat_stories_files/figure-gfm/errors-1.png)<!-- -->
 
@@ -68,14 +71,31 @@ Unclear what the correct thresholds for exclusions should be, although
 I’m tempted by an 80% accuracy cut-off (for RT stuff at least). If
 measures of interest are about comprehension, comprehension questions
 seem
-    reasonable.
+reasonable.
 
 ## Graphs for abstract
 
-    ## Scale for 'colour' is already present. Adding another scale for 'colour',
-    ## which will replace the existing scale.
+![](nat_stories_files/figure-gfm/error_abstract-1.png)<!-- -->![](nat_stories_files/figure-gfm/error_abstract-2.png)<!-- -->![](nat_stories_files/figure-gfm/error_abstract-3.png)<!-- -->
 
-![](nat_stories_files/figure-gfm/error_abstract-1.png)<!-- -->![](nat_stories_files/figure-gfm/error_abstract-2.png)<!-- -->
+## Are comprehension questions working
+
+As was raised when I presented this at lab meeting, it could be that
+participants are looking up answers to comprehension questions, so we
+want to check based on
+    length.
+
+![](nat_stories_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
+
+    ## `summarise()` regrouping output by 'subject' (override with `.groups` argument)
+
+    ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+
+![](nat_stories_files/figure-gfm/unnamed-chunk-2-2.png)<!-- -->
+
+Can play around with cutoffs etc, but the net result is that most of the
+answering is happening within 10 (much within 5) seconds, and it doesn’t
+look like people are looking up answers, so comprehension is probably
+reliable.
 
 ## Experiment length, pay
 
@@ -84,7 +104,10 @@ we’re curious about this for designing appropriate length experiments
 and compensating adequately in the future. This takes into account all
 the time spent doing maze, including practice items and correcting
 mistakes. It does not include time to read instructions, answer
-comprehension questions or fill out demographics.
+comprehension questions or fill out
+    demographics.
+
+    ## `summarise()` regrouping output by 'subject' (override with `.groups` argument)
 
 ![](nat_stories_files/figure-gfm/total-rt-1.png)<!-- -->
 
@@ -2565,11 +2588,14 @@ well than doing SPR (they report average reading times around 330 ms),
 so the memory delay is greater with Maze. But we do still get some
 participants who do it. (There’s also the fact that despite both studies
 sourcing participants from Mturk, the demographics have changed in
-between when the studies were run.)
+between when the studies were
+    run.)
 
 # Error analysis
 
-![](nat_stories_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
+    ## `summarise()` regrouping output by 'subject' (override with `.groups` argument)
+
+![](nat_stories_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
 
 Even more evidence some participants are taking the random button
 pressing; also more evidence that some others are doing quite well.
@@ -2581,7 +2607,10 @@ correct on the maze.
 
 This includes data from 63 participants.
 
-When in sentences do errors occur?
+When in sentences do errors
+    occur?
+
+    ## `summarise()` ungrouping output (override with `.groups` argument)
 
 ![](nat_stories_files/figure-gfm/when-error-1.png)<!-- -->
 
@@ -2611,7 +2640,10 @@ the sentences are completed error-free.
 If we only exclude the errors and the first words of sentences, there
 are 59441 words. If we also exclude all words after mistakes, there are
 40862 words. We will exclude only a couple of words after each mistake,
-but we could also opt to analyse only the pre-error sections.
+but we could also opt to analyse only the pre-error
+    sections.
+
+    ## `summarise()` regrouping output by 'sentence' (override with `.groups` argument)
 
 Of the 2969 sentences that good participants completed, 1658 were
 completed entirely correctly.

@@ -12,7 +12,6 @@ library(lme4)
 library(rstan)
 library(tidybayes)
 library(knitr)
-library(viridis)
 library(cowplot)
 theme_set(theme_bw())
 rstan_options(auto_write = TRUE)
@@ -68,15 +67,14 @@ The below plot shows how accurate participants were on the task (measured per wo
 
 data_error_summ <- data_filt %>% 
   mutate(correct.num=ifelse(correct=="yes", 1,0)) %>% 
-  group_by(subject, critical, practice) %>%
+  group_by(subject, num_correct) %>%
   filter(type!="practice") %>% 
   filter(rt<5000) %>% 
   summarize(mean_rt=mean(rt),
             pct_correct=mean(correct.num)) %>% 
-  mutate(critical_factor=as.character(critical*6),
-         good_comp=ifelse(critical>.8,"5 or 6 correct","4 or fewer correct"))
+  mutate(good_comp=ifelse(num_correct>4,"5 or 6 correct","4 or fewer correct"))
 
-ggplot(data_error_summ, aes(x=pct_correct, y=mean_rt, color=critical_factor))+
+ggplot(data_error_summ, aes(x=pct_correct, y=mean_rt, color=as.factor(num_correct)))+
   geom_point()+
   facet_grid(.~good_comp)+
   labs(title="Relationship between error rate, RT, and comp ? accuracy",
@@ -96,15 +94,14 @@ Unclear what the correct thresholds for exclusions should be, although I'm tempt
 ```{r error_abstract}
 
 for_plot <- data_error_summ %>% 
-  mutate(num_correct=case_when(
-    critical_factor %in% c("1","2","3") ~ "3 or fewer",
-    T ~ critical_factor)) %>% 
+  # mutate(num_correct=case_when(
+  #   critical_factor %in% c("1","2","3") ~ "3 or fewer",
+  #   T ~ critical_factor)) %>% 
     mutate(accurate=ifelse(pct_correct>.8,">80% correct", "<80% correct"))
 
   
 ggplot(for_plot, aes(x=pct_correct, y=mean_rt, color=accurate))+
   geom_point(size=1)+
-  scale_color_viridis(discrete=T)+
   labs(x="Fraction words selected correctly",
        y="Mean Reaction Time (ms)",
        color="?s correct")+
@@ -117,7 +114,6 @@ ggsave("../Papers/error.pdf", width=3, height=2.1, unit="in")
 
 ggplot(for_plot, aes(x=pct_correct, y=mean_rt))+
   geom_point()+
-  scale_color_viridis(discrete=T)+
   labs(x="Fraction words selected correctly",
        y="Mean Reaction Time (ms)",
        color="?s correct")+
@@ -127,14 +123,13 @@ ggplot(for_plot, aes(x=pct_correct, y=mean_rt))+
 
 ggsave("../error.jpg", width=5, height=3, unit="in")
 
-some <- data_filt %>% select(subject, critical) %>% 
+some <- data_filt %>% select(subject, num_correct) %>% 
   unique() %>% 
-  left_join(data_error_summ, by=c("subject", "critical")) %>% 
+  left_join(data_error_summ, by=c("subject", "num_correct")) %>% 
   mutate(accurate=ifelse(pct_correct>.8,">80% correct", "<80% correct")) %>% 
-  mutate(correct=critical*6) %>% 
-  group_by(correct,accurate)
+  group_by(num_correct,accurate)
 
-ggplot(some, aes(x=correct,fill=accurate))+
+ggplot(some, aes(x=num_correct,fill=accurate))+
   geom_bar(position="dodge")+
   facet_grid(.~accurate)+
   labs(x="Comp. questions correct (out of 6)", y="Participants")+
@@ -143,12 +138,35 @@ guides(fill=FALSE)
 
 ggsave("../Papers/comp.pdf", width=3, height=1.5, unit="in")
 
-b <- cor(some$pct_correct, some$correct)
-
 ```
 
+## Are comprehension questions working
+
+As was raised when I presented this at lab meeting, it could be that participants are looking up answers to comprehension questions, so we want to check based on length.
+
+```{r}
+
+correct <- data_filt %>% select(subject, num_correct, correct_answer_1:correct_answer_6) %>% unique() %>% 
+  pivot_longer(correct_answer_1:correct_answer_6, names_to=c("q_num"), values_to=c("is.correct"), names_prefix="correct_answer_")
+
+time <- data_filt %>% select(subject, num_correct, q_time_1:q_time_6) %>% unique() %>% 
+  pivot_longer(q_time_1:q_time_6, names_to=c("q_num"), values_to=c("q_time"), names_prefix="q_time_") %>% 
+  left_join(correct, by=c("subject", "num_correct","q_num")) %>% 
+  left_join(data_error_summ, by=c("subject","num_correct")) %>% 
+      mutate(accurate=ifelse(pct_correct>.8,">80% correct", "<80% correct")) %>% 
+  filter(q_time<20000)
 
 
+ggplot(time, aes(x=q_time))+geom_density()+facet_grid(.~accurate)
+
+time_filt <- time %>%  filter(q_time<10000) %>% 
+  group_by(subject, accurate) %>% summarize(mod_pct_correct=sum(is.correct), mean_pct_correct=mean(is.correct))
+
+
+ggplot(time_filt, aes(x=mod_pct_correct))+geom_histogram()+facet_grid(.~accurate)
+```
+
+Can play around with cutoffs etc, but the net result is that most of the answering is happening within 10 (much within 5) seconds, and it doesn't look like people are looking up answers, so comprehension is probably reliable. 
 
 ## Experiment length, pay
 The other point of interest is how long the experiment takes overall; we're curious about this for designing appropriate length experiments and compensating adequately in the future. This takes into account all the time spent doing maze, including practice items and correcting mistakes. It does not include time to read instructions, answer comprehension questions or fill out demographics. 
@@ -157,13 +175,12 @@ The other point of interest is how long the experiment takes overall; we're curi
 
 total_time <- data_filt %>% 
   mutate(correct.num=ifelse(correct=="yes", 1,0)) %>% 
-  group_by(subject, critical, practice) %>%
+  group_by(subject, num_correct) %>%
   summarize(total_rt=sum(total_rt)/60000,
             pct_correct=mean(correct.num)) %>% 
-  mutate(critical_factor=as.character(critical*6),
-         good_comp=ifelse(critical>.8,"5 or 6 correct","4 or fewer correct"))
+  mutate(         good_comp=ifelse(num_correct>4,"5 or 6 correct","4 or fewer correct"))
 
-ggplot(total_time, aes(x=pct_correct, y=total_rt, color=critical_factor))+
+ggplot(total_time, aes(x=pct_correct, y=total_rt, color=as.factor(num_correct)))+
   geom_point()+
   facet_grid(.~good_comp)+
   labs(title="How long does this take",
@@ -224,20 +241,20 @@ spr <- read_csv("../ns_spr_1.csv") %>%
   mutate(source="SPR") %>% 
   select(source,correct,pct)
 
-all <- data_filt %>% select(subject, critical) %>% 
+all <- data_filt %>% select(subject, num_correct) %>% 
   unique() %>% 
-  mutate(correct=critical*6) %>% 
+  mutate(correct=num_correct) %>% 
    group_by(correct) %>% 
   tally() %>% 
   mutate(pct=n/95) %>% 
   mutate(source="all Maze") %>% 
   select(source,correct, pct)
 
-some <- data_filt %>% select(subject, critical) %>% 
+some <- data_filt %>% select(subject, num_correct) %>% 
   unique() %>% 
-  left_join(data_error_summ, by=c("subject", "critical")) %>% 
+  left_join(data_error_summ, by=c("subject", "num_correct")) %>% 
   filter(pct_correct>.8) %>% 
-  mutate(correct=critical*6) %>% 
+  mutate(correct=num_correct) %>% 
    group_by(correct) %>% 
   tally() %>% 
   mutate(pct=n/63) %>% 
@@ -266,7 +283,7 @@ b <- data_filt %>% filter(correct=="no") %>%
   select(-row_num) %>%
   left_join(for_plot, by="subject")
 
-c <- data_filt %>% filter(type!=practice) %>%
+c <- data_filt %>% filter(type!="practice") %>%
   group_by(subject, sentence) %>%
   mutate(is.error=ifelse(correct=="no",1,0)) %>%
   summarize(mistakes=sum(is.error)) %>%
@@ -296,7 +313,7 @@ From here on, we're only going to consider participants who got 80% correct on t
 
 ```{r exclusion}
 data_good <- data_filt %>% 
-  left_join(data_error_summ, by=c("subject", "critical")) %>% 
+  left_join(data_error_summ, by=c("subject", "num_correct")) %>% 
   filter(type!="practice") %>% 
   filter(pct_correct>.8) %>% 
   mutate(is.correct=ifelse(correct=="yes",1,0))

@@ -1,5 +1,4 @@
-library(tidyverse)
-library(stringr)
+ library(tidyverse)
 library(urltools)
 #function reads in data from a maze file plus demographic, other questions.
 read_in_data <- function(filename){
@@ -46,13 +45,14 @@ read_in_data <- function(filename){
       correct_answer=col_integer(),
       q_time=col_integer()
     )) %>% 
-    group_by(time, MD5, type) %>% 
-    summarize(pct_correct=mean(correct_answer)) %>% 
-    ungroup() %>% 
-    mutate(question_type=ifelse(type=="practice_question", "practice", "critical")) %>% 
-    select(-type) %>% 
-    pivot_wider(names_from="question_type", values_from="pct_correct")
-  
+     group_by(time, MD5, type) %>%
+       mutate(question_num=row_number(),
+              question_num=ifelse(type=="practice_question", str_c("prac_",question_num),str_c("",question_num))) %>% 
+              ungroup() %>% 
+    select(-question, -answer, -type) %>% 
+    pivot_wider(names_from=question_num, values_from=c(correct_answer,q_time)) %>% 
+    mutate(num_correct=(correct_answer_1+correct_answer_2+correct_answer_3+correct_answer_4+correct_answer_5+correct_answer_6))
+    
   
   #take the Maze task results, relabel and type appropriately
   maze<- filter(data, controller=="Maze") %>% 
@@ -75,9 +75,9 @@ read_in_data <- function(filename){
   maze
 }
 
-#Note: more comprehension questions data, such as time to answer exists, but we don't write it here b/c I don't care about it
-natural_stories_1 <- read_in_data("../Data/raw_data") %>% 
+#note: more comprehension questions data, such as time to answer exists, but we don't write it here b/c i don't care about it
+natural_stories_1 <- read_in_data("../Data/raw_data") %>%
   mutate(subject=paste(MD5, time),
-         subject=factor(subject, levels=unique(subject), labels=1:length(unique(subject)))) %>% 
-  select(-MD5, -time) %>% 
+         subject=factor(subject, levels=unique(subject), labels=1:length(unique(subject)))) %>%
+  select(-MD5, -time) %>%
   write_rds("../Data/cleaned.rds")
