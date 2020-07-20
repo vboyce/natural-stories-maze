@@ -28,7 +28,7 @@ data_filt <- data %>% filter(native %in% c("ENG", "English", "ENGLISH", "english
 
 data_error_summ <- data_filt %>% 
   mutate(correct.num=ifelse(correct=="yes", 1,0)) %>% 
-  group_by(subject, critical, practice) %>%
+  group_by(subject) %>%
   filter(type!="practice") %>% 
   filter(rt<5000) %>% 
   summarize(pct_correct=mean(correct.num)) %>% 
@@ -100,7 +100,7 @@ Surprisals are measured in bits.
 - GRNN
 - Transformer-XL
 
-We sometimes center the predictors, but don't rescale them. (We center them for the brm models, but don't center surprisal for the GAM model).
+We center the predictors for the brms models, but don't rescale them. 
 
 The model formula we use is rt ~ surp* length +  freq * length + past_surp * past_length + past_freq * past_length.
 
@@ -152,8 +152,7 @@ select(rt, subject, Word_In_Story_Num, Story_Num,txl_surp,ngram_surp,grnn_surp, 
 lab_summary <- select_labs %>% summarize_at(c("length","freq","txl_surp","grnn_surp","ngram_surp"), list(mean=mean, stdev=sd, min=min, max=max)) %>% 
   pivot_longer(everything()) %>% arrange(name)
 
-ggplot(select_labs, aes(length))+geom_bar()
-
+lab_summary
 ```
 
 
@@ -294,105 +293,14 @@ summary(brm_txl_interact_post)
 summary(brm_txl_interact)
 ```
 
-## GAMs
-
-I think there might be ways to have mixed effects for this, but for now we're not. Also, couldn't figure out good ways of getting graphs from the full models, so just fitting the pieces within ggplot for graphs.
-
-Using only pre-error data.
-
-```{r gams-2}
-gam_ngram_1 <- gam(rt ~ s(ngram_surp, bs="cr", k=20)+ te(freq, length, bs="cr")+s(past_ngram, bs="cr", k=20)+te(past_freq, past_length, bs="cr"), data=labelled_pre_error)
-
-gam_txl_1 <- gam(rt ~ s(txl_surp, bs="cr", k=20)+ te(freq, length, bs="cr")+s(past_txl, bs="cr", k=20)+te(past_freq, past_length, bs="cr"), data=labelled_pre_error)
-
-gam_grnn_1 <- gam(rt ~ s(grnn_surp, bs="cr", k=20)+ te(freq, length, bs="cr")+s(past_grnn, bs="cr", k=20)+te(past_freq, past_length, bs="cr"), data=labelled_pre_error)
-
-```
-
+## Log likelihoods
 
 ```{r}
-for_graph <- labelled_pre_error %>% 
-  select(rt, txl_surp, ngram_surp, grnn_surp, past_txl, past_grnn, past_ngram) %>%
-  pivot_longer(cols=`txl_surp`:`past_ngram`,names_to="label", values_to="data") %>% 
-  mutate(type=case_when(
-         label %in% c("past_ngram", "past_txl", "past_grnn")~"Previous",
-         T~"Current"),
-         model=case_when(
-           label %in% c("txl_surp", "past_txl")~"TXL",
-           label %in% c("grnn_surp", "past_grnn")~"GRNN",
-           T ~ "5-gram"
-         ))
-
-ggplot(for_graph, aes(x=data, y=rt))+
-         geom_smooth(method="gam",formula= y~s(x, bs="cr", k=20),color="black")+
-         facet_grid(type~model)+
-        labs(x="Surprisal (bits)", y="Reaction Time (ms)")
-
-ggsave("../Papers/gam.pdf", width=3.5, height=2, unit="in")
-
-  
+# a <- log_lik(brm_ngram_interact)
+# 
+# a2 <- add_criterion(brm_ngram_interact, "waic")
+# 
+# b <- log_lik(brm_grnn_interact)
+# 
+# c <- log_lik(brm_txl_interact)
 ```
-
-
-
-Including post-error data. 
-
-```{r gams-3}
-gam_ngram_2 <- gam(rt ~ s(ngram_surp, bs="cr", k=20)+ te(freq, length, bs="cr")+s(past_ngram, bs="cr", k=20)+te(past_freq, past_length, bs="cr"), data=labelled_post_error)
-
-gam_txl_2 <- gam(rt ~ s(txl_surp, bs="cr", k=20)+ te(freq, length, bs="cr")+s(past_txl, bs="cr", k=20)+te(past_freq, past_length, bs="cr"), data=labelled_post_error)
-
-gam_grnn_2 <- gam(rt ~ s(grnn_surp, bs="cr", k=20)+ te(freq, length, bs="cr")+s(past_grnn, bs="cr", k=20)+te(past_freq, past_length, bs="cr"), data=labelled_post_error)
-
-```
-
-```{r plot_gam-3}
-for_graph_2 <- labelled_post_error %>% 
-  select(rt, txl_surp, ngram_surp, grnn_surp, past_txl, past_grnn, past_ngram) %>%
-  pivot_longer(cols=`txl_surp`:`past_ngram`,names_to="label", values_to="data") %>% 
-  mutate(type=case_when(
-         label %in% c("past_ngram", "past_txl", "past_grnn")~"Previous",
-         T~"Current"),
-         model=case_when(
-           label %in% c("txl_surp", "past_txl")~"TXL",
-           label %in% c("grnn_surp", "past_grnn")~"GRNN",
-           T ~ "5-gram"
-         ))
-
-ggplot(for_graph_2, aes(x=data, y=rt))+
-         geom_smooth(method="gam",formula= y~s(x, bs="cr", k=20),color="black")+
-         facet_grid(type~model)+
-        labs(x="Surprisal (bits)", y="Reaction Time (ms)")
-
-ggsave("../Papers/gam2.pdf", width=3.5, height=2, unit="in")
-
-for_graph_3 <- labelled_post_only %>% 
-  select(rt, txl_surp, ngram_surp, grnn_surp, past_txl, past_grnn, past_ngram) %>%
-  pivot_longer(cols=`txl_surp`:`past_ngram`,names_to="label", values_to="data") %>% 
-  mutate(type=case_when(
-         label %in% c("past_ngram", "past_txl", "past_grnn")~"Previous",
-         T~"Current"),
-         model=case_when(
-           label %in% c("txl_surp", "past_txl")~"TXL",
-           label %in% c("grnn_surp", "past_grnn")~"GRNN",
-           T ~ "5-gram"
-         ))
-
-ggplot(for_graph_3, aes(x=data, y=rt))+
-         geom_smooth(method="gam",formula= y~s(x, bs="cr", k=20),color="black")+
-         facet_grid(type~model)+
-        labs(x="Surprisal (bits)", y="Reaction Time (ms)")
-
-ggsave("../Papers/gam3.pdf", width=3.5, height=2, unit="in")
-
-
-
-```
-
-
-# TODOs for future
-
-In terms of surprisal analyses, the possible next steps are doing GAM analysis more robustly (with mixed effects, presenting results from the models) and doing DTSR. 
-
-We could also try looking at the specific syntactic features that are in the dataset (the point of natural stories was to have a bunch of idioms and weird syntax); we could maybe analyse those?
-  

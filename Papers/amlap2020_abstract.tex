@@ -28,7 +28,7 @@
 % \toggletrue{anonymous} with \togglefalse{anonymous} to de-anonymize.
 \usepackage{etoolbox}
 \newtoggle{anonymous}
-\toggletrue{anonymous}
+\togglefalse{anonymous}
 
 \renewcommand{\title}[1]{\textbf{#1}\\}
 \newcommand{\authors}[1]{\iftoggle{anonymous}{\phantom{#1}}{#1}\\}
@@ -41,8 +41,8 @@
 % Insert title, authors, affiliations, and e-mail address in the next three lines:
 
 \title{A-maze of Natural Stories: Texts are comprehensible using the Maze task}
-\authors{Veronica Boyce (MIT), Roger Levy (MIT)} %TODO, check what affiliation I have at conference time
-\email{vboyce@mit.edu}
+\authors{Veronica Boyce (MIT/Stanford), Roger Levy (MIT)} %TODO, check what affiliation I have at conference time
+\email{vboyce@stanford.edu}
 \newline
 %
 % Here goes the main text of your abstract:
@@ -57,7 +57,7 @@ The Natural Stories Corpus consists of 10 passages ($\sim$1000 words each) with 
 
 We exclude 5 participants who do not report being native English speakers. Participants clustered into those who appear to randomly press keys to get through the task quickly and those who do the task more slowly and accurately (Figure~2); we exclude participants with less than 80\% accuracy from analyses. Task accuracy is correlated with performance on the comprehension questions ($r^2=.47$); of the 63 participants who had at least 80\% accuracy on the Maze task, 50 got 5 or 6 of the 6 comprehension questions correct (Figure~4). People can understand and remember what they read while doing the Maze task successfully.
 
-We also investigated the relationship between a word's predictability and its RT. We fit Bayesian regression models using suprisal, frequency, length, and surprisal:length and frequency:length interactions at both the current and previous word as predictors of RT (see Table~1 for details). We use 3 models for surprisals: a Kneser-Ney smoothed 5-gram model, a recurrent neural network model (GRNN) from Gulordava et al. (2018), and a transformer model (TXL) from Dai et al. (2019). Across all models, we see large effects of current word surprisal and length, which noticeably exceed effects of previous word predictors (Table~1). We also fit GAMs to look at the shape of the relationship between surprisal and RT; we find a linear relationship between RT and current word surprisal and no relationship with previous word surprisal (Figure~3). The linear relationship matches known effects from eye-tracking and self-paced reading (Smith \& Levy 2013), but the lack of spillover indicates a potential advantage of Maze over eye-tracking and self-paced reading.
+We also investigated the relationship between a word's predictability and its RT. We fit Bayesian regression models using suprisal, frequency, length, and surprisal:length and frequency:length interactions at both the current and previous word as predictors of RT (see Table~1 for details). We use 3 models for surprisals: a Kneser-Ney smoothed 5-gram model, a recurrent neural network model (GRNN) from Gulordava et al. (2018), and a transformer model (TXL) from Dai et al. (2019). Across all models, we see large effects of current word surprisal and length, which noticeably exceed effects of previous word predictors (Table~1). We see minimal to no frequency effects (consistent with Shain 2019). We also fit GAMs to look at the shape of the relationship between surprisal and RT; we find a linear relationship between RT and current word surprisal and no relationship with previous word surprisal (Figure~3). The linear relationship matches known effects from eye-tracking and self-paced reading (Smith \& Levy 2013), but the lack of spillover indicates a potential advantage of Maze over eye-tracking and self-paced reading.
 
 
 In summary, we provide an adaptation of the Maze task for long naturalistic texts, and show that participants can comprehend what they read during A-maze. Additionally, we find robust, localized surprisal effects, supporting Forster et al.'s (2009) argument that Maze forces highly incremental processing. Overall, this suggests that A-maze is a versatile alternative to eye-tracking and self-paced reading. 
@@ -158,10 +158,10 @@ Frequency & -2.9 & [-6.3, 0.5] & 0.10 & 2.9 & [-0.2, 6] & 0.06 & 0.4 & [-2.7, 3.
 			Forster et al (2009). \textit{Behav. Res. Methods} $\bullet$
 			Futrell et al (2017). arXiv:1708.05763 $\bullet$
 			Gulordava et al (2018).  \textit{NAACL-HLT 2018} $\bullet$
+			Shain (2019). \textit{NAACL-HLT 2019} $\bullet$
 			Sloggett et al (2020). \textit{CUNY 2020} $\bullet$
 			Smith \& Levy (2013). \textit{Cognition} $\bullet$
-			Witzel et al (2012).  \textit{J Psycholinguist Res} 
-			%TODO add cites for length, freq, surprisal justification
+			Witzel et al (2012).  \textit{J Psycholinguist Res.} 
 		}
 	\end{small}
 

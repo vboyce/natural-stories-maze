@@ -151,11 +151,12 @@ select(rt, subject, Word_In_Story_Num, Story_Num,txl_surp,ngram_surp,grnn_surp, 
 
 
 
-## GAMs
+### GAMs
 
+## Try 1
 Using only pre-error data.
 
-Does not have hierarchical effects.
+Does not have hierarchical effects. Has smooths for the surprisals, and tensor effects/interactions for the freq x length
 
 ```{r for gam}
 
@@ -176,7 +177,7 @@ txl_data <- labelled_pre_error %>% select(rt, surprisal=txl_surp, prev_surp=past
 
 ```
 
-```{r gams-2}
+```{r gams}
 gam_ngram_1 <- gam(rt ~ s(surprisal, bs="cr", k=20)+ te(freq, len, bs="cr")+s(prev_surp, bs="cr", k=20)+te(prev_freq, prev_len, bs="cr"), data=ngram_data, method="REML")
 
 gam_grnn_1 <- gam(rt ~ s(surprisal, bs="cr", k=20)+ te(freq, len, bs="cr")+s(prev_surp, bs="cr", k=20)+te(prev_freq, prev_len, bs="cr"), data=grnn_data, method="REML")
@@ -209,7 +210,5 @@ ggsave("../Papers/gam.pdf", width=3.5, height=2, unit="in")
 #plot(gam_txl_1, seWithMean = TRUE, shift = coef(gam_txl_1)[1], select=1)
 
 ```
-
-
 
 
