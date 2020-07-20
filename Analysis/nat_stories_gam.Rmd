@@ -1,0 +1,215 @@
+---
+title: "Natural Stories GAM analysis"
+output: github_document
+---
+```{r, include=F}
+knitr::opts_chunk$set(echo = FALSE, warning=F)
+options(knitr.table.format = "html")
+library(tidyverse)
+library(readr)
+library(brms)
+library(lme4)
+library(rstan)
+library(tidybayes)
+library(knitr)
+library(mgcv)
+library(mgcViz)
+library(tidymv)
+library(rsample)
+theme_set(theme_bw())
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
+```
+
+```{r participants}
+
+data <- read_rds("../Data/cleaned.rds")
+
+data_filt <- data %>% filter(native %in% c("ENG", "English", "ENGLISH", "english")) #I peeked at what people put that semantically maps to english
+
+data_error_summ <- data_filt %>% 
+  mutate(correct.num=ifelse(correct=="yes", 1,0)) %>% 
+  group_by(subject) %>%
+  filter(type!="practice") %>% 
+  filter(rt<5000) %>% 
+  summarize(pct_correct=mean(correct.num)) %>% 
+  ungroup() %>% 
+  mutate(is.attentive=ifelse(pct_correct>.8, T,F)) %>% 
+  select(subject, is.attentive)
+
+data_low_error <- data_filt %>% 
+  left_join(data_error_summ, by="subject") %>% 
+  filter(is.attentive) %>% 
+  filter(type!="practice")
+
+  data_error_free <- data_low_error %>% 
+    mutate(word_num_mistake=ifelse(correct=="no", word_num,NA)) %>% 
+    group_by(sentence, subject) %>% fill(word_num_mistake) %>% ungroup() %>% 
+    mutate(after_mistake=word_num-word_num_mistake,
+           after_mistake=ifelse(is.na(after_mistake),0,after_mistake)) %>% 
+    filter(correct=="yes") %>% 
+    filter(!after_mistake %in% c(1,2))
+  
+data_no_first <- data_error_free %>% filter(word_num!=0)
+
+data_ready <- data_no_first %>% filter(rt>100 & rt<5000) %>% 
+  select(subject, word_num, word, rt, sentence, type)
+
+data_post_only <- data_no_first %>% filter(rt>100 & rt<5000) %>% 
+  filter(!after_mistake==0) %>% 
+    select(subject, word_num, word, rt, sentence, type)
+
+data_pre_error <- data_no_first %>% filter(rt>100 & rt<5000) %>% 
+  filter(after_mistake==0) %>% 
+  select(subject, word_num, word, rt, sentence, type)
+
+data_stories <- data_ready %>% select(type, subject) %>% 
+  unique() %>% 
+  group_by(type) %>% 
+  tally()
+```
+
+
+# Overview
+
+`r data %>% select(subject) %>% unique() %>% nrow()` participants read naturalistic stories from the natural stories corpus. Each participant read 1 story. 
+
+We exclude
+
+- participants who do not report English as a native language (`r data_filt %>% select(subject) %>% unique() %>% nrow()` remaining)
+- participants who do not get 80% of the words correct (`r data_low_error %>% select(subject) %>% unique() %>% nrow()` remaining)
+- practice items (`r data_low_error %>% nrow()` words remaining)
+- words that were wrong or were within two after a mistake (`r data_error_free %>% nrow()` words remaining)
+- the first word of every sentence (didn't have a real distractor, RT is measured slightly differently) (`r data_no_first %>% nrow()` words remaining)
+- words with RTs <100 or >5000 (<100 we think is likely a recording error, or at least not reading the words at all, >5000 is likely getting distracted) (`r data_ready %>% nrow()` words remaining)
+
+Within the filtered data, each story was read between `r min(data_stories$n)` and `r max(data_stories$n)` times, for an average of `r mean(data_stories$n)`.
+
+We also do the analyses on only the words before mistakes (per sentence) (`r data_pre_error %>% nrow()` words)
+
+From the modelling side:
+(After attempts without doing this filtering) we only include words which are single token and known words in each of the models vocabularies. We also only include words with frequencies. This is roughly equivalent to excluding words with punctuation. 
+
+We use as predictors:
+
+- length in characters of stripped word
+- unigram frequency of word. Frequencies for words are calculated using word_tokenize on the gulordava train data and counting up instances. (This tends to tokenize off punctuation, but is capitalization sensitive). Frequencies are represented as log2 of the expected occurances in 1 billion words. 
+
+Surprisals are measured in bits.
+
+- ngram (5-gram KN smoothed)
+- GRNN
+- Transformer-XL
+
+For GAM models, we center length and frequency but not surprisal. We want surprisal interpretable, but we also will be plotting it (at least for the bootstrapping) at length and frequencies set to 0, so they need to be centered. (Not sure this last piece is actually true/matters). 
+
+
+```{r labels}
+labs <- read_rds("../Prep_code/natural_stories_surprisals.rds") %>% left_join(read_delim("../Materials/natural_stories_sentences.tsv", delim="\t")) %>% 
+  select(word_num=Word_In_Sentence_Num, word=Word, sentence=Sentence, everything())
+
+select_labs <- labs %>% 
+  filter(ngram_token_count==1 & txl_token_count==1 & grnn_token_count==1) %>% 
+  filter(!is.na(txl_surp) & !is.na(ngram_surp) & !is.na(grnn_surp) & !is.na(freq) & !is.na(length)) %>% 
+    mutate(txl_center=txl_surp-mean(txl_surp, na.rm=T),
+         ngram_center=ngram_surp-mean(ngram_surp, na.rm=T),
+         grnn_center=grnn_surp-mean(grnn_surp, na.rm=T),
+         freq_center=freq-mean(freq, na.rm=T),
+         length_center=length-mean(length, na.rm=T))
+
+past_word <- select_labs %>% 
+  mutate(word_num=word_num+1) %>% 
+  rename(past_txl=txl_surp, past_ngram=ngram_surp, past_grnn=grnn_surp, past_freq=freq, past_length=length,past_c_txl=txl_center, past_c_ngram=ngram_center, past_c_grnn=grnn_center, past_c_freq=freq_center, past_c_length=length_center) %>% 
+  select(sentence,Story_Num,Sentence_Num, word_num, starts_with("past")) %>% 
+  left_join(select_labs, by=c("Story_Num","Sentence_Num","sentence", "word_num"))
+
+
+
+labelled_pre_error <- data_pre_error %>% inner_join(past_word, by=c("word_num", "word", "sentence")) %>%
+  filter(word_num>1) %>% 
+  select(rt, subject, Word_In_Story_Num, Story_Num,txl_surp,ngram_surp,grnn_surp, freq,length,
+         txl_center, ngram_center,grnn_center,freq_center, length_center, starts_with("past")) %>% 
+  mutate(Word_ID=as_factor(str_c(Story_Num, Word_In_Story_Num, sep="_"))) %>% 
+  select(-Word_In_Story_Num, -Story_Num) %>% write_rds("pre_error.rds")
+
+labelled_post_error <- data_ready %>% inner_join(past_word, by=c("word_num", "word", "sentence")) %>%
+  filter(word_num>1) %>% 
+select(rt, subject, Word_In_Story_Num, Story_Num,txl_surp,ngram_surp,grnn_surp, freq,length,
+         txl_center, ngram_center,grnn_center,freq_center, length_center, starts_with("past")) %>% 
+  mutate(Word_ID=as_factor(str_c(Story_Num, Word_In_Story_Num, sep="_"))) %>% 
+  select(-Word_In_Story_Num, -Story_Num) %>% write_rds("post_error.rds")
+
+labelled_post_only <- data_post_only %>% inner_join(past_word, by=c("word_num", "word", "sentence")) %>%
+  filter(word_num>1) %>% 
+select(rt, subject, Word_In_Story_Num, Story_Num,txl_surp,ngram_surp,grnn_surp, freq,length,
+         txl_center, ngram_center,grnn_center,freq_center, length_center, starts_with("past")) %>% 
+  mutate(Word_ID=as_factor(str_c(Story_Num, Word_In_Story_Num, sep="_"))) %>% 
+  select(-Word_In_Story_Num, -Story_Num)
+```
+
+
+
+
+
+## GAMs
+
+Using only pre-error data.
+
+Does not have hierarchical effects.
+
+```{r for gam}
+
+ngram_data <- labelled_pre_error %>% select(rt, surprisal=ngram_surp, prev_surp=past_ngram, 
+                                            freq=freq_center, len=length_center,
+                                            prev_freq=past_c_freq, prev_len=past_c_length
+                                            )
+
+grnn_data <- labelled_pre_error %>% select(rt, surprisal=grnn_surp, prev_surp=past_grnn, 
+                                            freq=freq_center, len=length_center,
+                                            prev_freq=past_c_freq, prev_len=past_c_length
+                                            )
+
+txl_data <- labelled_pre_error %>% select(rt, surprisal=txl_surp, prev_surp=past_txl, 
+                                            freq=freq_center, len=length_center,
+                                            prev_freq=past_c_freq, prev_len=past_c_length
+                                            )
+
+```
+
+```{r gams-2}
+gam_ngram_1 <- gam(rt ~ s(surprisal, bs="cr", k=20)+ te(freq, len, bs="cr")+s(prev_surp, bs="cr", k=20)+te(prev_freq, prev_len, bs="cr"), data=ngram_data, method="REML")
+
+gam_grnn_1 <- gam(rt ~ s(surprisal, bs="cr", k=20)+ te(freq, len, bs="cr")+s(prev_surp, bs="cr", k=20)+te(prev_freq, prev_len, bs="cr"), data=grnn_data, method="REML")
+
+gam_txl_1 <- gam(rt ~ s(surprisal, bs="cr", k=20)+ te(freq, len, bs="cr")+s(prev_surp, bs="cr", k=20)+te(prev_freq, prev_len, bs="cr"), data=txl_data, method="REML")
+
+```
+
+```{r plot-gam}
+
+
+a <- get_gam_predictions(model=gam_ngram_1, series=surprisal, series_length=100) %>% select(surprisal, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="5-gram", s="Current")
+b <- get_gam_predictions(model=gam_ngram_1, series=prev_surp, series_length=100) %>% select(surprisal=prev_surp, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="5-gram", s="Previous")
+c <- get_gam_predictions(model=gam_grnn_1, series=surprisal, series_length=100) %>% select(surprisal, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="GRNN", s="Current")
+d <- get_gam_predictions(model=gam_grnn_1, series=prev_surp, series_length=100) %>% select(surprisal=prev_surp, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="GRNN", s="Previous")
+e <- get_gam_predictions(model=gam_txl_1, series=surprisal, series_length=100) %>% select(surprisal, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="TXL", s="Current")
+f <- get_gam_predictions(model=gam_txl_1, series=prev_surp, series_length=100) %>% select(surprisal=prev_surp, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="TXL", s="Previous")
+
+all <- a %>% union(b) %>% union(c) %>% union(d) %>% union(e) %>% union(f)
+
+ggplot(all, aes(x=surprisal, y=rt, ymin=CI_lower, ymax=CI_upper))+
+  geom_line()+
+  geom_ribbon(alpha=.3)+
+  facet_grid(s~model)+
+  labs(x="Surprisal (bits)", y="Reaction Time (ms)")
+
+ggsave("../Papers/gam.pdf", width=3.5, height=2, unit="in")
+
+#confirm that this really is just a prettied up version of what the usual output is
+#plot(gam_txl_1, seWithMean = TRUE, shift = coef(gam_txl_1)[1], select=1)
+
+```
+
+
+
+
