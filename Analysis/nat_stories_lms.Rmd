@@ -296,11 +296,18 @@ summary(brm_txl_interact)
 ## Log likelihoods
 
 ```{r}
-# a <- log_lik(brm_ngram_interact)
-# 
+ a <- log_lik(brm_ngram_interact)
+
+a2 <- exp(a*-1) %>% mean()
 # a2 <- add_criterion(brm_ngram_interact, "waic")
 # 
-# b <- log_lik(brm_grnn_interact)
-# 
-# c <- log_lik(brm_txl_interact)
+ b <- log_lik(brm_grnn_interact)
+
+ b2 <- exp(a*-1) %>% mean()
+ c <- log_lik(brm_txl_interact)
+ c2 <- exp(c*-1) %>% mean()
+ 
+ product <- sum(a) 
+ 
+ a2 <- a*-1+product
 ```
