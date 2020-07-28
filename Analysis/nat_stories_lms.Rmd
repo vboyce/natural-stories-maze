@@ -125,7 +125,7 @@ past_word <- select_labs %>%
 
 labelled_pre_error <- data_pre_error %>% inner_join(past_word, by=c("word_num", "word", "sentence")) %>%
   filter(word_num>1) %>% 
-  select(rt, subject, Word_In_Story_Num, Story_Num,txl_surp,ngram_surp,grnn_surp, freq,length,
+  select(rt, subject, Word_In_Story_Num, word, Story_Num,txl_surp,ngram_surp,grnn_surp, freq,length,
          txl_center, ngram_center,grnn_center,freq_center, length_center, starts_with("past")) %>% 
   mutate(Word_ID=as_factor(str_c(Story_Num, Word_In_Story_Num, sep="_"))) %>% 
   select(-Word_In_Story_Num, -Story_Num) %>% write_rds("pre_error.rds")
@@ -310,17 +310,123 @@ get_harmonic <- function(d){
   overall
 }
 
- a <- log_lik(brm_ngram_interact)
-
- b <- log_lik(brm_grnn_interact)
-
- c <- log_lik(brm_txl_interact)
-
- get_harmonic(a)
- 
- get_harmonic(b)
- 
- get_harmonic(c)
+ # a <- log_lik(brm_ngram_interact)
+ # 
+ # b <- log_lik(brm_grnn_interact)
+ # 
+ # c <- log_lik(brm_txl_interact)
+ # 
+ # get_harmonic(a)
+ # 
+ # get_harmonic(b)
+ # 
+ # get_harmonic(c)
 ```
 
 I get 9.087e-32 for Ngram, 3.602e-32 for GRNN, and 2.24e-33 for TXL. I'm not sure this is the order we expect, and not sure how to interpret it. (Also not sure I did things right.)
+
+# Frequentist LMs
+
+```{r}
+#mean by subject for each word
+d_lm <- labelled_pre_error %>% group_by(word, txl_center, ngram_center, grnn_center, freq_center, length_center,
+                                        past_c_txl, past_c_ngram, past_c_grnn, past_c_freq, past_c_length, Word_ID) %>% 
+  summarize(mean_rt=mean(rt))
+```
+
+## Models
+
+We want to be able to do nested model comparision, so we want models with 
+- only length, frequency fx
+- each 1 surprisal model as predictor
+- all the surprisals
+
+For now, no interactions between surprisal and others, and if we include a predictor, include both current and lagged of it. 
+
+```{r}
+
+no_surp <- lmer(mean_rt ~ freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d_lm)
+
+ngram_only <- lmer(mean_rt ~ ngram_center + past_c_ngram + freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d_lm)
+
+grnn_only <- lmer(mean_rt ~ grnn_center + past_c_grnn + freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d_lm)
+
+txl_only <- lmer(mean_rt ~ txl_center + past_c_txl + freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d_lm)
+
+all_surp <- lmer(mean_rt ~ ngram_center + past_c_ngram + 
+                   grnn_center + past_c_grnn +
+                   txl_center + past_c_txl +
+                   freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d_lm)
+
+
+ngram_grnn <-  lmer(mean_rt ~ ngram_center + past_c_ngram + 
+                   grnn_center + past_c_grnn +
+                   freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d_lm)
+
+ngram_txl <-  lmer(mean_rt ~ ngram_center + past_c_ngram + 
+                   txl_center + past_c_txl +
+                   freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d_lm)
+
+grnn_txl <-  lmer(mean_rt ~ grnn_center + past_c_grnn +
+                   txl_center + past_c_txl +
+                   freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d_lm)
+
+no_lag <-  lmer(mean_rt ~ ngram_center +
+                   grnn_center +
+                   txl_center + 
+                   freq_center*length_center+(1|word), data=d_lm)
+
+no_surp_lag <-  lmer(mean_rt ~ ngram_center +  
+                   grnn_center + 
+                   txl_center +                    freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d_lm)
+
+  only_surp_lag <-  lmer(mean_rt ~ ngram_center + past_c_ngram + 
+                   grnn_center + past_c_grnn +
+                   txl_center + past_c_txl +
+                   freq_center*length_center+(1|word), data=d_lm)
+```
+
+```{r}
+
+anova(all_surp, txl_only)
+anova(all_surp, grnn_only)
+anova(all_surp, ngram_only)
+
+anova(txl_only, no_surp)
+anova(grnn_only, no_surp)
+anova(ngram_only, no_surp)
+
+anova(all_surp, ngram_grnn)
+anova(all_surp, ngram_txl)
+anova(all_surp, grnn_txl)
+
+anova(ngram_grnn, ngram_only)
+anova(ngram_grnn, grnn_only)
+anova(ngram_txl, ngram_only)
+anova(ngram_txl, txl_only)
+anova(grnn_txl, grnn_only)
+anova(grnn_txl, txl_only)
+
+anova(all_surp, no_lag)
+
+anova(all_surp, no_surp_lag)
+
+anova(no_surp_lag, no_lag) 
+
+anova(all_surp, only_surp_lag)
+
+anova(only_surp_lag, no_lag)
+```
+In general, adding to the model makes it better. 
+
+The model with all 3 surprisal predictors is better than any model with only one. Any one surprisal predictor is better than no surprisals predictors. 
+
+However, adding ngram predictors to a model that already has txl & grnn does not help. 
+In other cases, adding the 3rd surprisal source to the other two does help. 
+
+Ngram+Grnn is not better than Grnn only. Otherwise, pairs are better than singletons. This suggests that Ngram's info is a subset of GRNN, but not a subset of TXL. 
+
+Past surprisal predictors don't help (with or without past freq,length effects in the models), but past freq,length do (with or without past surprisal predictors). 
+
+
+
