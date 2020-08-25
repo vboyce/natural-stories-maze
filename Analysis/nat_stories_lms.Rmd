@@ -64,6 +64,12 @@ data_stories <- data_ready %>% select(type, subject) %>%
   unique() %>% 
   group_by(type) %>% 
   tally()
+
+data_anything_goes <- data_filt %>% 
+  filter(type!="practice") %>% 
+  filter(correct=="yes") %>% 
+    select(subject, word_num, word, rt, sentence, type)
+
 ```
 
 
@@ -143,6 +149,13 @@ select(rt, subject, Word_In_Story_Num, Story_Num,txl_surp,ngram_surp,grnn_surp, 
          txl_center, ngram_center,grnn_center,freq_center, length_center, starts_with("past")) %>% 
   mutate(Word_ID=as_factor(str_c(Story_Num, Word_In_Story_Num, sep="_"))) %>% 
   select(-Word_In_Story_Num, -Story_Num)
+
+labelled_anything_goes <- data_anything_goes %>% inner_join(past_word, by=c("word_num", "word", "sentence")) %>%
+  filter(word_num>1) %>% 
+select(rt, subject, Word_In_Story_Num, word, Story_Num,txl_surp,ngram_surp,grnn_surp, freq,length,
+         txl_center, ngram_center,grnn_center,freq_center, length_center, starts_with("past")) %>% 
+  mutate(Word_ID=as_factor(str_c(Story_Num, Word_In_Story_Num, sep="_"))) %>% 
+  select(-Word_In_Story_Num, -Story_Num) %>% write_rds("non-selective.rds")
 ```
 
 ```{r}
@@ -318,7 +331,7 @@ get_harmonic <- function(d){
  # 
  # get_harmonic(a)
  # 
- # get_harmonic(b)
+ # get_harmonic(b)    
  # 
  # get_harmonic(c)
 ```
@@ -429,4 +442,26 @@ Ngram+Grnn is not better than Grnn only. Otherwise, pairs are better than single
 Past surprisal predictors don't help (with or without past freq,length effects in the models), but past freq,length do (with or without past surprisal predictors). 
 
 
+## What if we don't exclude participants
 
+One potentially useful comparison with past SPR/eye-tracking is if we are more inclusive of participants, do we get data that looks more like theirs. (Perhaps our exclusion criteria are more robust?)
+
+
+```{r freq_all}
+#mean by subject for each word
+d_lm2 <- labelled_anything_goes %>% group_by(word, txl_center, ngram_center, grnn_center, freq_center, length_center,
+                                        past_c_txl, past_c_ngram, past_c_grnn, past_c_freq, past_c_length, Word_ID) %>% 
+  summarize(mean_rt=mean(rt))
+```
+
+```{r}
+
+no_surp <- lmer(mean_rt ~ freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d_lm2)
+
+ngram_only <- lmer(mean_rt ~ ngram_center + past_c_ngram + freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d_lm2)
+
+grnn_only <- lmer(mean_rt ~ grnn_center + past_c_grnn + freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d_lm2)
+
+txl_only <- lmer(mean_rt ~ txl_center + past_c_txl + freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d_lm2)
+
+```
