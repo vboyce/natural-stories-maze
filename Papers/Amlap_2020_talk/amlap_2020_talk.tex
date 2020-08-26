@@ -1,4 +1,4 @@
-\documentclass[12pt, xcolor=beamer,table,usenames,dvipsnames, ignorenonframetext, ngerman]{beamer}
+\documentclass[12pt, xcolor=beamer,table,usenames,dvipsnames, ignorenonframetext, ngerman,t]{beamer}
 \usetheme{Frankfurt}
 \usecolortheme{dove}
 \usepackage{appendixnumberbeamer}
@@ -54,6 +54,12 @@
 \usepackage{tcolorbox}
 \tcbuselibrary{raster}
 
+\newcommand{\bluecheck}{}%
+\DeclareRobustCommand{\greencheck}{%
+	\tikz\fill[scale=0.6, color=ForestGreen]
+	(0,.35) -- (.25,0) -- (1,.7) -- (.25,.15) -- cycle;%
+}
+
 \title{A-maze of Natural Stories: Texts are comprehensible using the Maze task}
 \author{Veronica Boyce, Roger Levy}
 \date{AMLaP 2020}
@@ -64,30 +70,25 @@
 \begin{frame}
 \maketitle
 %TODO maybe put a picture of Roger's face??, at least acknowledge him 
-%Pre-amble -- thank Roger, outline with be methods heavy, and then talk about the specific experiment & how it's relevant to how we think about surprisal 
-\end{frame}
-
-% But first -- Incremental processing methods
-
-
-\begin{frame}{Incremental processing methods}
-\pause
-Goal: Measure processing difficulty
-
-Assumption: Longer RT = more difficulty
-\medskip
-
-\pause
 \end{frame}
 
 \begin{frame}{Incremental processing methods}
-	How to measure RT?
+\pause
+Want a measure of processing difficulty \greencheck\pause
+
+Assume that longer RT = more difficulty \pause
+\smallskip
+\begin{center}
+{\large How to measure RT?}
+\end{center}
+\end{frame}
+\begin{frame}{Incremental processing methods}
 	
-Usual Methods
+{\large Common ways to measure RT}
 \begin{columns}[t]\pause
 	\begin{column}{.5\textwidth}
 		\begin{center}
-			\textbf{\Large Eye-tracking}
+			\textbf{\large Eye-tracking}
 			
 			\medskip
 			
@@ -97,11 +98,11 @@ Usual Methods
 	\end{column}\pause
 	\begin{column}{.5\textwidth}
 		\begin{center}
-\textbf{\Large Self-paced reading}
+\textbf{\large Self-paced reading}
 
 \medskip
 
-\begin{tikzpicture} %TODO on slide etc
+\begin{tikzpicture}
 \draw (-.5,-.5) rectangle (3.2,.5);
 \onslide<4>{\node at (0,0) {The};}
 \onslide<4>{\node at (1.7,0) {- - - - - - - - - - -};}
@@ -115,20 +116,21 @@ Usual Methods
 \onslide<7->{\node at (2.7,0) {milk.};}
 \end{tikzpicture}
 \end{center}
-\onslide<8->{
-}
 \end{column}
 \end{columns}
 \bigskip
-Different methods have different trade-offs
+\onslide<8->{Different methods have different trade-offs}
 \end{frame}
 
-\begin{frame}{An alternative: Maze}
-%TODO First mentioned, then more elaborated in 2009 paper, has been used ~dozen times 
+\begin{frame}[c]{An alternative: Maze}
+
+\pause 
 \centering
+
+\bigskip 
+
 \tikzset{
 	font={\fontsize{14pt}{12}\selectfont}}
-%TODO Maybe update with circles to show the selections. 
 \begin{tikzpicture}
 \onslide<1-2>{\node  (c) at (-1,.5) {The};}
 \onslide<1-2>{\node  (d) at (1,.5) {x-x-x};}
@@ -147,17 +149,22 @@ align=center] at (d) {};}
 \end{frame}
 
 \begin{frame}{An alternative: Maze}
+\vskip -1em
+{\small(Forster et al. 2009; Witzel et al. 2012)}
+	\vskip -1em
 \begin{columns}
 	\begin{column}{0.5\textwidth}
 		\begin{center}
-		\textbf{\large G-maze}
+		\textbf{\large G-maze}\\
+		`Grammatical' choices\\
 		\includegraphics[clip, trim=9cm 14cm 11cm 1cm,width=.9\textwidth]{../gmaze.pdf}
 		\end{center}
 	\pause
 	\end{column}
 	\begin{column}{0.5\textwidth} 
 		\begin{center}
-		\textbf{\large L-maze}
+		\textbf{\large L-maze}\\
+		`Lexical' choices\\
 			\includegraphics[clip, trim=9cm 14cm 11cm 1cm,width=.9\textwidth]{../lmaze.pdf}
 		\end{center}
 	\end{column}
@@ -169,77 +176,78 @@ Sentence ends if a mistake is made.
 \pause
 
 Claim: forces incremental processing (no spillover)
-
-\begin{flushright}
-	{\small(Forster et al. 2009; Witzel et al. 2012)}
-\end{flushright}
 % Compelling results especially for G-maze, but 
 % was run in the lab, and generating G-maze materials is a huge amount of work
 \end{frame}
 
-\begin{frame}{Using Maze}
-Is Maze a viable alternative to web SPR?
-
-Needs:
-\begin{itemize}
-	\item Run on web 
-	\item Easy generation of distractor words
-	\item Work for long or multi-sentence items %this part incidentally makes it easy to do exclusions, and might help with data loss, but we'll talk about that later
-\end{itemize} 
-\pause
-
+\begin{frame}{Maze Made Easy}
+	
+	Want to use Maze instead of web SPR\pause
+	
+	\medskip
+	
+	Needs some tweaks:\pause
+	\begin{itemize}
+		\item Run on web \pause
+		\item Easily generate distractors \pause
+		\item Work for multi-sentence items \pause
+	\end{itemize} 
+	
 \end{frame}
 
 \begin{frame}{Run on web}
-	%TODO include screenshot
-	Wrote an Ibex module
-	\begin{itemize}
-		\item Based off SPR module
-		\item Fits in with existing workflow
-	\end{itemize}
- Replicated Witzel et al. (2012) results (see Boyce et al. 2020)
+	Wrote an Ibex module \pause
+	
+	\begin{center}\includegraphics[width=.7\textwidth]{screenshot.png} \end{center}\pause
+
+ Replicated Witzel et al. (2012) results (Boyce et al. 2020)
 \end{frame}
 %
-\begin{frame}{Using Maze}
-	Is Maze a viable alternative to web SPR?
+\begin{frame}{Maze Made Easy}
 	
-	Needs:
+	Want to use Maze instead of web SPR
+	
+	\medskip
+	
+	Needs some tweaks:
 	\begin{itemize}
-		\item Run on web 
-		\item Easy generation of distractor words
-		\item Work for long or multi-sentence items %this part incidentally makes it easy to do exclusions, and might help with data loss, but we'll talk about that later
+		\item Run on web \greencheck
+		\item Easily generate distractors
+		\item Work for multi-sentence items %this part incidentally makes it easy to do exclusions, and might help with data loss, but we'll talk about that later
 	\end{itemize} 
-	\pause
 	
 \end{frame}
 %
 \begin{frame}{Generating distractors}
 \pause
-Task: Given  \textit{The dog chased} Find a word that can't be a continuation.
+Goal: Find a word that can't continue a partial sentence
 \begin{itemize}
-	\item Tedious (and hard!) to do by hand. 
-\end{itemize}
+	\item Ex.  \textit{The dog chased} \pause
+	\item Tedious (and hard!) to do by hand
+\end{itemize} \pause
 
-What makes something an unacceptable continuation?
+What makes something an unacceptable continuation? \pause
 \begin{itemize}
-	\item Ungrammatical
-	\item ...or otherwise really unlikely 
+	\item Ungrammatical \pause
+	\item ...or otherwise really unlikely \pause 
 	\item $\approx$ high surprisal 
-\end{itemize}
+\end{itemize} \pause
 
 Can we use Neural Language Models?
 \end{frame}
 %
 \begin{frame}{Can we use LMs?}
+	\pause
 Language models (LMs)
 \begin{itemize}
-	\item Trained on large corpora to predict the next word
+	\item Trained to predict the next word
 	\item Given a partial sentence, return probabilities of the next word
-\end{itemize}
+\end{itemize}\pause
 
-LSTM RNNs (ex. Gulordava 2018) show some syntactic knowledge %TODO cite people
+LSTM RNNs show some syntactic knowledge %TODO cite people 
+\pause
 
-Add some controls:
+Add some restrictions:
 \begin{itemize}
 \item Restrict to a list of possible distractors
 \item Only consider length, frequency matches
@@ -247,52 +255,51 @@ Add some controls:
 	
 \end{frame}
 %
-\begin{frame}{Can we use LMs to choose distractors?} 
-
-Does it work? 
-
-Yes, at least well enough.
+\begin{frame}{Does it work?} 
+\pause
+\vskip -2em
+{\large Yes, at least well enough.} \pause
 \begin{itemize}
-	\item Sometimes generates plausible distractors.
-	\item Overall results comparable with G-maze %TODO citations to me, Sloggett
-	%TODO show graph from Boyce et al
+	\item Sometimes generates plausible distractors. \pause
+	\item A-maze results comparable with G-maze {\small(Boyce et al 2020, Sloggett et al 2020)} \pause 
 \end{itemize} 
 \medskip
+\centering
 
-Parameter-tweaking may help, as would hand-checking. 
+\includegraphics[width=.7\textwidth]{../a_all.pdf}
 \end{frame}
 %
-\begin{frame}{Using Maze}
-	Is Maze a viable alternative to web SPR?
+\begin{frame}{Maze Made Easy}
 	
-	Needs:
+	Want to use Maze instead of web SPR
+	
+	\medskip
+	
+	Needs some tweaks:
 	\begin{itemize}
-		\item Run on web %TODO figure out how to make checkmarks again
-		\item Easy generation of distractor words 
-		\item Work for long or multi-sentence items %this part incidentally makes it easy to do exclusions, and might help with data loss, but we'll talk about that later
+		\item Run on web \greencheck
+		\item Easily generate distractors \greencheck
+		\item Work for multi-sentence items 
 	\end{itemize} 
-	\pause
 	
 \end{frame}
 %
 %
 \begin{frame}{Long items}
-	
-Errors terminate sentences. 
-Some error rate is inevitable. 
 
-Want to run multi-sentence items. 
+Want to run multi-sentence items. \pause
+
+Problem: Errors terminate sentences. \pause
 \begin{itemize}
-	\item Treat whole story as a unit: Almost no one makes it to the end.
-	\item Treat each sentence as a unit:
-	Many participants miss key context. 
+	\item Treat whole story as a unit: ~ No one makes it to the end. \pause
+	\item Treat each sentence as a unit: Some participants miss key context. \pause
 \end{itemize}
 
 What if after an error, participants corrected errors and the sentence continued?
 	
 \end{frame}
 %
-\begin{frame}{Maze with Error Correction}
+\begin{frame}[c]{Maze with Error Correction}
 \centering
 \tikzset{
 	font={\fontsize{14pt}{12}\selectfont}}
@@ -319,50 +326,60 @@ What if after an error, participants corrected errors and the sentence continued
 \begin{frame}{Maze with Error Correction}
 
 \begin{columns}
-	\begin{column}{0.3\textwidth}
+	\begin{column}{0.4\textwidth}
 		\begin{center}
 		\includegraphics[clip, trim=9cm 12.5cm 10cm 1cm,width=\textwidth]{../maze_diagram.pdf}
 		\end{center}
 		
 	\end{column} \pause 
-	\begin{column}{0.7\textwidth} 
+	\begin{column}{0.6\textwidth} 
 		\begin{center}
-			Features
 			\begin{itemize}
-				\item Easily implemented as a toggle in Ibex \pause
-				\item Can look at long materials (in principle)
+				\item Can be toggled in Ibex \pause
+				\item Long materials feasible \pause
 				\item Have all the data \pause
-				\item Identify bad participants v bad distractors 
-				%easy to weed out participants who aren't paying attention 
-				\item Makes it less of a big deal when we have bad distractors
+				\item Compensates for bad distractors
 			\end{itemize}
 		\end{center}
 	\end{column}
 \end{columns}
 \medskip
 \pause
-
-Side effect: Can now run multi-sentence items!
 \end{frame}
 %
+
+\begin{frame}{Maze Made Easy}
+	
+	Want to use Maze instead of web SPR
+	
+	\medskip
+	
+	Needs some tweaks:
+	\begin{itemize}
+		\item Run on web \greencheck
+		\item Easily generate distractors \greencheck
+		\item Work for multi-sentence items \greencheck ? 
+	\end{itemize} 
+	
+\end{frame}
 %%So now that I've explained the method, going to switch over to current experiment & what we hoped to get from it
 %
-\begin{frame}
-	Various open questions we want to address -- really test suitability of Maze
+\begin{frame}{Current experiment}
+	Various open questions to address \pause
 	\begin{itemize}
-		\item Do people comprehend/remember what they read?
-		\item Does this error correction thing work? 
-		\item Are people willing to read texts in this way? 
-		\item Do we get predictability effects? (Both SPR, eye-tracking show certain surprisal effects, does Maze?)
+		\item Are people willing to read long texts in this way? \pause
+		\item Do people comprehend what they read? \pause
+		\item Does the error correction variant work? \pause
+		\item Do we get predictability effects? 
 	\end{itemize}
 \end{frame}
 
 \begin{frame}{Natural Stories}
-Natural stories corpus (Futrell et al. 2017)
+Natural stories corpus (Futrell et al. 2017) \pause
 \begin{itemize}
-	\item 10 stories, each about 1000 words
-	\item Some unusual constructions, but read fluently
-	\item 6 comprehension questions per story
+	\item 10 stories, each about 1000 words \pause
+	\item Some unusual constructions, but read fluently \pause
+	\item 6 comprehension questions per story \pause
 \end{itemize}
 
 \end{frame}
@@ -386,6 +403,7 @@ A: \hspace{3em} 1630's\hspace{3em} 1730's \end{small}
 \includegraphics[width=.8\textwidth]{../error.pdf}
 \end{center}
 \end{frame}
+
 \begin{frame}{Comprehension questions}
 \begin{center} \pause
 \includegraphics[width=.8\textwidth]{../comp.pdf}
@@ -394,7 +412,7 @@ A: \hspace{3em} 1630's\hspace{3em} 1730's \end{small}
 \end{frame}
 
 
-
+%HERE%
 \begin{frame}{Surprisal Effects}
 %TODO copy from updated abstract
 Use 3 LMs to estimate surprisal: smoothed 5-gram, Gulordava RNN, Transformer-XL (Gulordava et al. 2018, Dai et al. 2019)

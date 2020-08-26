@@ -62,10 +62,17 @@ to be centered. (Not sure this last piece is actually true/matters).
 
     ## Joining, by = c("Story_Num", "Sentence_Num")
 
-## GAMs
+### GAMs
+
+## Try 1
 
 Using only pre-error data.
 
-Does not have hierarchical effects.
+Does not have hierarchical effects. Has smooths for the surprisals, and
+tensor effects/interactions for the freq x length
 
-![](nat_stories_gam_files/figure-gfm/plot-gam-1.png)<!-- -->
+![](nat_stories_gam_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
+
+## Permissive
+
+![](nat_stories_gam_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
