@@ -446,6 +446,7 @@ Past surprisal predictors don't help (with or without past freq,length effects i
 
 One potentially useful comparison with past SPR/eye-tracking is if we are more inclusive of participants, do we get data that looks more like theirs. (Perhaps our exclusion criteria are more robust?)
 
+This is all data from participants who speak English that wasn't a mistake. (So, includes bad participants and post-mistake data.)
 
 ```{r freq_all}
 #mean by subject for each word
@@ -464,4 +465,55 @@ grnn_only <- lmer(mean_rt ~ grnn_center + past_c_grnn + freq_center*length_cente
 
 txl_only <- lmer(mean_rt ~ txl_center + past_c_txl + freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d_lm2)
 
+summary(no_surp)
+summary(ngram_only)
+summary(grnn_only)
+summary(txl_only)
+
+```
+
+BRM models from this same very permissive data. 
+```{r brm-models}
+
+any_grnn <- read_rds("brm_grnn_any_center.rds")
+any_txl <- read_rds("brm_txl_any_center.rds")
+any_ngram <- read_rds("brm_ngram_any_center.rds")
+
+summary(any_grnn)
+summary(any_txl)
+summary(any_ngram)
+
+
+```
+
+```{r}
+
+show_summary <- function(model){
+  intervals <- gather_draws(model, `b_.*`, regex=T) %>% mean_qi()
+  
+  stats <- gather_draws(model, `b_.*`, regex=T) %>% 
+    mutate(above_0=ifelse(.value>0, 1,0)) %>% 
+    group_by(.variable) %>% 
+    summarize(pct_above_0=mean(above_0)) %>% 
+    mutate(`P` = signif(2*pmin(pct_above_0,1-pct_above_0), digits=2)) %>% 
+    left_join(intervals, by=".variable") %>% 
+    mutate(lower=round(.lower, digits=1),
+           upper=round(.upper, digits=1),
+           E=round(.value, digits=1),
+           `CI`=str_c("[",lower,", ", upper,"]"),
+           Term=str_sub(.variable, 3, -1),
+           ) %>% 
+    select(Term, `E`, `CI`,`P`)
+  
+  stats
+}
+a <- show_summary(any_txl) %>% mutate(model="TXL") %>% mutate(Term=str_replace(Term,"txl","surp"))
+b <- show_summary(any_grnn) %>% mutate(model="GRNN") %>% mutate(Term=str_replace(Term,"grnn","surp"))
+c <- show_summary(any_ngram) %>% mutate(model="5-gram") %>% mutate(Term=str_replace(Term,"ngram","surp"))
+
+summ <- a %>% union(b) %>% union(c) %>% pivot_wider(names_from="model", values_from=c(`E`,`CI`,`P`)) %>% 
+  select(Term, `E_5-gram`, `CI_5-gram`, `P_5-gram`, `E_GRNN`, CI_GRNN, P_GRNN, E_TXL, CI_TXL, P_TXL)
+
+library(xtable)
+print(xtable(summ,digits=c(0,0,1,0,2,1,0,2,1,0,2)), include.rownames=FALSE)
 ```
