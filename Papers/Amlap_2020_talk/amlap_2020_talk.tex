@@ -67,14 +67,40 @@
 
 \begin{document}
 
-\begin{frame}
-\maketitle
+\begin{frame}{ }
+\vskip 6em
+
+\begin{center}
+{\LARGE A-maze of Natural Stories:}
+
+\smallskip
+
+{\Large Texts are comprehensible using\\ \smallskip the Maze task}
+
+\bigskip
+
+{\large Veronica Boyce, Roger Levy}
+
+\bigskip
+
+{\large AMLaP 2020}
+
+\begin{tikzpicture}[remember picture,overlay]
+\node[xshift=-1.8cm,yshift=-1cm] at (current page.east) {\includegraphics[clip, trim=.1cm 0cm .2cm 0cm,width=.2\textwidth]{roger.jpg}};
+\end{tikzpicture}
+
+\begin{tikzpicture}[remember picture,overlay]
+\node[xshift=2.5cm,yshift=-1.5cm] at (current page.north west) {\includegraphics[width=.3\textwidth]{cpl_header.png}};
+\end{tikzpicture}
+
+
 %TODO maybe put a picture of Roger's face??, at least acknowledge him 
+\end{center}
 \end{frame}
 
 \begin{frame}{Incremental processing methods}
 \pause
-Want a measure of processing difficulty \greencheck\pause
+Want a measure of processing difficulty\pause
 
 Assume that longer RT = more difficulty \pause
 \smallskip
@@ -95,7 +121,7 @@ Assume that longer RT = more difficulty \pause
 			\includegraphics[width=.9\textwidth]{../eye-tracker.jpeg}
 			\pause
 		\end{center}
-	\end{column}\pause
+	\end{column}
 	\begin{column}{.5\textwidth}
 		\begin{center}
 \textbf{\large Self-paced reading}
@@ -124,7 +150,7 @@ Assume that longer RT = more difficulty \pause
 
 \begin{frame}[c]{An alternative: Maze}
 
-\pause 
+
 \centering
 
 \bigskip 
@@ -182,7 +208,7 @@ Claim: forces incremental processing (no spillover)
 
 \begin{frame}{Maze Made Easy}
 	
-	Want to use Maze instead of web SPR\pause
+	Can we use Maze instead of web SPR?\pause
 	
 	\medskip
 	
@@ -190,12 +216,14 @@ Claim: forces incremental processing (no spillover)
 	\begin{itemize}
 		\item Run on web \pause
 		\item Easily generate distractors \pause
-		\item Work for multi-sentence items \pause
+		\item Work for multi-sentence items
 	\end{itemize} 
 	
 \end{frame}
 
 \begin{frame}{Run on web}
+	
+	\pause
 	Wrote an Ibex module \pause
 	
 	\begin{center}\includegraphics[width=.7\textwidth]{screenshot.png} \end{center}\pause
@@ -205,7 +233,7 @@ Claim: forces incremental processing (no spillover)
 %
 \begin{frame}{Maze Made Easy}
 	
-	Want to use Maze instead of web SPR
+	Can we use Maze instead of web SPR?
 	
 	\medskip
 	
@@ -244,7 +272,7 @@ Language models (LMs)
 	\item Given a partial sentence, return probabilities of the next word
 \end{itemize}\pause
 
-LSTM RNNs show some syntactic knowledge %TODO cite people 
+Run items through LM, choose high surprisal words as distractors
 \pause
 
 Add some restrictions:
@@ -271,7 +299,7 @@ Add some restrictions:
 %
 \begin{frame}{Maze Made Easy}
 	
-	Want to use Maze instead of web SPR
+	Can we use Maze instead of web SPR?
 	
 	\medskip
 	
@@ -291,8 +319,8 @@ Want to run multi-sentence items. \pause
 
 Problem: Errors terminate sentences. \pause
 \begin{itemize}
-	\item Treat whole story as a unit: ~ No one makes it to the end. \pause
-	\item Treat each sentence as a unit: Some participants miss key context. \pause
+	\item Treat whole story as a unit: \pause ~ No one makes it to the end. \pause
+	\item Treat each sentence as a unit: \pause Some participants miss key context. \pause
 \end{itemize}
 
 What if after an error, participants corrected errors and the sentence continued?
@@ -335,7 +363,7 @@ What if after an error, participants corrected errors and the sentence continued
 	\begin{column}{0.6\textwidth} 
 		\begin{center}
 			\begin{itemize}
-				\item Can be toggled in Ibex \pause
+				\item Can be toggled in Ibex Maze \pause
 				\item Long materials feasible \pause
 				\item Have all the data \pause
 				\item Compensates for bad distractors
@@ -343,14 +371,12 @@ What if after an error, participants corrected errors and the sentence continued
 		\end{center}
 	\end{column}
 \end{columns}
-\medskip
-\pause
 \end{frame}
 %
 
 \begin{frame}{Maze Made Easy}
 	
-	Want to use Maze instead of web SPR
+	Can we use Maze instead of web SPR?
 	
 	\medskip
 	
@@ -378,8 +404,8 @@ What if after an error, participants corrected errors and the sentence continued
 Natural stories corpus (Futrell et al. 2017) \pause
 \begin{itemize}
 	\item 10 stories, each about 1000 words \pause
-	\item Some unusual constructions, but read fluently \pause
-	\item 6 comprehension questions per story \pause
+%	\item Some unusual constructions, but read fluently \pause
+	\item 6 comprehension questions per story
 \end{itemize}
 
 \end{frame}
@@ -388,6 +414,8 @@ Natural stories corpus (Futrell et al. 2017) \pause
 
 \begin{small}Tulip mania was a period in the Dutch Golden Age during which contract prices for bulbs of the recently introduced tulip reached extraordinarily high levels and then suddenly collapsed. At the peak of tulip mania in February sixteen thirty-seven, tulip contracts sold for more than ten times the annual income of a skilled craftsman. It is generally considered the first recorded economic bubble. [...]
 \medskip
+
+\pause
 
 Q: When did tulip mania reach its peak?
 
@@ -414,137 +442,113 @@ A: \hspace{3em} 1630's\hspace{3em} 1730's \end{small}
 
 %HERE%
 \begin{frame}{Surprisal Effects}
-%TODO copy from updated abstract
-Use 3 LMs to estimate surprisal: smoothed 5-gram, Gulordava RNN, Transformer-XL (Gulordava et al. 2018, Dai et al. 2019)
-\pause
+\large{Is RT linear in terms of surprisal?}\pause
+\medskip
 
-%TODO make sure that updated correct gams are used!!!
-
-Fit GAMs on pre-error data.
+Estimate surprisal from 3 models:
 \begin{itemize}
-	\item Limit to single-token words.
-	\item Fit to both current and past word surprisal.
+	\item smoothed 5-gram
+	\item LSTM-RNN (Gulordava et al. 2018)
+	\item Transformer-XL (Dai et al. 2019)
 \end{itemize}
 
-\end{frame}
+\pause
 
-\begin{frame}
-	Implications for surprisal theory -- size of the effects is different
-	include effect sizes
-	Is it about participant quality?
+Fit GAMs
+\begin{itemize}
+	\item Limit to single-token words
+	\item Fit to both current and past word surprisal
+	\item Include frequency, length as predictors
+\end{itemize}
+
 \end{frame}
 
 \begin{frame}{Surprisal Effects}
-\includegraphics[width=.9\textwidth]{../gam.pdf}	
-\end{frame}
-\begin{frame}{What about post-mistake data?}
-Exclude data from mistakes or the two words after a mistake. 
-
-\includegraphics[width=.9\textwidth]{../gam2.pdf}	
+	\includegraphics[width=.9\textwidth]{../gam.pdf}	
 \end{frame}
 
-\begin{frame}{Summary}
+
+\begin{frame}{Surprisal Effects}
+	Linear Models \\
+	\pause
+	
+	\begin{small}
+		\begin{tabular}{l|r|r|r}
+			\hline
+			&5-gram & GRNN & TXL\\
+			\hline
+			Intercept & \textbf{865.3} & \textbf{871.1} & \textbf{870.8} \\ 
+			Surprisal & \textbf{11.7}  & \textbf{23.7} & \textbf{18.5}  \\ 
+			Frequency & -2.9  & 2.9  & 0.4  \\ 
+			Length & \textbf{20.5} & \textbf{18.5}  & \textbf{21.4} \\ 
+			Surprisal:Length & \textbf{-2.0}  & \textbf{-1.8}  & \textbf{-1.4} \\
+			Freq:Length & -1.0  & -0.1 & 0.2  \\ 
+			\hline
+			Past Surprisal & 1.6  & \textbf{2.7} & 0.8 \\ 
+			Past Freq & 2.6  & 1.9  & 1.2  \\ 
+			Past Length & \textbf{-4.8}  & \textbf{-6.6 }&\textbf{ -5.2} \\ 
+			Past Surp:Length & -0.2 & \textbf{-0.9} & -0.6  \\ 
+			Past Freq:Length & -1.0  & \textbf{-1.8 }&   \textbf{-1.5}  \\ 
+			\hline
+		\end{tabular}
+	
+	Surprisal in bits, Length in characters, \\
+	Frequency in $log_2$ occurrences/billion words
+	\end{small}
+
+\end{frame}
+\begin{frame}{Surprisal Effects}
+	Takeaways: \pause
+	\begin{itemize}
+		\item Minimal frequency effects (consistent with Shain 2019) \pause
+		\item Long RTs \pause
+		\item Large effects of Length, Surprisal \pause
+		\item Very little spillover \pause
+	\end{itemize}
+	
+	Model comparison: GRNN is best, but TXL complementary
+\end{frame}
+
+\begin{frame}{Why such large effects?}
+	\pause
+	Framework: Look at words long enough to ID with some threshold of certainty \pause
+	
+Could hypothesize mechanisms for difference: \pause
+\begin{itemize}
+	\item Task leads to higher threshold \pause 
+	\item Task demands reduce available resources for processing \pause
+	\item Presence of second word 
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{Conclusion}
+	
+	\pause
+	
+Consider A-maze! 
 \begin{itemize}\pause
-	\item People will read in the Maze task for 15-20 minutes \pause
-	\item It's possible to comprehend during Maze \pause
-	\item Distractors are generally good enough \pause
-	\item Find expected RT patterns \pause
-	\item Very little spillover
+	\item Documentation:  \textcolor{ForestGreen}{vboyce.github.io/Maze} \pause
+	\item Versatile \pause
+	\item Low spillover \pause 
 \end{itemize}
-\end{frame}
 
-
-\begin{frame}{Use A-maze!}
-Easy to use! \pause
+Natural Stories A-maze: \pause 
 \begin{itemize}
-	\item Runs on command line \pause
-	\item Match distractors across minimal pair sentences \pause
-	\item Customize surprisal thresholds, vocabulary lists \pause
-	\item Can output pre-formatted for Ibex
-\end{itemize}
-\medskip
-\end{frame}
-
-\begin{frame}{Use A-maze!} \pause
-Contribute to A-maze:
-\begin{itemize}
-	\item Written in Python 3 \pause
-	\item Interface with other language models \pause
-	\item Add more frequency sources \pause
-	\item Extend to non-English languages
+	\item Participants comprehend what they read \pause
+	\item Find linear, large surprisal effects
 \end{itemize}
 
 \end{frame}
-
-
-\begin{frame}{}
-
-\textcolor{ForestGreen}{\large Documentation: vboyce.github.io/Maze}
-
-with links to the following:
-\begin{itemize}
-
-\item A-maze code: github.com/vboyce/Maze
-
-\item Web-maze code: github.com/vboyce/Ibex-with-Maze
-
-\item Sample task: syntaxgym.org:666
-
-\item Paper: psyarxiv.com/b7nqd/
-\end{itemize}
-\end{frame}
-
 
 \appendix
 
-\begin{frame}{Matching distractors}
-If unspecified: Match by position
-\begin{itemize}
-	\item The son of the lady who politely introduced \sethlcolor{green} \hl{herself}\sethlcolor{pink} / \hl{himself} was popular at the party.
-\end{itemize}
-Can specify labels for each word to pair (within item)
-\begin{itemize}
-	\item The cat who the dog scared hid in a box.\\pre-1 pre-2 who art noun verb main-verb post-1 post-2 post-3
-\item The dog who scared the cat sniffed around the couch.\\ pre-1 pre-2 who verb art noun main-verb post-1 post-2 post-3
-\end{itemize}
-\end{frame}
-%%back pocket on more on model results??
-%%do we even need back pockets??
 
-\begin{frame}{Post-mistake only}
-Exclude data from mistakes or the two words after a mistake. 
-
-
-\includegraphics[]{../gam3.pdf}	
+\begin{frame}{Surprisal Effects}
+	GAM if we only exclude mistakes (all participants, post-mistake data)
+	\includegraphics[width=.9\textwidth]{../gam-any.pdf}	
 \end{frame}
 
-\begin{frame}{Regression coefficients}
-\begin{tiny}
-\begin{tabular}{l|rlr|rlr|rlr}
-	\hline
-	&\multicolumn{3}{c|}{5-gram}&\multicolumn{3}{c|}{GRNN}&\multicolumn{3}{c}{TXL}\\
-	& Est & CI & $p$ & Est & CI & $p$ &Est & CI & $p$ \\ 
-	\hline
-	Intercept & 865.3 & [829.9, 902.9] & 0.00 & 871.1 & [837.9, 905.3] & 0.00 & 870.8 & [832.5, 907.8] & 0.00 \\ 
-	Surprisal & 11.7 & [9.3, 14.1] & 0.00 & 23.7 & [21, 26.5] & 0.00 & 18.5 & [16.1, 21.1] & 0.00 \\ 
-	Frequency & -2.9 & [-6.3, 0.5] & 0.10 & 2.9 & [-0.2, 6] & 0.06 & 0.4 & [-2.7, 3.5] & 0.79 \\ 
-	Length & 20.5 & [15.4, 25.6] & 0.00 & 18.5 & [13.3, 23.7] & 0.00 & 21.4 & [16.2, 26.6] & 0.00 \\ 
-	Surprisal:Length & -2.0 & [-3, -1] & 0.00 & -1.8 & [-2.7, -0.9] & 0.00 & -1.4 & [-2.2, -0.6] & 0.00 \\
-	Freq:Length & -1.0 & [-2.5, 0.4] & 0.16 & -0.1 & [-1.2, 1] & 0.82 & 0.2 & [-0.9, 1.2] & 0.76 \\ 
-	\hline
-	Past Surprisal & 1.6 & [-0.5, 3.6] & 0.14 & 2.7 & [0.8, 4.5] & 0.00 & 0.8 & [-0.9, 2.5] & 0.40 \\ 
-	Past Freq & 2.6 & [-0.1, 5.4] & 0.06 & 1.9 & [-0.2, 4.2] & 0.08 & 1.2 & [-1.1, 3.6] & 0.30 \\ 
-	Past Length & -4.8 & [-9, -0.1] & 0.04 & -6.6 & [-10.9, -2.1] & 0.00 & -5.2 & [-9.3, -0.7] & 0.03 \\ 
-	Past Surp:Length & -0.2 & [-1.2, 0.8] & 0.72 & -0.9 & [-1.7, -0.2] & 0.01 & -0.6 & [-1.3, 0.2] & 0.13 \\ 
-	Past Freq:Length & -1.0 & [-2.3, 0.3] & 0.15 & -1.8 & [-2.9, -0.8] & 0.00 & -1.5 & [-2.6, -0.5] & 0.01 \\ 
-	
-	
-	
-	
-	\hline
-\end{tabular}
-\end{tiny}
-\end{frame}
 
 
 \end{document}
