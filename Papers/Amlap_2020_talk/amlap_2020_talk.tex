@@ -94,22 +94,22 @@
 \end{tikzpicture}
 
 
-%TODO maybe put a picture of Roger's face??, at least acknowledge him 
+
 \end{center}
 \end{frame}
 
+%\begin{frame}{Incremental processing methods}
+%\pause
+%Want a measure of processing difficulty\pause
+%
+%Assume that longer RT = more difficulty \pause
+%\smallskip
+%\begin{center}
+%{\large How to measure RT?}
+%\end{center}
+%\end{frame}
 \begin{frame}{Incremental processing methods}
-\pause
-Want a measure of processing difficulty\pause
-
-Assume that longer RT = more difficulty \pause
-\smallskip
-\begin{center}
-{\large How to measure RT?}
-\end{center}
-\end{frame}
-\begin{frame}{Incremental processing methods}
-	
+	\pause
 {\large Common ways to measure RT}
 \begin{columns}[t]\pause
 	\begin{column}{.5\textwidth}
@@ -273,14 +273,13 @@ Language models (LMs)
 \end{itemize}\pause
 
 Run items through LM, choose high surprisal words as distractors
-\pause
 
-Add some restrictions:
-\begin{itemize}
-\item Restrict to a list of possible distractors
-\item Only consider length, frequency matches
-\end{itemize}
-	
+%Add some restrictions:
+%\begin{itemize}
+%\item Restrict to a list of possible distractors
+%\item Only consider length, frequency matches
+%\end{itemize}
+%	
 \end{frame}
 %
 \begin{frame}{Does it work?} 
@@ -319,7 +318,7 @@ Want to run multi-sentence items. \pause
 
 Problem: Errors terminate sentences. \pause
 \begin{itemize}
-	\item Treat whole story as a unit: \pause ~ No one makes it to the end. \pause
+	\item Treat whole story as a unit: \pause Few participants make it to the end. \pause
 	\item Treat each sentence as a unit: \pause Some participants miss key context. \pause
 \end{itemize}
 
@@ -393,9 +392,9 @@ What if after an error, participants corrected errors and the sentence continued
 \begin{frame}{Current experiment}
 	Various open questions to address \pause
 	\begin{itemize}
-		\item Are people willing to read long texts in this way? \pause
-		\item Do people comprehend what they read? \pause
-		\item Does the error correction variant work? \pause
+		\item Will people read long texts in Maze? \pause
+		\item Will they comprehend what they read? \pause
+		\item Does error correction Maze work? \pause
 		\item Do we get predictability effects? 
 	\end{itemize}
 \end{frame}
@@ -456,7 +455,7 @@ Estimate surprisal from 3 models:
 
 Fit GAMs
 \begin{itemize}
-	\item Limit to single-token words
+	%\item Limit to single-token words
 	\item Fit to both current and past word surprisal
 	\item Include frequency, length as predictors
 \end{itemize}
@@ -469,6 +468,7 @@ Fit GAMs
 
 
 \begin{frame}{Surprisal Effects}
+	\vskip -2em
 	Linear Models \\
 	\pause
 	
@@ -497,26 +497,26 @@ Fit GAMs
 	\end{small}
 
 \end{frame}
-\begin{frame}{Surprisal Effects}
-	Takeaways: \pause
-	\begin{itemize}
-		\item Minimal frequency effects (consistent with Shain 2019) \pause
-		\item Long RTs \pause
-		\item Large effects of Length, Surprisal \pause
-		\item Very little spillover \pause
-	\end{itemize}
-	
-	Model comparison: GRNN is best, but TXL complementary
-\end{frame}
+%\begin{frame}{Surprisal Effects}
+%	Takeaways: \pause
+%	\begin{itemize}
+%		\item Minimal frequency effects (consistent with Shain 2019) \pause
+%		\item Long RTs \pause
+%		\item Large effects of Length, Surprisal \pause
+%		\item Very little spillover \pause
+%	\end{itemize}
+%	
+%	Model comparison: GRNN is best, but TXL complementary
+%\end{frame}
 
 \begin{frame}{Why such large effects?}
 	\pause
-	Framework: Look at words long enough to ID with some threshold of certainty \pause
+	Bayesian reader framework: Look at words long enough to ID with some threshold of certainty \pause
 	
-Could hypothesize mechanisms for difference: \pause
+Possible mechanisms for difference: \pause
 \begin{itemize}
-	\item Task leads to higher threshold \pause 
-	\item Task demands reduce available resources for processing \pause
+	\item Higher threshold \pause 
+	\item Fewer available resources for processing \pause
 	\item Presence of second word 
 \end{itemize}
 
@@ -543,13 +543,75 @@ Natural Stories A-maze: \pause
 
 \appendix
 
+\begin{frame}
+	\centering
+	\includegraphics[clip, trim=3.25cm 5cm 2.5cm 2.5cm,width=.9\textwidth]{../flow_2.pdf}
+\end{frame}
+
+
+
+\begin{frame}{Caveats}
+	
+	{\large Definitely some bad distractors}
+	\begin{table}
+		
+		
+		\begin{tabular}{rlll}
+			Prefix & Correct & Distractor & Error Rate \\
+			\hline
+			\hline
+			Gulordava&&&\\
+			\hline
+			The & niece & cooks & 44\%\\
+			The swimmer & disappointed & propositions & 30\%\\
+			The & semester & steroids & 29\%\\
+			\hline
+			\hline
+			Jozefowicz&&&\\
+			\hline
+			The & husband & authors & 46\%\\
+			Jim & listened & survived & 43\%\\
+			The & uncle & roads & 42\%\\
+			The & knight & saints & 40\%\\
+		\end{tabular}
+	\end{table}
+	
+\end{frame}
 
 \begin{frame}{Surprisal Effects}
 	GAM if we only exclude mistakes (all participants, post-mistake data)
 	\includegraphics[width=.9\textwidth]{../gam-any.pdf}	
 \end{frame}
 
+\begin{frame}{Links}
+	
+	\textcolor{ForestGreen}{\large Documentation: vboyce.github.io/Maze}
+	
+	with links to the following:
+	\begin{itemize}
+		
+		\item A-maze code: github.com/vboyce/Maze
+		
+		\item Web-maze code: github.com/vboyce/Ibex-with-Maze
+		
+		\item Sample task: syntaxgym.org:666
+		
+		\item Paper: psyarxiv.com/b7nqd/
+	\end{itemize}
+\end{frame}
 
+
+\begin{frame}{Matching distractors}
+	If unspecified: Match by position
+	\begin{itemize}
+		\item The son of the lady who politely introduced \sethlcolor{green} \hl{herself}\sethlcolor{pink} / \hl{himself} was popular at the party.
+	\end{itemize}
+	Can specify labels for each word to pair (within item)
+	\begin{itemize}
+		\item The cat who the dog scared hid in a box.\\pre-1 pre-2 who art noun verb main-verb post-1 post-2 post-3
+		\item The dog who scared the cat sniffed around the couch.\\ pre-1 pre-2 who verb art noun main-verb post-1 post-2 post-3
+	\end{itemize}
+\end{frame}
 
 \end{document}
 
