@@ -137,6 +137,13 @@ all <- txl_translator %>%
   ungroup() %>% 
   write_rds("natural_stories_surprisals.rds")
 
+all <- txl_translator %>% 
+  left_join(ngram_translator, by=c("Story_Num", "Sentence_Num","Word_In_Sentence_Num", "Word", "Word_In_Story_Num")) %>% 
+  left_join(grnn_translator, by=c("Story_Num", "Sentence_Num","Word_In_Sentence_Num", "Word", "Word_In_Story_Num")) %>%
+  left_join(freq, by=c("Story_Num", "Sentence_Num","Word_In_Sentence_Num", "Word", "Word_In_Story_Num")) %>% 
+  #filter(Word_In_Sentence_Num!=0) %>% 
+  ungroup() %>% 
+  write_rds("natural_stories_surprisals2.rds")
 ```
 
 Note that word 0's of sentences will be removed b/c we definitely don't trust them

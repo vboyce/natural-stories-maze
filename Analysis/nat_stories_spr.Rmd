@@ -1,0 +1,261 @@
+---
+title: "Natural Stories LM analysis"
+output: github_document
+---
+```{r, include=F}
+knitr::opts_chunk$set(echo = FALSE, warning=F)
+options(knitr.table.format = "html")
+library(tidyverse)
+library(readr)
+library(brms)
+library(lme4)
+library(rstan)
+library(tidybayes)
+library(knitr)
+library(matrixStats)
+library(mgcv)
+library(mgcViz)
+library(tidymv)
+library(rsample)
+library(cowplot)
+library(scales)
+theme_set(theme_bw())
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
+```
+
+```{r read spr}
+
+spr_info <- read_tsv("../Data/SPR/processed_wordinfo.tsv") %>%
+  select(word, zone, item) %>% arrange(item, zone) %>% 
+  mutate(row=row_number())
+
+labs <- read_rds("../Prep_code/natural_stories_surprisals2.rds") %>% left_join(read_delim("../Materials/natural_stories_sentences.tsv", delim="\t")) %>% 
+  select(word_num=Word_In_Sentence_Num, word=Word, sentence=Sentence, everything()) %>% 
+  mutate(row=row_number())
+
+spr_labels <- spr_info %>% inner_join(labs, by=c("row", "word")) %>% 
+  filter(word_num!=0) %>% 
+  filter(ngram_token_count==1 & txl_token_count==1 & grnn_token_count==1) %>% 
+  filter(!is.na(txl_surp) & !is.na(ngram_surp) & !is.na(grnn_surp) & !is.na(freq) & !is.na(length)) %>% 
+    mutate(txl_center=txl_surp-mean(txl_surp, na.rm=T),
+         ngram_center=ngram_surp-mean(ngram_surp, na.rm=T),
+         grnn_center=grnn_surp-mean(grnn_surp, na.rm=T),
+         freq_center=freq-mean(freq, na.rm=T),
+         length_center=length-mean(length, na.rm=T))
+
+past_word <- spr_labels %>% 
+  mutate(word_num=word_num+1,
+         zone=zone+1) %>% 
+  rename(past_txl=txl_surp, past_ngram=ngram_surp, past_grnn=grnn_surp, past_freq=freq, past_length=length,past_c_txl=txl_center, past_c_ngram=ngram_center, past_c_grnn=grnn_center, past_c_freq=freq_center, past_c_length=length_center) %>% 
+  select(sentence,Story_Num,Sentence_Num, word_num, zone, item, starts_with("past")) %>% 
+  left_join(spr_labels, by=c("Story_Num","Sentence_Num","sentence", "word_num", "zone", "item")) %>% 
+  filter(!is.na(word)) %>% select(-word)
+
+
+
+```
+
+```{r data}
+spr_data <- read_tsv("../Data/SPR/processed_RTs.tsv") %>% 
+  inner_join(past_word, by=c("zone", "item")) %>% 
+  select(word, rt=RT, subject=WorkerId, Word_In_Story_Num, Story_Num,txl_surp,ngram_surp,grnn_surp, freq,length,
+         txl_center, ngram_center,grnn_center,freq_center, length_center, starts_with("past")) %>% 
+  mutate(Word_ID=as_factor(str_c(Story_Num, Word_In_Story_Num, sep="_"))) %>% 
+  select(-Word_In_Story_Num, -Story_Num) %>% write_rds("spr.rds")
+```
+
+
+## BRM models
+
+(not yet done)
+
+We include a by-subject effect for everything, and a by_word random intercept (full mixed effects). 
+
+Priors:
+
+- normal(1000,1000) for intercept -- we think RTs are about 1 second usually
+- normal(0,500) for beta and sd -- we don't really know what effects are
+- lkj(1) for correlations -- we don't have reason to think correlations might go any particular way 
+
+```{r}
+  priors <- c(
+      set_prior("normal(1000, 1000)", class="Intercept"),
+      set_prior("normal(0, 500)", class="b"),
+      set_prior("normal(0, 500)", class="sd"),
+      set_prior("lkj(1)",       class="cor"))
+  
+
+```
+
+
+
+# Frequentist LMs
+
+```{r}
+#mean by subject for each word
+d_lm <- spr_data %>% group_by(word, txl_center, ngram_center, grnn_center, freq_center, length_center,
+                                        past_c_txl, past_c_ngram, past_c_grnn, past_c_freq, past_c_length, Word_ID) %>% 
+  summarize(mean_rt=mean(rt))
+```
+
+## Models
+
+We want to be able to do nested model comparision, so we want models with 
+- only length, frequency fx
+- each 1 surprisal model as predictor
+- all the surprisals
+
+For now, no interactions between surprisal and others, and if we include a predictor, include both current and lagged of it. 
+
+```{r}
+
+no_surp <- lmer(mean_rt ~ freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d_lm)
+
+ngram_only <- lmer(mean_rt ~ ngram_center + past_c_ngram + freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d_lm)
+
+grnn_only <- lmer(mean_rt ~ grnn_center + past_c_grnn + freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d_lm)
+
+txl_only <- lmer(mean_rt ~ txl_center + past_c_txl + freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d_lm)
+
+all_surp <- lmer(mean_rt ~ ngram_center + past_c_ngram + 
+                   grnn_center + past_c_grnn +
+                   txl_center + past_c_txl +
+                   freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d_lm)
+
+
+ngram_grnn <-  lmer(mean_rt ~ ngram_center + past_c_ngram + 
+                   grnn_center + past_c_grnn +
+                   freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d_lm)
+
+ngram_txl <-  lmer(mean_rt ~ ngram_center + past_c_ngram + 
+                   txl_center + past_c_txl +
+                   freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d_lm)
+
+grnn_txl <-  lmer(mean_rt ~ grnn_center + past_c_grnn +
+                   txl_center + past_c_txl +
+                   freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d_lm)
+
+no_lag <-  lmer(mean_rt ~ ngram_center +
+                   grnn_center +
+                   txl_center + 
+                   freq_center*length_center+(1|word), data=d_lm)
+
+no_surp_lag <-  lmer(mean_rt ~ ngram_center +  
+                   grnn_center + 
+                   txl_center +                    freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d_lm)
+
+  only_surp_lag <-  lmer(mean_rt ~ ngram_center + past_c_ngram + 
+                   grnn_center + past_c_grnn +
+                   txl_center + past_c_txl +
+                   freq_center*length_center+(1|word), data=d_lm)
+```
+
+```{r}
+
+anova(all_surp, txl_only)
+anova(all_surp, grnn_only)
+anova(all_surp, ngram_only)
+
+anova(txl_only, no_surp)
+anova(grnn_only, no_surp)
+anova(ngram_only, no_surp)
+
+anova(all_surp, ngram_grnn)
+anova(all_surp, ngram_txl)
+anova(all_surp, grnn_txl)
+
+anova(ngram_grnn, ngram_only)
+anova(ngram_grnn, grnn_only)
+anova(ngram_txl, ngram_only)
+anova(ngram_txl, txl_only)
+anova(grnn_txl, grnn_only)
+anova(grnn_txl, txl_only)
+
+anova(all_surp, no_lag)
+
+anova(all_surp, no_surp_lag)
+
+anova(no_surp_lag, no_lag) 
+
+anova(all_surp, only_surp_lag)
+
+anova(only_surp_lag, no_lag)
+```
+## Try 1
+Using only pre-error data.
+
+Does not have hierarchical effects. Has smooths for the surprisals, and tensor effects/interactions for the freq x length
+
+```{r for gam}
+
+ngram_data <- spr_data %>% select(rt, surprisal=ngram_surp, prev_surp=past_ngram, 
+                                            freq=freq_center, len=length_center,
+                                            prev_freq=past_c_freq, prev_len=past_c_length
+                                            ) %>% mutate(model="5-gram")
+
+grnn_data <- spr_data %>% select(rt, surprisal=grnn_surp, prev_surp=past_grnn, 
+                                            freq=freq_center, len=length_center,
+                                            prev_freq=past_c_freq, prev_len=past_c_length
+                                            )%>% mutate(model="GRNN")
+
+txl_data <- spr_data %>% select(rt, surprisal=txl_surp, prev_surp=past_txl, 
+                                            freq=freq_center, len=length_center,
+                                            prev_freq=past_c_freq, prev_len=past_c_length
+                                            ) %>% mutate(model="TXL")
+
+all_data <- ngram_data %>% union(grnn_data) %>% union(txl_data) %>% 
+  select(surprisal, prev_surp,model) %>% 
+  pivot_longer(cols=`surprisal`:`prev_surp`) %>% 
+  mutate(s=ifelse(name=="surprisal", "Current","Previous"))
+```
+
+```{r gams}
+gam_ngram_1 <- gam(rt ~ s(surprisal, bs="cr", k=20)+ te(freq, len, bs="cr")+s(prev_surp, bs="cr", k=20)+te(prev_freq, prev_len, bs="cr"), data=ngram_data, method="REML")
+
+gam_grnn_1 <- gam(rt ~ s(surprisal, bs="cr", k=20)+ te(freq, len, bs="cr")+s(prev_surp, bs="cr", k=20)+te(prev_freq, prev_len, bs="cr"), data=grnn_data, method="REML")
+
+gam_txl_1 <- gam(rt ~ s(surprisal, bs="cr", k=20)+ te(freq, len, bs="cr")+s(prev_surp, bs="cr", k=20)+te(prev_freq, prev_len, bs="cr"), data=txl_data, method="REML")
+
+```
+
+```{r plot-gam}
+
+
+a <- get_gam_predictions(model=gam_ngram_1, series=surprisal, series_length=100) %>% select(surprisal, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="5-gram", s="Current")
+b <- get_gam_predictions(model=gam_ngram_1, series=prev_surp, series_length=100) %>% select(surprisal=prev_surp, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="5-gram", s="Previous")
+c <- get_gam_predictions(model=gam_grnn_1, series=surprisal, series_length=100) %>% select(surprisal, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="GRNN", s="Current")
+d <- get_gam_predictions(model=gam_grnn_1, series=prev_surp, series_length=100) %>% select(surprisal=prev_surp, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="GRNN", s="Previous")
+e <- get_gam_predictions(model=gam_txl_1, series=surprisal, series_length=100) %>% select(surprisal, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="TXL", s="Current")
+f <- get_gam_predictions(model=gam_txl_1, series=prev_surp, series_length=100) %>% select(surprisal=prev_surp, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="TXL", s="Previous")
+```
+
+```{r}
+all <- a %>% union(b) %>% union(c) %>% union(d) %>% union(e) %>% union(f)
+
+gam1 <-  ggplot(all, aes(x=surprisal, y=rt, ymin=CI_lower, ymax=CI_upper))+
+  geom_line()+
+  geom_ribbon(alpha=.3)+
+   #geom_density(data=all_data, aes(x=value), fill="gray",)+
+  facet_grid(s~model)+
+  coord_cartesian(ylim=c(700,1300), xlim=c(0,28))+
+  labs(x="Surprisal (bits)", y="Reaction Time (ms)")+theme(axis.ticks.x=element_blank(), axis.title.x=element_blank(), axis.text.x=element_blank(), plot.margin=margin(t=0,r=0,b=0,l=0,unit="pt"))
+
+
+dens2 <-   ggplot(all_data, aes(x=value))+
+  geom_density(fill="gray",)+
+  facet_grid(.~model)+
+  labs(x="Surprisal (bits)", y="")+
+  theme(axis.text.y = element_blank(), strip.text=element_blank(), axis.ticks.y =element_blank(), axis.title.y=element_blank(), panel.grid=element_blank(), plot.margin = unit(c(0, 0, 0, 0), "cm"))
+
+bot <- plot_grid(NA, dens2, NA, nrow=1, rel_widths = c(.16, 1, .08))
+
+ plot_grid(gam1, bot, nrow=2, rel_heights = c(1, .3))
+
+ggsave("../Papers/gam.pdf", width=4, height=2.3, unit="in")
+
+#confirm that this really is just a prettied up version of what the usual output is
+#plot(gam_txl_1, seWithMean = TRUE, shift = coef(gam_txl_1)[1], select=1)
+
+```
+
