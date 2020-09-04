@@ -93,6 +93,7 @@ Priors:
 # Frequentist LMs
 
 ```{r}
+spr_data <- read_rds("spr.rds")
 #mean by subject for each word
 d_lm <- spr_data %>% group_by(word, txl_center, ngram_center, grnn_center, freq_center, length_center,
                                         past_c_txl, past_c_ngram, past_c_grnn, past_c_freq, past_c_length, Word_ID) %>% 
@@ -189,20 +190,22 @@ Does not have hierarchical effects. Has smooths for the surprisals, and tensor e
 
 ```{r for gam}
 
-ngram_data <- spr_data %>% select(rt, surprisal=ngram_surp, prev_surp=past_ngram, 
-                                            freq=freq_center, len=length_center,
-                                            prev_freq=past_c_freq, prev_len=past_c_length
-                                            ) %>% mutate(model="5-gram")
+# trying with semi-summarized data, b/c otherwise it takes forever
 
-grnn_data <- spr_data %>% select(rt, surprisal=grnn_surp, prev_surp=past_grnn, 
-                                            freq=freq_center, len=length_center,
-                                            prev_freq=past_c_freq, prev_len=past_c_length
-                                            )%>% mutate(model="GRNN")
-
-txl_data <- spr_data %>% select(rt, surprisal=txl_surp, prev_surp=past_txl, 
-                                            freq=freq_center, len=length_center,
-                                            prev_freq=past_c_freq, prev_len=past_c_length
-                                            ) %>% mutate(model="TXL")
+# ngram_data <- spr_data%>% select(rt, surprisal=ngram_surp, prev_surp=past_ngram, 
+#                                             freq=freq_center, len=length_center,
+#                                             prev_freq=past_c_freq, prev_len=past_c_length
+#                                             ) %>% mutate(model="5-gram")
+# 
+# grnn_data <- spr_data %>% select(rt, surprisal=grnn_surp, prev_surp=past_grnn, 
+#                                             freq=freq_center, len=length_center,
+#                                             prev_freq=past_c_freq, prev_len=past_c_length
+#                                             )%>% mutate(model="GRNN")
+# 
+# txl_data <- spr_data %>% select(rt, surprisal=txl_surp, prev_surp=past_txl, 
+#                                             freq=freq_center, len=length_center,
+#                                             prev_freq=past_c_freq, prev_len=past_c_length
+#                                             ) %>% mutate(model="TXL")
 
 all_data <- ngram_data %>% union(grnn_data) %>% union(txl_data) %>% 
   select(surprisal, prev_surp,model) %>% 
@@ -211,17 +214,17 @@ all_data <- ngram_data %>% union(grnn_data) %>% union(txl_data) %>%
 ```
 
 ```{r gams}
-gam_ngram_1 <- gam(rt ~ s(surprisal, bs="cr", k=20)+ te(freq, len, bs="cr")+s(prev_surp, bs="cr", k=20)+te(prev_freq, prev_len, bs="cr"), data=ngram_data, method="REML")
-
-gam_grnn_1 <- gam(rt ~ s(surprisal, bs="cr", k=20)+ te(freq, len, bs="cr")+s(prev_surp, bs="cr", k=20)+te(prev_freq, prev_len, bs="cr"), data=grnn_data, method="REML")
-
-gam_txl_1 <- gam(rt ~ s(surprisal, bs="cr", k=20)+ te(freq, len, bs="cr")+s(prev_surp, bs="cr", k=20)+te(prev_freq, prev_len, bs="cr"), data=txl_data, method="REML")
+# gam_ngram_1 <- gam(rt ~ s(surprisal, bs="cr", k=20)+ te(freq, len, bs="cr")+s(prev_surp, bs="cr", k=20)+te(prev_freq, prev_len, bs="cr"), data=ngram_data, method="REML")
+# 
+# gam_grnn_1 <- gam(rt ~ s(surprisal, bs="cr", k=20)+ te(freq, len, bs="cr")+s(prev_surp, bs="cr", k=20)+te(prev_freq, prev_len, bs="cr"), data=grnn_data, method="REML")
+# 
+# gam_txl_1 <- gam(rt ~ s(surprisal, bs="cr", k=20)+ te(freq, len, bs="cr")+s(prev_surp, bs="cr", k=20)+te(prev_freq, prev_len, bs="cr"), data=txl_data, method="REML")
 
 ```
 
 ```{r plot-gam}
 
-
+  
 a <- get_gam_predictions(model=gam_ngram_1, series=surprisal, series_length=100) %>% select(surprisal, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="5-gram", s="Current")
 b <- get_gam_predictions(model=gam_ngram_1, series=prev_surp, series_length=100) %>% select(surprisal=prev_surp, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="5-gram", s="Previous")
 c <- get_gam_predictions(model=gam_grnn_1, series=surprisal, series_length=100) %>% select(surprisal, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="GRNN", s="Current")
@@ -249,10 +252,10 @@ dens2 <-   ggplot(all_data, aes(x=value))+
   theme(axis.text.y = element_blank(), strip.text=element_blank(), axis.ticks.y =element_blank(), axis.title.y=element_blank(), panel.grid=element_blank(), plot.margin = unit(c(0, 0, 0, 0), "cm"))
 
 bot <- plot_grid(NA, dens2, NA, nrow=1, rel_widths = c(.16, 1, .08))
-
+    
  plot_grid(gam1, bot, nrow=2, rel_heights = c(1, .3))
 
-ggsave("../Papers/gam.pdf", width=4, height=2.3, unit="in")
+ggsave("../Papers/gam-spr.pdf", width=4, height=2.3, unit="in")
 
 #confirm that this really is just a prettied up version of what the usual output is
 #plot(gam_txl_1, seWithMean = TRUE, shift = coef(gam_txl_1)[1], select=1)
