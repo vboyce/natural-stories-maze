@@ -1,83 +1,140 @@
-TODO: read Natural Stories paper, crib some of intro from our old paper, wordcount old paper -- how long is 4000 words??
+---
+title             : "The title"
+shorttitle        : "Title"
 
-? how much do I re-explain Maze here? briefly explain how it works?, but maybe not in the introduction??
+author: 
+  - name          : "Veronica Boyce"
+    affiliation   : "1"
+    corresponding : yes    # Define only one corresponding author
+    address       : "Postal address"
+    email         : "vboyce@stanford.edu"
+    role:         # Contributorship roles (e.g., CRediT, https://casrai.org/credit/)
+      - Conceptualization
+      - Writing - Original Draft Preparation
+      - Writing - Review & Editing
+  - name          : "Roger Levy"
+    affiliation   : "2"
+    role:
+      - Writing - Review & Editing
 
-Outline:
-- Introduction
- - hook/frame
- - sufficient set-up to explain why this is useful
-- Methodology
-- Experiment methods/set-up
-- Results: what we have already, (additional analyses??)
-- Discussion (why we are awesome, other stuff)
-- ?? Supplement ??
+affiliation:
+  - id            : "1"
+    institution   : "Stanford University"
+  - id            : "2"
+    institution   : "Massachusetts Institute of Technology"
 
-# Abstract
-TODO
+authornote: 
 
-# Introduction
+abstract: |
+  One or two sentences providing a **basic introduction** to the field,  comprehensible to a scientist in any discipline.
+  
+  Two to three sentences of **more detailed background**, comprehensible  to scientists in related disciplines.
+  
+  One sentence clearly stating the **general problem** being addressed by  this particular study.
+  
+  One sentence summarizing the main result (with the words "**here we show**" or their equivalent).
+  
+  Two or three sentences explaining what the **main result** reveals in direct comparison to what was thought to be the case previously, or how the  main result adds to previous knowledge.
+  
+  One or two sentences to put the results into a more **general context**.
+  
+  Two or three sentences to provide a **broader perspective**, readily comprehensible to a scientist in any discipline.
+  
+  <!-- https://tinyurl.com/ybremelq -->
+  
+keywords          : "keywords"
+wordcount         : "X"
 
-## Hook 
-TODO: make not suck
-We all want to have more methods for doing research. A diversity of robust methods provides for converging evidence from different methods (either within or between types), and choices allow for a good fit to the scope and goals of research. 
+bibliography      : ["r-references.bib"]
 
-## Introduce SPR, eye-tracking
-The two major incremental processing methods are eye-tracking and self-paced reading. The field of incremental processing research has long been dominated by eye-tracking and self-paced reading, both of which have advantages, but they present a serious tradeoff between ease of running an experiment and quality of the data. There's also analytic flexibility issues. There are other methods, and one less common method is attracting some more attention. 
+floatsintext      : yes
+figurelist        : no
+tablelist         : no
+footnotelist      : no
+linenumbers       : yes
+mask              : no
+draft             : no
 
-## But sometimes, you want different trade-offs, so Maze.
+documentclass     : "apa6"
+classoption       : "man"
+output            : papaja::apa6_pdf
+---
 
-The Maze method (CITATIONS) provides a different set of tradeoffs than other methods. It promises good localization, but at what seems like an exhorbitant cost for widespread use. In the Maze task, participants see two words at a time and have to choose which word continues the sentence. The time to choose the correct word is taken as the dependent measure and interpreted as representing the difficulty of integrating the word into the sentence so far. If participants make a mistake, the sentence discontinues, so participants are incentivized to be careful (not sure this is a real incentive here). This is claimed to force extremely incremental processing, where participants must fully integrate each word into the sentence in order to be confident selecting it. In contrast, both eye-tracking and SPR provide some more flexibility in when participants integrate words, which can lead to spillover and thus analytic flexibility. In eye-tracking, participants read naturally, and so have the option to look back at a previous span when clarification is needed (thus, processing difficulty may be reflected in various measures). In SPR, the time it takes participants to initiate a button click is relatively long compared to how long it takes to integrate a word, so participants may click ahead, identifying each word before they move on, but not fully integrating it until they are looking at a later word. This results in spillover effects and messiness. 
+```{r setup, include = FALSE}
+library("papaja")
+r_refs("r-references.bib")
+```
 
-There's times when you don't want to deal with spillover effects, and want things to be very incremental. 
+```{r analysis-preferences}
+# Seed for random number generation
+set.seed(42)
+knitr::opts_chunk$set(cache.extra = knitr::rand_seed)
+```
 
-## but Maze is really not useable, except there's this new version
-However, Maze had some drawbacks, namely the time- and effort- intensive process of creating distractors probably dissuaded people from using it widely. An alternative version of the Maze task, dubbed A-maze, was recently introduced that gets around this problem by automatically generating distrators using a program and neural nets (Boyce et al, 2020). Boyce et al provide an interface for running the Maze task in a browser and a way of generating distractors that are usually, although not always, sufficiently bad. In a comparison between these A-maze materials and traditional hand-crafted distractors (from Witzel 2012), they find that A-maze yields comparable results to G-maze (either lab or web), and in one condition recovers effects that G-maze did not. A-maze also outperforms self-paced reading on this syntactic disambiguation paradigm. Sloggett (cite) also directly compared A-maze and G-maze on a disambiguaton paradigm and similarly found that A-maze and G-maze yielded similar results. 
+A diversity of robust methods provides for converging evidence from different methods (either within or between types), and choices allow for a good fit to the scope and goals of research. But we also want these methods to be reliable. Some of that is theoretical, but we also want empirical evidence that what the method captures is relevant to what we want to study, and that this connection is true across as broad a range of materials as we hope to use it for. Robustness is important to establishing how good a new method is. What range of tasks can this new tool accomplish and how well? (Could really extend on a toolbox analogy.)
+
+Incremental processing -- it's really important and we want different ways of measuring it. The field of incremental processing research is dominated by eye-tracking and self-paced reading. In eye-tracking ... Eye-tracking is natural and yields fine grained data, but it's expensive in terms of researcher time and equipment. Self-paced reading is quicker and cheaper to run because it can be done online without specialized equipment or supervision; however, the results are plagued by spillover effects. Both methods introduce analytic flexibility in which eye-tracking measures or what region of spillover you consider, and how data is residualized. In SPR, the time it takes participants to initiate a button click is relatively long compared to how long it takes to integrate a word, so participants may click ahead, identifying each word before they move on, but not fully integrating it until they are looking at a later word. There seems to be a gap for a method that is cheap to run, but has straightforwardly localized (and thus easy to analyse data). This may seem like too much to hope for, but the Maze task appears to fill this gap. 
+
+In the Maze task, participants see two words at a time and have to choose which word continues the sentence. The time to choose the correct word is taken as the dependent measure and interpreted as representing the difficulty of integrating the word into the sentence so far. If participants make a mistake, the sentence discontinues, so participants are incentivized to be careful (not sure this is a real incentive here). This is claimed to force extremely incremental processing, where participants must fully integrate each word into the sentence in order to be confident selecting it. The Maze task is even more unnatural than SPR, but in some experiments, this might not be a real downside. The actually prohibitive fine print on the Maze task is the need for distractors; while cheap and easy to run, traditional Maze materials are effort-intensive to construct, which may have kept this method from widespread adoption. 
+
+However, a solution to the issue of generating Maze materials has been proposed. An alternative version of the Maze task, dubbed A-maze, was recently introduced that gets around this problem by automatically generating distrators using a program and neural nets (Boyce et al, 2020). While the quality of the automatically generated distractors is not quite up that of hand-generated (as judged by their being occassional distractors that seem completely acceptable continuations), the results from A-maze match those of G-maze. Boyce et al provide an interface for running the Maze task in a browser and a way of generating distractors that are usually, although not always, sufficiently bad. 
+In a comparison between these A-maze materials and traditional hand-crafted distractors (from Witzel 2012), they find that A-maze yields comparable results to G-maze (either lab or web), and in one condition recovers effects that G-maze did not. A-maze also outperforms self-paced reading on this syntactic disambiguation paradigm. Sloggett (cite) also directly compared A-maze and G-maze on a disambiguaton paradigm and similarly found that A-maze and G-maze yielded similar results. 
+
+These demonstrations make A-maze seem quite promising, as it has the advantages of the traditional Maze task, without it's drawback. This method seems worth exploring further. 
+
 One evident shortcoming of the Maze task is that it has been used on only a limited set of materials. Some of this is due to the fact that it isn't used as widely as other incremental processing methods, and some is due to inherent limitations of the paradigm. In particular, because Maze tasks discontinue after participants make mistakes, the farther into an item a word is, the fewer participants see it. This makes it hard to run long materials using Maze, and prevents Maze from being used on long text passages where SPR or eye-tracking could be used. 
 
-## What we do is offer an expansion on new Maze 
-
-We find a way around this problem by creating a version of the Maze task interface where participants correct their mistakes and continue with the sentence rather than being discontinued. We use this method with A-maze generated distractors on the Natural Stories corpus. 
-
-With new methods, its useful to try to establish how widely they work. We hope to test A-maze on an experiment that is very different from the syntactic disambiguation, in order to learn whether it works for a different type of psycholinguistic material. 
-While Maze has traditionally been limited to single sentence items; we innovate on how the materials are presented and show that it is possible for participants to read naturalistic passages that are presented in the Maze paradigm. We confirm that participants can understand what they are reading, and that Maze shows linear surprisal effects. This opens up another area of research to being amenable to the new A-maze paradigm. 
-
-This is just one other data point on A-maze, so we still don't know how widely the method holds up; however the fact that it works on such disparate materials gives us hope that it will be useful for a variety of paradigms. 
+We find a way around this problem by creating a version of the Maze task interface where participants correct their mistakes and continue with the sentence rather than being discontinued. This allows for multi-sentence items to be run using Maze, which we verify by running Maze on the Natural Stories corpus. With this data, we are able to confirm that participants can comprehend what they read using Maze and investigate the effects of surprisal on RT in Maze. 
 
 
 # Error-correction maze
 
-The Maze tasked as presented in Forster et al 2009 consists of showing participants individual sentences for materials that are controlled (in a Latin Square type design). Other Maze experiments have also worked like this. One issue with Maze is data loss -- whenever a participant makes a mistake, they don't see the rest of the sentence and thus they do not contribute RT data for any words in the rest of the sentence. While this hasn't been a problem with in lab G-maze (error rates were fairly low and items not too long), it's more of a problem with A-maze on crowd-sourced participants, due to both compontents. One of the issues with A-maze is that some of the distractors, especially early in the sentence are problematic, and therefore data-loss is high. 
+The Maze tasked as historically done involves presenting in-lab participants (often college students) with materials that consist of individual, unrelated sentences, some of which exemplify the relevant properties (often with a Latin Square design). While this is a common psycholinguistic paradigm, it isn't the only one, and Maze would be more versatile (and thus more appealing as an alternative to eye-tracking and SPR) if it also worked on other types of materials, such as longer texts used in research in discourse or surprisal. There's also interest in comparing neural net performance to that of human behavioral data on naturalistic corpora, which necessitates behavioral corpora. 
 
-However, even with G-maze quality materials, and high quality subjects, the Maze paradigm with eventually run into trouble as materials get longer. Even assuming a very low per word error rate (TODO: check what would be reasonable, but could also use 1%), the errors will build up as materials get longer, and few participants will make it to the end. This makes it hard to run long materials, such as could be done with eye-tracking or SPR. One potential option is to have participants skip to the next sentence (rather than next item) when they make a mistake, but having missed some context from the last sentence, this may be jarring and they may be confused (and have unreliable RT) due to lack of context and discourse cues. 
+One major concern with Maze is data loss -- whenever a participant makes a mistake, they don't see the rest of the sentence and thus they do not contribute RT data for any words in the rest of the sentence. TODO cite how much this happened in old paper. While this hasn't been a problem with in lab G-maze (error rates were fairly low and items not too long), it's more of a problem with A-maze on crowd-sourced participants, due to both compontents. In particular, Boyce et al 2020 found that some of the distractors, especially early in the sentence are problematic, and therefore data-loss is high. 
 
-To solve this conundrum, we decided to try letting participant continue after their mistakes. To do this, we presented them with an error message, and waited until they selected the correct option, then the sentence continued as normal. This was easily implemented as a variant on the Maze Ibex thing. We record both the RT to the first click and also the total RT until they select the correct answer separately. 
+However, even with G-maze quality materials, and high quality subjects, the Maze paradigm with eventually run into trouble as materials get longer. Even assuming a very low per word error rate , the errors will build up as materials get longer, and few participants will make it to the end. For instance, with a 1% error rate, `r round(.99**15*100)`% would complete each 15-word sentence, but only `r round(.99**50*100)`% of participants would complete each 50 word vignette, and `r round(.99**200*100)`% of 200 word passages.  One potential option would be to have participants skip to the next sentence (rather than next item) when they make a mistake. However, having missed some context from the last sentence, this may be jarring and and confusing for participants. Their RTs may also be unreliable  due to having missed context and discourse cues. 
 
-This in principle solves several problems. Firstly, it allows for running longer materials, potentially expanding the range of questions Maze is suitable for. Secondly, it compensates for some of the shortcomings of Maze identified in Boyce et al 2020 -- distractors might still cause participants to make unavoidable mistakes, but at least they still see the rest of the sentence (perhaps reducing frustration), and we get their data. Whether RT data from after mistakes is useable is a question of potential interest. 
+To solve this conundrum, we decide to get rid of the source of the problem: the terminating on errors. Instead, we let participants continue after they make a mistake. To do this, we present them with an error message, and wait until they select the correct option, before continuing the sentence as normal. This was easily implemented as a new option built on the Ibex Maze code used in Boyce et al 2020. We record both the RT to the first click and also the total RT until they select the correct answer as separate values. 
 
-Lastly, this helps to address the "distractors or participants" question around errors mentioned in Boyce. When participants continue with the sentence, we can see what fraction of time they made mistakes and do participant level selection on the basis of this, without having to account for the censoring due to lack of data. This provides a convenient way of controlling data quality after the fact. 
+This in principle solves several problems. Firstly, it allows for running longer materials, potentially expanding the range of questions Maze is suitable for. Secondly, it compensates for some of the shortcomings of Maze identified in Boyce et al 2020 -- distractors might still cause participants to make unavoidable mistakes, but at least they still see the rest of the sentence and we get their data. We believe (although don't have evidence) that being able to correct mistakes may reduce frustration related to unavoidable mistakes from impossible choices and accidental misclicks. Whether this also solves the data loss problem from the researcher perspective within a sentence depends on whether post-mistake data are high-quality and trustworthy; this is a hard-to-assess question of potential interest. 
 
-It also starts to reduce the perverse incentives. With error-terminates Maze, the fastest way to get through the task is to select randomly, and it's quite quick because mistakes skip you to the next sentence. With error-correction Maze, randomly jamming buttons takes more effort, but is still an effective strategy. [Footnote: it has been suggested that one way to disincentivize this is to force a pause when a participant makes a mistake, forcing them to wait some short period of time (500ms or 1 sec) before being able to correct their mistake. This seems like a promising idea that could be implemented.]
+Even if all post-mistake data are discarded before analysis, they can still help address the "distractors or participants" question around errors mentioned in Boyce. When participants continue with the sentence, it is easy to calculate the per-word error rate for participants, without having to account for the censoring present in traditional Maze (if you already made a mistake, we can't know if you would have made another one; with error-correction, we do know if you did). This allows us to exclude participants on the basis of their task accuracy, ensuring RT data comes from participants who were paying attention and doing the task. This provides a convenient and clear-cut way of controlling data quality after the fact. 
+
+It also starts to reduce the perverse incentives. With error-terminates Maze, the fastest way to get through the task is to select randomly, and it's quite quick because mistakes skip you to the next sentence. With error-correction Maze, randomly jamming buttons takes more effort, but is still an effective strategy. [Footnote: In discussing this work, we recieved the suggestion that one way to disincentivize random clicking is to add a pause when a participant makes a mistake, forcing them to wait some short period of time (ex 500ms or 1 sec) before being able to correct their mistake. This seems like a promising improvement that could be worth implementing and testing.]
 
 # Natural Stories corpus
 
-We wanted to try Maze on a naturalistic materials, to see if error-correction Maze would work, whether surprisal and other coarse-level processing effects would appear (as a sanity check) -- eye-tracking and SPR show these effects robustly and in relatively well established patterns, and for Maze to be trusted as an alternative, it would need to as well. Maze typically doesn't use comprehension questions because comprehending the local sentence structure is required to do the task. Thus, there isn't much information on how well participants comprehend and remember what they read. We wanted to know if participants understood and internalized the gist of what they were reading with Maze. 
+As our test of the Maze method, we use the Natural Stories corpus, which consists of 10 passages, each about 1000 words long (around 50 sentences), a mix of fiction and non-fiction. We think this is an appropriately severe test: the passages are long, and they contain a number of low-frequency syntactic constructions. In addition, they have a lot of punctuation (such as from quoted speech) and proper nouns (which are likely to be out of vocabulary for the autogeneration model). If people can make it through these passages while doing the Maze task accurately, we think they are likely to be able to on other naturalistic passages as well (many of which may be shorter or simpler). 
 
-To satisfy these various desires, we decided to run a Maze task on the Natural Stories corpus (Futrell et al 2020). This corpus consists of 10 passages, each about 1000 words long. They are naturalistic, although they were designed to contain a fair number of low frequency constructions such as BLAH and BLAH. (We do not specifically analyse this.) They also come with comprehension questions, and SPR data from the corpus is available. THis seemed like an appropriate severe test, and the corpus was available. SEE FOOBAR for examples of the materials and questions. 
-# Actual methods junk
+The Natural Stories corpus also comes with comprehension questions, 6 binary-choice questions per story. Maze typically doesn't use comprehension questions because comprehending the local sentence structure is required to do the task. Thus, there isn't much information on how well participants comprehend and remember what they read. We wanted to know if participants understood and internalized the gist of what they were reading with Maze. 
 
-# Materials
+Our last check point of interest was whether and how coarse phenomena like the effect of word length and surprisal, which are well established for eye-tracking and SPR would manifest with Maze. If they show similar patterns to that found in other methods, that's more promising. 
+
+Another consideration is the ability to compare our data with other analyses and data obtained from different methods. This corpus has SPR data available with we can compare to. Using a standard data set also means that this set of results will be easy to compare to in the future. 
+
+
+# Methods
+We report how we determined our sample size, all data exclusions (if any), all manipulations, and all measures in the study. <!-- 21-word solution (Simmons, Nelson & Simonsohn, 2012; retrieved from http://ssrn.com/abstract=2160588) -->
+
+## Participants
+We recruited XX participants from Mechanical Turk, and paid each participant YY dollars. 
+
+## Material
+
 We took the corpus and split it up into sentences (this involved some judgement calls due to quoted speech) because the Maze material generation works at the sentence level. We ran the sentences through A-maze generation using TODO foo, bar parameters. Materials are available in TODO: anon repo. We set up the materials in Ibex, using Maze to display things.
 
 We also wrote a short passage to use as practice, with 2 comprehension questions (double check!!). 
 
+## Procedure
+
 Participants gave their informed consent, saw instructions, saw the practice item and practice comprehension questions, and then completed the story using the Maze task, then the 6 main comprehension questions. At the end of the experiment, we asked how their experience was, gathered demographic questions (which ones), and debriefed participants. 
 
-# Participants
-We recruited XX participants from Mechanical Turk, and paid each participant YY dollars. 
-
-# Analysis stuff
-
+## Data analysis
+We used `r cite_r("r-references.bib")` for all our analyses.
 We excluded participants who did not indicate that their native language was English. This left us with YY participants. 
+
+# Results
 
 ## Qualitative stuff
 
@@ -92,15 +149,27 @@ There's commonly observed effects of surprisal, frequency, and length on stuff, 
 - GAMs
 - LMER/BRMS 
 
-*write up what we have, then we can consider adding comparison and ex-gaussians and stuff when we do it*
-
-TODO
-
 # Discussion
-
 We've shown another way to adapt the Maze task to make it suitable for a wider range of experiments. While we think that error-correction Maze is generally a good idea, especially when using A-maze, this is an orthagonal adjustment to the task. By using the Natural Stories corpus, we establish that Maze works for longer naturalistic tasks, with participants able to do the task and understand what they are reading. Additionally, their RTs reflect expected patterns in terms of length and surprisal. While there are some differences, especially in scale, to that found with other incremental processing paradigms, we think this is a reason to explore more. Could be a statistical thing (???) or due to task differences. Comparisons between methods could be very useful for identifying how task demands influence processing. 
 
 All the code is available, and we encourage researchers to consider trying out Maze if they think it's appropriate to their experiments. 
 
 This is just one other data point on A-maze, so we still don't know how widely the method holds up; however the fact that it works on such disparate materials gives us hope that it will be useful for a variety of paradigms. 
 
+With new methods, its useful to try to establish how widely they work. We hope to test A-maze on an experiment that is very different from the syntactic disambiguation, in order to learn whether it works for a different type of psycholinguistic material. 
+While Maze has traditionally been limited to single sentence items; we innovate on how the materials are presented and show that it is possible for participants to read naturalistic passages that are presented in the Maze paradigm. We confirm that participants can understand what they are reading, and that Maze shows linear surprisal effects. This opens up another area of research to being amenable to the new A-maze paradigm. 
+
+This is just one other data point on A-maze, so we still don't know how widely the method holds up; however the fact that it works on such disparate materials gives us hope that it will be useful for a variety of paradigms. 
+
+The Maze task might be espeically good for comparing with NNs because of the forced incrementality. While eventually we do want to figure out models of more natural reading, this might be a useful complement b/c we don't have to deal with nasty spillover. 
+
+\newpage
+
+# References
+
+\begingroup
+\setlength{\parindent}{-0.5in}
+\setlength{\leftskip}{0.5in}
+
+<div id="refs" custom-style="Bibliography"></div>
+\endgroup
