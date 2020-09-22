@@ -1,20 +1,25 @@
 ---
-title             : "The title"
-shorttitle        : "Title"
+title             : "A-maze of Natural Stories: Texts are comprehensible during the Maze task"
+shorttitle        : "A-maze of Natural Stories"
 
 author: 
   - name          : "Veronica Boyce"
     affiliation   : "1"
     corresponding : yes    # Define only one corresponding author
-    address       : "Postal address"
+    address       : "TODO"
     email         : "vboyce@stanford.edu"
     role:         # Contributorship roles (e.g., CRediT, https://casrai.org/credit/)
       - Conceptualization
+      - Formal Analysis
+      - Investigation
+      - Software
       - Writing - Original Draft Preparation
       - Writing - Review & Editing
   - name          : "Roger Levy"
     affiliation   : "2"
     role:
+      - Conceptualization
+      - Formal Analysis
       - Writing - Review & Editing
 
 affiliation:
@@ -23,29 +28,16 @@ affiliation:
   - id            : "2"
     institution   : "Massachusetts Institute of Technology"
 
-authornote: 
-
+authornote: |
+  TODO
+  
 abstract: |
-  One or two sentences providing a **basic introduction** to the field,  comprehensible to a scientist in any discipline.
+  Easy to use, reliable methods are important to science. In studying how people understand language in real time, we use incremental processing methods to measure word-by-word reading time. However, neither of the common methods (eye-tracking and self-paced reading) can run over the web and produce localized effects. Another method, called the Maze task, seems to be able to do this, especially since a technique called A-maze makes the task much faster to construct. Due to task limitations, Maze has not been used on long, naturalistic passages, only short targeted materials. Here we present an adaptation of the Maze method suitable for long materials; we test this method on the Natural Stories corpus and find that participants can comprehend what they read while doing the task and that the reading time patterns are broadly similar to those found with other methods. We find support for the localization of reading time effects during the Maze task, as well as extending the range of materials Maze is suitable for. 
   
-  Two to three sentences of **more detailed background**, comprehensible  to scientists in related disciplines.
-  
-  One sentence clearly stating the **general problem** being addressed by  this particular study.
-  
-  One sentence summarizing the main result (with the words "**here we show**" or their equivalent).
-  
-  Two or three sentences explaining what the **main result** reveals in direct comparison to what was thought to be the case previously, or how the  main result adds to previous knowledge.
-  
-  One or two sentences to put the results into a more **general context**.
-  
-  Two or three sentences to provide a **broader perspective**, readily comprehensible to a scientist in any discipline.
-  
-  <!-- https://tinyurl.com/ybremelq -->
-  
-keywords          : "keywords"
+keywords          : "TODO"
 wordcount         : "X"
 
-bibliography      : ["r-references.bib"]
+bibliography      : ["r-references.bib","refs.bib"]
 
 floatsintext      : yes
 figurelist        : no
@@ -73,11 +65,18 @@ knitr::opts_chunk$set(cache.extra = knitr::rand_seed)
 
 A diversity of robust methods provides for converging evidence from different methods (either within or between types), and choices allow for a good fit to the scope and goals of research. But we also want these methods to be reliable. Some of that is theoretical, but we also want empirical evidence that what the method captures is relevant to what we want to study, and that this connection is true across as broad a range of materials as we hope to use it for. Robustness is important to establishing how good a new method is. What range of tasks can this new tool accomplish and how well? (Could really extend on a toolbox analogy.)
 
-Incremental processing -- it's really important and we want different ways of measuring it. The field of incremental processing research is dominated by eye-tracking and self-paced reading. In eye-tracking ... Eye-tracking is natural and yields fine grained data, but it's expensive in terms of researcher time and equipment. Self-paced reading is quicker and cheaper to run because it can be done online without specialized equipment or supervision; however, the results are plagued by spillover effects. Both methods introduce analytic flexibility in which eye-tracking measures or what region of spillover you consider, and how data is residualized. In SPR, the time it takes participants to initiate a button click is relatively long compared to how long it takes to integrate a word, so participants may click ahead, identifying each word before they move on, but not fully integrating it until they are looking at a later word. There seems to be a gap for a method that is cheap to run, but has straightforwardly localized (and thus easy to analyse data). This may seem like too much to hope for, but the Maze task appears to fill this gap. 
+When we hear or read language, we incorporate new words into our model of the unfolding context as we go. To understand this real-time process and how it copes with unexpected words, psycholinguists use incremental processing methods. This set of methods involves measuring how long participants choose to spend reading and integrating a word before moving on, although the tasks and measures of reading/reaction time differ.
 
-In the Maze task, participants see two words at a time and have to choose which word continues the sentence. The time to choose the correct word is taken as the dependent measure and interpreted as representing the difficulty of integrating the word into the sentence so far. If participants make a mistake, the sentence discontinues, so participants are incentivized to be careful (not sure this is a real incentive here). This is claimed to force extremely incremental processing, where participants must fully integrate each word into the sentence in order to be confident selecting it. The Maze task is even more unnatural than SPR, but in some experiments, this might not be a real downside. The actually prohibitive fine print on the Maze task is the need for distractors; while cheap and easy to run, traditional Maze materials are effort-intensive to construct, which may have kept this method from widespread adoption. 
+The two most commonly used methods are eye-tracking and self-paced reading. In eye-tracking, participants read text freely from a screen, while the eye movements and fixations are tracked with an infrared camera CITE, check for truth. Eye-tracking is naturalistic and yields fine-grained data about how long participants spent on each word when, but it's expensive to run requiring both specialized equipment and researcher time to run experiments. 
+
+Self-paced reading (commonly abbreviated SPR) in contrast can be run online with no specialzed equipment or direct researcher supervision, and so it's possible to collect data quickly and cheaply. In SPR, participants see one word of the text on screen at a time and press a button to contine to the next word instead; the time between button presses when a word was on screen is used as the reading time. The problem with SPR, especially when run online, is that effects from one word tend to show up as longer reading times spread out over several later words, in what is known as spillover effects. Both of these methods suffer somewhat from analytic flexibilty as processing difficulty may manifest in several ways in eye-tracking and is hard to localize in SPR.
+
+For some experimental paradigms, it would be idea to have a readily useable method that localizes processing effects in a straightforward to analyse manner. This may seem like too much to hope for, but the Maze task appears to fill this gap. 
+
+In the Maze task, participants see two words at a time, one of which continues the sentence, and one of which does not, and they have to choose which word is the correct continuation. The time to choose the correct word is taken as the dependent measure and interpreted as representing the difficulty of integrating the word into the sentence so far. If participants make a mistake, the sentence discontinues. Because of the required choices, the Maze task is claimed to  force extremely incremental processing, where participants must fully integrate each word into the sentence in order to confidently select it and move on. Experiments using  The actually prohibitive fine print on the Maze task is the need for distractors; while cheap and easy to run, traditional Maze materials are effort-intensive to construct, which may have kept this method from widespread adoption. 
 
 However, a solution to the issue of generating Maze materials has been proposed. An alternative version of the Maze task, dubbed A-maze, was recently introduced that gets around this problem by automatically generating distrators using a program and neural nets (Boyce et al, 2020). While the quality of the automatically generated distractors is not quite up that of hand-generated (as judged by their being occassional distractors that seem completely acceptable continuations), the results from A-maze match those of G-maze. Boyce et al provide an interface for running the Maze task in a browser and a way of generating distractors that are usually, although not always, sufficiently bad. 
+
 In a comparison between these A-maze materials and traditional hand-crafted distractors (from Witzel 2012), they find that A-maze yields comparable results to G-maze (either lab or web), and in one condition recovers effects that G-maze did not. A-maze also outperforms self-paced reading on this syntactic disambiguation paradigm. Sloggett (cite) also directly compared A-maze and G-maze on a disambiguaton paradigm and similarly found that A-maze and G-maze yielded similar results. 
 
 These demonstrations make A-maze seem quite promising, as it has the advantages of the traditional Maze task, without it's drawback. This method seems worth exploring further. 
@@ -105,13 +104,13 @@ It also starts to reduce the perverse incentives. With error-terminates Maze, th
 
 # Natural Stories corpus
 
-As our test of the Maze method, we use the Natural Stories corpus, which consists of 10 passages, each about 1000 words long (around 50 sentences), a mix of fiction and non-fiction. We think this is an appropriately severe test: the passages are long, and they contain a number of low-frequency syntactic constructions. In addition, they have a lot of punctuation (such as from quoted speech) and proper nouns (which are likely to be out of vocabulary for the autogeneration model). If people can make it through these passages while doing the Maze task accurately, we think they are likely to be able to on other naturalistic passages as well (many of which may be shorter or simpler). 
+We test this method using the Natural Stories corpus, which consists of 10 passages, some fiction and some non-fiction. We think this is a fairly severe test: the passages are long (about 1000 words each), they contain a lot of punctuation (for instance quoted speech), a number of proper nouns (which are likely out of vocabulary for the autogeneration model), and a number of low frequency grammatical constructions. However, they are intended to read naturally to native English speakers. We choose this because if participants can succeed at doing the Maze task and understanding it on this set of materials, we think they are likely to on basically any naturalistic text (many of which might be shorter or easier to follow). The corpus also comes with binary-choice comprehension questions, 6 per story. 
 
-The Natural Stories corpus also comes with comprehension questions, 6 binary-choice questions per story. Maze typically doesn't use comprehension questions because comprehending the local sentence structure is required to do the task. Thus, there isn't much information on how well participants comprehend and remember what they read. We wanted to know if participants understood and internalized the gist of what they were reading with Maze. 
+THis corpus has been used for SPR, so there's the possiblity of comparison. 
 
-Our last check point of interest was whether and how coarse phenomena like the effect of word length and surprisal, which are well established for eye-tracking and SPR would manifest with Maze. If they show similar patterns to that found in other methods, that's more promising. 
+In addition to testing that Maze works at all on this type of material, we also wanted to check for two other desired characteristics. That the materials can be comprehended even when read with Maze, and that commonly found psycholinguistic effects of length and surprisal show.  whether surprisal and other coarse-level processing effects would appear (as a sanity check) -- eye-tracking and SPR show these effects robustly and in relatively well established patterns, and for Maze to be trusted as an alternative, it would need to as well. Maze typically doesn't use comprehension questions because comprehending the local sentence structure is required to do the task. Thus, there isn't much information on how well participants comprehend and remember what they read. We wanted to know if participants understood and internalized the gist of what they were reading with Maze. 
 
-Another consideration is the ability to compare our data with other analyses and data obtained from different methods. This corpus has SPR data available with we can compare to. Using a standard data set also means that this set of results will be easy to compare to in the future. 
+To satisfy these various desires, we decided to run a Maze task on the Natural Stories corpus (Futrell et al 2020). This corpus consists of 10 passages, each about 1000 words long. They are naturalistic, although they were designed to contain a fair number of low frequency constructions such as BLAH and BLAH. (We do not specifically analyse this.) They also come with comprehension questions, and SPR data from the corpus is available. THis seemed like an appropriate severe test, and the corpus was available. SEE FOOBAR for examples of the materials and questions. 
 
 
 # Methods
