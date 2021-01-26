@@ -19,7 +19,7 @@ something to compare to.
 chunk (whereas we’d put pause screens in previous maze experiments, I
 didn’t here because it could disrupt the story), so we had each
 participant only read one story. This was prefaced by a short practice
-item (~100 words) that I wrote, which had 2 practice questions.
+item (\~100 words) that I wrote, which had 2 practice questions.
 
 At the end, we collected some optional demographics and debriefed
 participants.
@@ -54,8 +54,7 @@ rt\<5000 was used to exclude times when a participant got distracted or
 paused in doing the experiment). Coloring indicates how many of the
 comprehension questions (out of 6) they got right, and the grids are
 faceted on the SPR exclusion criteria for comparison. (Practice items
-and practice questions are not included
-    here.)
+and practice questions are not included here.)
 
     ## `summarise()` regrouping output by 'subject' (override with `.groups` argument)
 
@@ -70,8 +69,7 @@ variability. When the task is done well, average RT is between 600 and
 Unclear what the correct thresholds for exclusions should be, although
 I’m tempted by an 80% accuracy cut-off (for RT stuff at least). If
 measures of interest are about comprehension, comprehension questions
-seem
-reasonable.
+seem reasonable.
 
 ## Graphs for abstract
 
@@ -81,8 +79,7 @@ reasonable.
 
 As was raised when I presented this at lab meeting, it could be that
 participants are looking up answers to comprehension questions, so we
-want to check based on
-    length.
+want to check based on length.
 
 ![](nat_stories_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
 
@@ -104,8 +101,7 @@ we’re curious about this for designing appropriate length experiments
 and compensating adequately in the future. This takes into account all
 the time spent doing maze, including practice items and correcting
 mistakes. It does not include time to read instructions, answer
-comprehension questions or fill out
-    demographics.
+comprehension questions or fill out demographics.
 
     ## `summarise()` regrouping output by 'subject' (override with `.groups` argument)
 
@@ -2588,8 +2584,7 @@ well than doing SPR (they report average reading times around 330 ms),
 so the memory delay is greater with Maze. But we do still get some
 participants who do it. (There’s also the fact that despite both studies
 sourcing participants from Mturk, the demographics have changed in
-between when the studies were
-    run.)
+between when the studies were run.)
 
 # Error analysis
 
@@ -2607,8 +2602,7 @@ correct on the maze.
 
 This includes data from 63 participants.
 
-When in sentences do errors
-    occur?
+When in sentences do errors occur?
 
     ## `summarise()` ungrouping output (override with `.groups` argument)
 
@@ -2640,8 +2634,7 @@ the sentences are completed error-free.
 If we only exclude the errors and the first words of sentences, there
 are 59441 words. If we also exclude all words after mistakes, there are
 40862 words. We will exclude only a couple of words after each mistake,
-but we could also opt to analyse only the pre-error
-    sections.
+but we could also opt to analyse only the pre-error sections.
 
     ## `summarise()` regrouping output by 'sentence' (override with `.groups` argument)
 

@@ -50,10 +50,11 @@ Surprisals are measured in bits.
 
 We center the predictors for the brms models, but don’t rescale them.
 
-The model formula we use is rt ~ surp\* length + freq \* length +
+The model formula we use is rt \~ surp\* length + freq \* length +
 past\_surp \* past\_length + past\_freq \* past\_length.
 
-    ## Parsed with column specification:
+    ## 
+    ## ── Column specification ────────────────────────────────────────────────────────
     ## cols(
     ##   Story_Num = col_double(),
     ##   Sentence_Num = col_double(),
@@ -98,8 +99,7 @@ Priors:
   - normal(0,500) for beta and sd – we don’t really know what effects
     are
   - lkj(1) for correlations – we don’t have reason to think correlations
-    might go any particular
-    way
+    might go any particular way
 
 ### On pre-error data only
 
@@ -107,8 +107,8 @@ Priors:
     ## `summarise()` ungrouping output (override with `.groups` argument)
     ## `summarise()` ungrouping output (override with `.groups` argument)
 
-    ## % latex table generated in R 4.0.2 by xtable 1.8-4 package
-    ## % Wed Aug 26 16:22:51 2020
+    ## % latex table generated in R 4.0.3 by xtable 1.8-4 package
+    ## % Mon Jan 25 17:22:33 2021
     ## \begin{table}[ht]
     ## \centering
     ## \begin{tabular}{lrlrrlrrlr}
@@ -138,8 +138,7 @@ Priors:
 
 I get 9.087e-32 for Ngram, 3.602e-32 for GRNN, and 2.24e-33 for TXL. I’m
 not sure this is the order we expect, and not sure how to interpret it.
-(Also not sure I did things
-    right.)
+(Also not sure I did things right.)
 
 # Frequentist LMs
 
@@ -471,8 +470,7 @@ are more inclusive of participants, do we get data that looks more like
 theirs. (Perhaps our exclusion criteria are more robust?)
 
 This is all data from participants who speak English that wasn’t a
-mistake. (So, includes bad participants and post-mistake
-    data.)
+mistake. (So, includes bad participants and post-mistake data.)
 
     ## `summarise()` regrouping output by 'word', 'txl_center', 'ngram_center', 'grnn_center', 'freq_center', 'length_center', 'past_c_txl', 'past_c_ngram', 'past_c_grnn', 'past_c_freq', 'past_c_length' (override with `.groups` argument)
 
@@ -1452,8 +1450,8 @@ BRM models from this same very permissive data.
     ## `summarise()` ungrouping output (override with `.groups` argument)
     ## `summarise()` ungrouping output (override with `.groups` argument)
 
-    ## % latex table generated in R 4.0.2 by xtable 1.8-4 package
-    ## % Wed Aug 26 16:24:51 2020
+    ## % latex table generated in R 4.0.3 by xtable 1.8-4 package
+    ## % Mon Jan 25 17:23:53 2021
     ## \begin{table}[ht]
     ## \centering
     ## \begin{tabular}{lrlrrlrrlr}
