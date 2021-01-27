@@ -146,28 +146,18 @@ This corpus allows us to address a set of sequential questions.
 - Fourthly, although we do not examine it here, the data set can be examined at the targetted syntactic phenomena or compared with NN models. (TODO: unclear whether we should include parts of this). 
 
 # Methods
+We constructed A-maze distractors for the Natural stories corpus (CITE) and recruited 100 MTurkers to each read one the stories in the Maze paradigm. On the basis of previous uses of the Maze paradigm, we estimated that participants would do the task at roughly 1 second per word, or around 17 minutes for a 1000 word passage, so we only gave each participant one passage to read to keep the task manageable. 
 
-
+## Participants
+We recruited 100 participants from Amazon Mechanical Turk, and paid each participant 3.50 dollars for what we estimated was a 20 minute task. In fact, it appears to have taken most attentive participants around 20 minutes to read the story, and thus closer to 25 minutes for the overall study. 
 
 ## Procedure
+Participants first gave their informed consent and saw task instructions. Then they read a short practice story in the Maze paradigm and answered 2 binary-choice practice comprehension questions, before reading the main story in the A-maze task. After the story, they answered the 6 main comprehension questions, commented on their experience, answered optional demographic questions, saw an debriefing and were given a code to enter into Mturk for payment. The experiment was implemented in Ibex (CITE) and the experimental code is availabe at REPO.  
 
-Participants gave their informed consent, saw instructions, and saw the practice item and practice comprehension questions before reading the main story using the Maze task. After they answered the 6 main comprehension questions, commented on their experience, answered optional demographic questions and were debriefed participants. 
-## Participants
-We recruited XX participants from Mechanical Turk, and paid each participant YY dollars. 
-
-## Material
-
-We took the corpus and split it up into sentences (this involved some judgment calls due to quoted speech) because the Maze material generation works at the sentence level. We ran the sentences through A-maze generation using TODO foo, bar parameters. Materials are available in TODO: anon repo. We set up the materials in Ibex, using Maze to display things.
-
-We also wrote a short passage to use as practice, with 2 comprehension questions (double check!!). All of these materials are available at TODO
-We report how we determined our sample size, all data exclusions (if any), all manipulations, and all measures in the study. <!-- 21-word solution (Simmons, Nelson & Simonsohn, 2012; retrieved from http://ssrn.com/abstract=2160588) -->
-
-1000 words is a lot for Maze especially when it needs to be done in one chunk (whereas we'd put pause screens in previous maze experiments, I didn't here because it could disrupt the story), so we had each participant only read one story. This was prefaced by a short practice item (~100 words) that I wrote, which had 2 practice questions. 
-
-At the end, we collected some optional demographics and debriefed participants. 
-
-We recruited 100 participants, across the 10 stories. (Stories were randomized, but not balanced, so we'll see how balanced the data is.) We estimated that this would take around 20 minutes (given how long past studies had taken) and paid 3.50. In fact, it appears to have taken most attentive participants around 20 minutes to read the story, and thus closer to 25 minutes for the overall study. 
-
+## Materials
+We took the texts of the Natural Stories corpus (CITE) and split it into sentences because the A-Maze process works on the sentence level. (This involved some judgment calls due to quoted speech). We used the original comprehension questions provided in the Natural Stories corpus. To familiarize participants with the task, we wrote a short practice passage and corresponding comprehension questions.
+We then ran the sentences of the items through the A-maze generation process. We updated the code of the generation process to fix some issues identified in that paper; the code used is available at REPO. The underlying method did not change, but features such as appropriately handling more types of punctuation (needed for the Natural Stories corpus) were added. We ran the materials using FOOBAR paramters. We used the auto-generated distractors as they were, without checking them for quality. Materials are available at REPO.
+TODO other notable changes to the codebase??
 
 ## Data analysis
 
@@ -233,17 +223,16 @@ data_sentence <- data_before <- data_good %>%
   mutate(sent.correct=ifelse(total_mistake==0,1,0))
 ```
 
-
+Of the `r data %>% select(subject) %>% unique() %>% nrow()` participants who each read one story, we excluded data from those who did not report English as their native language, leaving `r data_filt %>% select(subject) %>% unique() %>% nrow()` participants.  
 We used `r cite_r("r-references.bib")` for all our analyses.
-Of the `r data %>% select(subject) %>% unique() %>% nrow()` participants who each read one story, we excluded data from those who did not report English as their native language, leaving `r data_filt %>% select(subject) %>% unique() %>% nrow()` participants. After this exclusion, each of the 10 stories was read between `r min(data_stories$n)` and `r max(data_stories$n)` times. 
 
 # Results
 
-## Can people read the stories?
+## Reading stories in the Maze task
 
-(ref:error-cap) A. Correlation between a participant's accuracy on the Maze task (fraction of words selected correctly) and their average reaction time (in ms). Many participants (marked in green) attained accuracies of >80%; others (in red) appear to be randomly guessing and were excluded from further analysis. B. Performance on comprehension questions. Participants who had >80% task accuracy tended to do well on comprehension questions; those who were at chance on the task were also at chance on comprehension questions. 
+(ref:error-cap) A. Correlation between a participant's accuracy on the Maze task (fraction of words selected correctly) and their average reaction time (in ms). Many participants (marked in green) chose the correct word >80% of the time; others (in red) appear to be randomly guessing and were excluded from further analysis. B. Performance on comprehension questions. Participants who had >80% task accuracy tended to do well on comprehension questions; those who were at chance on the task were also at chance on comprehension questions. 
 
-```{r errors, out.width="100%", out.height="25%", fig.pos='t', fig.cap="(ref:error-cap)"}
+```{r errors, out.height="25%", fig.pos='t', fig.cap="(ref:error-cap)"}
 error_plot <- ggplot(data_error_summ, aes(x=pct_correct, y=mean_rt, color=accurate))+
   geom_point(size=1)+
   labs(x="Fraction words selected correctly",
@@ -263,13 +252,18 @@ error_plot+comp_plot+plot_annotation(tag_levels="A")
 
 ```
 
-The first question of interest is whether participants can do the Maze task on such a long text and whether the auto-generated distractors are clear enough to allow high rates of accuracy. To examine this, we calculate each participants by-word error rate and compare to their average RT (\@ref(fig:errors)). (To avoid biases the average RT estimate if a participant got distracted or stepped away from the computer, RTs greater than 5 seconds were excluded.) A number of participants do the task well, with high per-word accuracies reaching 99%. This indicates that the distractors are mostly not a problem since some people can reliably choose the right option. It also indicates that some participants can maintain focus on the task for the whole story. These participants who are careful tend to take around 1 second per word selection. In contrast, other participants are going much faster and appear to be randomly guessing. We believe this bimodal distribution is a reflection of the mixture of workers on Mturk -- some sped through the task to get paid for as little time as possible, while others took the task seriously. This comparision allows us to easily see who was paying attention to the task; we  only analyse data from participants with at least 80% accuracy.
+Our first concern was whether the paradigm would work at all. To our relief, it did. Some participants were able to complete the Maze task with high accuracy and understand the story while doing so. 
 
+We first wanted to check for participant accuracy, which reflects both how well participants can focus on and navigate the task and whether the auto-generated distractors are of acceptable quality. We calculated the per-word error rate for each participant and compared it against their average reaction time. (To avoid biasing the average if a participant took a pause before returning to the task, RTs greater than 5 seconds were excluded.) As seen in Figure \@ref(fig:errors), there is a cluster of participants who make relatively few errors (marked in green), with some reaching 99% accuracy. This indicates that the distractors were generally appropriate and that some participants can maintain focus on the task for the whole story. These careful participants tend to take around 1 second for each word selection, which is much slower than other paradigms CITE SPR something.
+
+In contrast, we also have a cluster of participants (in red) who we infer sped through the task clicking randomly. This distribution is likely due to the mix of workers on Mturk; as we did not use qualification cutoffs. 
+
+Another important check is whether participants were able to comprehend the story,which we tested using 6 binary-choice comprehension questions after each story. We count how many questions each participant got right, and group them by their performance on the Maze task. As seen in @ref(fig:comp-q), most participants were were accurate on the task also did well on comprehension questions, while participants who were at chance on the Maze task were also at chance on the comprehension questions. Participants usually answered quickly (within 10 seconds), so we do not believe they were looking up the answers on the internet.These are not especially hard questions, and we can't rule out that some participants may have been able to guess the answers without reading the story. Nonetheless, this provides preliminary evidence that people can understand and remember details of stories they read during the Maze task. 
+
+Given that Maze task accuracy and comprehension question accuracy are correlated, but task accuracy is finer-grained and less noisy we use task performance as our exclusion metric. This easy to calculate speed and accuracy comparision makes it easy to see who was paying attention to the task; we exclude the random guessers and only analyse data from participants with at least 80% accuracy (in the gap between high-performers and low-performers). 
+
+## Error patterns
 When participants do make errors, they correct them quickly, generally within one second, which means it's probably not disrupting their reading much. 
-
-The next question qualitative check is whether participants are able to comprehend the story. We tested this using 6 binary-choice questions after each story. As seen in @ref(fig:comp-q), most participants were were accurate on the task also did well on comprehension questions, while participants who were at chance on the maze task were also at chance on the comprehension questions. One concern is that they comprehension questions may have been too easy, as some of the stories are about factual events (ex. tulip mania) or folk stories. We can't rule out that some participants may have already known some of the answers, but participants usually answered quickly (within 10 seconds), so we do not believe they were looking up the answers on the internet. 
-
-This provides some evidence that people are able to understand and remember details of what they are reading during the Maze task. While the comprehension scores are worse than those from SPR (cite), we must keep in mind that Maze is a much slower task, and therefore participants have more of a delay between the start of the story and answering comprehension questions. We take comprehension question performance as a less reliable indicator of attention that maze task peformance, and so use maze task performance as our exclusion metric. 
 
 
 While we are planning on analysing data after mistakes, it might be interesting to know how much of the data is pre-mistake, and how many of the sentences are completed error-free. If we only exclude the errors and the first words of sentences, there are `r nrow(data_non_error)` words. If we also exclude all words after mistakes, there are `r nrow(data_before)` words. We will exclude only a couple of words after each mistake, but we could also opt to analyse only the pre-error sections. Of the `r nrow(data_sentence)` sentences that good participants completed, `r filter(data_sentence, sent.correct==1) %>% nrow()` were completed entirely correctly. 
@@ -427,7 +421,7 @@ no_surp_lag <-  lmer(mean_rt ~ ngram_center +
                    freq_center*length_center+(1|word), data=d_lm)
 ```
 
-```{r}
+```{r, include=F}
 
 anova(all_surp, txl_only)
 anova(all_surp, grnn_only)
@@ -543,8 +537,7 @@ c <- show_summary(any_ngram) %>% mutate(model="5-gram") %>% mutate(Term=str_repl
 summ <- a %>% union(b) %>% union(c) %>% pivot_wider(names_from="model", values_from=c(`E`,`CI`,`P`)) %>% 
   select(Term, `E_5-gram`, `CI_5-gram`, `P_5-gram`, `E_GRNN`, CI_GRNN, P_GRNN, E_TXL, CI_TXL, P_TXL)
 
-library(xtable)
-print(xtable(summ,digits=c(0,0,1,0,2,1,0,2,1,0,2)), include.rownames=FALSE)
+
 ```
 ## BRM models
 
@@ -590,6 +583,9 @@ show_summary <- function(model){
   
   stats
 }
+brm_txl_interact <- read_rds(paste0(here(),"/Analysis/brm_txl_interact.rds"))
+brm_grnn_interact <- read_rds(paste0(here(),"/Analysis/brm_grnn_interact.rds"))
+brm_ngram_interact <- read_rds(paste0(here(),"/Analysis/brm_ngram_interact.rds"))
 a <- show_summary(brm_txl_interact) %>% mutate(model="TXL") %>% mutate(Term=str_replace(Term,"txl","surp"))
 b <- show_summary(brm_grnn_interact) %>% mutate(model="GRNN") %>% mutate(Term=str_replace(Term,"grnn","surp"))
 c <- show_summary(brm_ngram_interact) %>% mutate(model="5-gram") %>% mutate(Term=str_replace(Term,"ngram","surp"))
@@ -597,8 +593,6 @@ c <- show_summary(brm_ngram_interact) %>% mutate(model="5-gram") %>% mutate(Term
 summ <- a %>% union(b) %>% union(c) %>% pivot_wider(names_from="model", values_from=c(`E`,`CI`,`P`)) %>% 
   select(Term, `E_5-gram`, `CI_5-gram`, `P_5-gram`, `E_GRNN`, CI_GRNN, P_GRNN, E_TXL, CI_TXL, P_TXL)
 
-library(xtable)
-print(xtable(summ,digits=c(0,0,1,0,2,1,0,2,1,0,2)), include.rownames=FALSE)
 ```
 
 ### On post-error as well
