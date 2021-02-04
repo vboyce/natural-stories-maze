@@ -204,7 +204,7 @@ f <- get_gam_predictions(model=gam_txl_1, series=prev_surp, series_length=100) %
 ```
 
 ```{r}
-all <- a %>% union(b) %>% union(c) %>% union(d) %>% union(e) %>% union(f)
+all <- a %>% union(b) %>% union(c) %>% union(d) %>% union(e) %>% union(f) %>% write_rds("gam_predictions.rds")
 
 gam1 <-  ggplot(all, aes(x=surprisal, y=rt, ymin=CI_lower, ymax=CI_upper))+
   geom_line()+

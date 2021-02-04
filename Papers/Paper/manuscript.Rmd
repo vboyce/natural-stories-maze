@@ -55,86 +55,54 @@ output            : papaja::apa6_pdf
 ---
 
 ```{r setup, include = FALSE}
-library("papaja")
-library("citr")
+ library("papaja")
+ library("citr")
+ library(here)
+ library(tidyverse)
 library(patchwork)
-library(here)
-library(tidyverse)
-library(readr)
-library(brms)
-library(lme4)
-library(rstan)
-library(tidybayes)
-library(knitr)
-library(matrixStats)
-library(tidyverse)
-library(readr)
-library(brms)
-library(lme4)
-library(rstan)
-library(tidybayes)
-library(knitr)
-library(mgcv)
-library(mgcViz)
-library(tidymv)
-library(rsample)
-library(cowplot)
-library(scales)
-r_refs("r-references.bib")
+ library(brms)
+ library(lme4)
+ library(tidybayes)
+ library(mgcv)
+ library(cowplot)
+ library(gridExtra)
+r_refs("r-references.bib", append=F)
 theme_set(theme_bw())
-rstan_options(auto_write = TRUE)
-options(mc.cores = parallel::detectCores())
 options(knitr.table.format = "pdf")
-set.seed(42)
-knitr::opts_chunk$set(cache.extra = knitr::rand_seed)
 ```
 # Intro
-[TODO: hook about toolbox of methods]
-A diversity of robust methods provides for converging evidence from different methods (either within or between types), and choices allow for a good fit to the scope and goals of research. But we also want these methods to be reliable. Some of that is theoretical, but we also want empirical evidence that what the method captures is relevant to what we want to study, and that this connection is true across as broad a range of materials as we hope to use it for. Robustness is important to establishing how good a new method is. What range of tasks can this new tool accomplish and how well? (Could really extend on a toolbox analogy.)
+We process language incrementally, building a model of the sentence as we hear or read word.  When a word is unexpected and does not fit the model of the sentence so far, our understanding of the sentence may need to be revised. Incremental processing methods measure how long each word takes to read as a proxy for how hard it is to incoroporate into the mental model of the sentence. Fluent language uses process language rapidly and flexibly adapt to many unexpected words, which makes it hard to pinpoint slow downs related to difficult-to-process words. 
 
-[incrementality; so need incremental methods] 
-One question in psycholinguistics is how real-time comprehension works; as we read or listen, we process language incrementally, building and changing our mental model of a sentence. How long we spend on each word is due to both qualities of the word itself and how it fits with the sentence context so far TODO citations
+TODO motivate why we care about localization
 
-We process language incrementally, building a model of the sentence as we hear or read word.  When a word is unexpected and does not fit the model of the sentence so far, our understanding of the sentence may need to be revised. Incremental processing methods measure this process, tracking how long each word takes to read as a proxy for how hard it is to process and incoroporate into the mental conception of meaning. Fluent language uses process language rapidly and flexibly adapt to many unexpected words. This makes it harder to capture reading time effects because they may be obscured by the overall robust reading process. Different techniques handle this localization problem differently, and present different trade-offs. The two most commonly used methods are eye-tracking and self-paced reading, but neither of these techniques are ideal at localization. One measure of localization is whether current or past word reading time is more predictive. SPR and eye-tarcking both don't seem great. 
+The two most commonly used methods are eye-tracking and self-paced reading. Both these methods are known to have spillover effects, which makes localization harder. CITE some things TODO might be worth bringing up RT/surprisal/spillover findings hereOur next question is what the relationship between a word's predictability and it's reading time is for Maze. It's well established for eye-tracking and SPR that RTs are roughly linear in terms of a word's surprisal (negative log probability). Due to spillover effects, on SPR and eye-tracking, there is also a positive linear relationship between the surprisal of a previous word and the RT on the current word -- this is an indication of lack of localization. In addition to suprisal predicting RT, word length and word's overall frequency are also often found to be predictive. TODO many CITES
 
-[eye-track and SPR, failure to localize] TODO: possibly shorten? In eye-tracking, participants read text freely from a screen, while the eye movements and fixations are tracked with an infrared camera CITE, check for truth. Eye-tracking is naturalistic and yields fine-grained data about how long participants spent on each word when, but it's expensive to run requiring both specialized equipment and researcher time to run experiments. Self-paced reading (commonly abbreviated SPR) in contrast can be run online with no specialzed equipment or direct researcher supervision, and so it's possible to collect data quickly and cheaply. In SPR, participants see one word of the text on screen at a time and press a button to contine to the next word instead; the time between button presses when a word was on screen is used as the reading time. The problem with SPR, especially when run online, is that effects from one word tend to show up as longer reading times spread out over several later words, in what is known as spillover effects. Both of these methods suffer somewhat from analytic flexibilty as processing difficulty may manifest in several ways in eye-tracking and is hard to localize in SPR.
+An alternative method that seems to have superior localization is the Maze task, which adopts an unnatural way of reading to force incremental processing [@forsterMazeTaskMeasuring2009]. In the Maze task, participants see two words at a time, a correct word that continues the sentence, and a distractor which does not. Participants must choose the correct word, and their reaction time (RT) is the dependent measure. If participants make a mistake, the sentence discontinues. Theoretically, participants must fully integrate each word into the sentence in order to confidently select it. This idea is supported by studies finding strongly localized effects [@witzel12]. 
 
-[Maze]An alternative that seems to have superior localization is the Maze task, which adopts an unnatural way of reading to force incremental processing. In the Maze task, participants see two words at a time, one of which continues the sentence, and one of which does not, and they have to choose which word is the correct continuation. The time to choose the correct word is taken as the dependent measure and interpreted as representing the difficulty of integrating the word into the sentence so far. If participants make a mistake, the sentence discontinues. Theoretically, participants must fully integrate each word into the sentence in order to confidently select it and move on. This is suppported by studies finding localized effects without much spillover. 
+The downside of Maze is that materials are effort-intensive to construct because of the need to select infelicitious words as distractors for each spot of each sentence; this may explain why the Maze task was not widely adopted. 
+@boyceMazeMadeEasy2020 demonstrate a way to automatically generate Maze distractors by using NLP language models to find words that are high-surprisal in the context of the target sentence. The quality of these A-Maze distractors is not up to that of hand-generated distractors, but @boyceMazeMadeEasy2020 found that materials with A-maze distractors had similar results to the hand-generated distractors from @witzel12. @sloggettAmazeAnyOther also found that A-maze and G-maze distractors yielded similar results on a disambiguation paradigm.
 
-[A-Maze] However, traditional Maze materials are effort-instensive to construct, because of the need to select infelicitious words as distractors for each spot of each sentence; this may have kept this method from widespread adoption. 
+While new, A-maze seems like a potentially powerful addition to the psycholinguists toolkit. However, like the other Maze tasks it has been limited in its application to single-sentence items probing minimal comparisons in constructed sentences. While some psycholinguistic phenomena are well-explored within individual targeted sentences, there's also a need for reading time data on longer passages, for instance in order to compare to language models or study discourse effects. Therefore, it's important to test whether the Maze task works on these types of materials. 
 
-CITE US propose a solution to this problem of generating Maze distractors. In A-maze, distractors are automatically generated by feeding the correct sentences through a program that uses NLP language models to select high-surprisal distractors. The quality of the automatically generated distractors is not up to that of hand-generated distractors, in that the distractors ocassionally are good fits in context. Nonetheless, Boyce et al found that materials with A-maze distractors had similar results to G-maze distractors.  TODO: talk about the paradigm more
-[Summary of 2020 paper]
+While the issue of needing to generate distractors for long passages is solved with A-maze, another problem with Maze remains. In particular, because Maze tasks discontinue after participants make mistakes, the farther into an item a word is, the fewer participants see it. This makes it hard to run long materials using Maze, and prevents Maze from being used on long text passages where SPR or eye-tracking could be used. 
 
-[Summary other uses of A-maze - Slogett]
-Slogett also found that it works similarly. 
+We address this problem by creating a Maze task interface where participants correct their mistakes and continue with the sentence rather than terminating on mistakes. This allows for multi-sentence items to be run using Maze, which we verify by running Maze on the Natural Stories corpus. With this data, we are able to confirm that participants can comprehend what they read using Maze and investigate the effects of surprisal on RT in Maze. 
 
-While new and untested, A-maze seems like a potentially powerful addition to the toolkit. However, like the other Maze tasks it has been limited in its application to single-sentence items probing minimal comparisons in constructed sentences. It's only been used on minimal pair types of sentences where each sentence is independent. In particular, it hasn't been used on longer, naturalistic texts, so we don't know how in compares to other methods here. And hasn't been used on multi-sentence issue of generating Maze materials has been proposed. An alternative version of the Maze task, dubbed A-maze, was recently introduced that gets around this problem by automatically generating distrators using a program and neural nets (Boyce et al, 2020). While the quality of the automatically generated distractors is not quite up that of hand-generated (as judged by their being occassional distractors that seem completely acceptable continuations), the results from A-maze match those of G-maze. Boyce et al provide an interface for running the Maze task in a browser and a way of generating distractors that are usually, although not always, sufficiently bad. 
-
-In a comparison between these A-maze materials and traditional hand-crafted distractors (from Witzel 2012), they find that A-maze yields comparable results to G-maze (either lab or web), and in one condition recovers effects that G-maze did not. A-maze also outperforms self-paced reading on this syntactic disambiguation paradigm. Sloggett (cite) also directly compared A-maze and G-maze on a disambiguaton paradigm and similarly found that A-maze and G-maze yielded similar results. 
-
-These demonstrations make A-maze seem quite promising, as it has the advantages of the traditional Maze task, without it's drawback. This method seems worth exploring further. 
-
-[why do longer Maze] While some psycholinguistic phenomena are well-explored within individual targeted sentences, there's also a need for reading time data of more naturalistic passages. This is important as a comparison for models of language understanding, for correlating with NLP language models. In addition, some phenomena such as discourse effects, only work in the context of passages. THus, it would be useful/versatile if Maze could be used in these other contexts. 
-
-[short-coming, where's the question we need to answer] One evident shortcoming of the Maze task is that it has been used on only a limited set of materials. Some of this is due to the fact that it isn't used as widely as other incremental processing methods, and some is due to inherent limitations of the paradigm. In particular, because Maze tasks discontinue after participants make mistakes, the farther into an item a word is, the fewer participants see it. This makes it hard to run long materials using Maze, and prevents Maze from being used on long text passages where SPR or eye-tracking could be used. 
-
-[Our contribution is...] We find a way around this problem by creating a version of the Maze task interface where participants correct their mistakes and continue with the sentence rather than being discontinued. This allows for multi-sentence items to be run using Maze, which we verify by running Maze on the Natural Stories corpus. With this data, we are able to confirm that participants can comprehend what they read using Maze and investigate the effects of surprisal on RT in Maze. 
 
 
 # Error-correction maze
+(ref:diagram-cap) Schematic of error-correction Maze. A participant reads a sentence word by word, choosing the correct word at each time point (selections marked in blue). When they make a mistake, an error message is displayed, they try again, and continue with the sentence. 
 
-[review the terminate thing, and why it was there] The advantage of the Maze task is that it forces incremental processing and automatically excludes inattentive participants by terminating a sentence when a participant makes an error. Thus, only participants who have processed the sentence up that point and are paying attention contribute data at critical regions later in the sentence. However, this means we don't have data after a participant makes a mistake in an item. In traditional G-maze tasks, with hand-crafted distractors and attentive participants, this is a small issue as the low per-word error rate does not compound too badly over the individual sentences.
+```{r diagram, out.height="25%", fig.width=8, fig.height=3, fig.pos='t', fig.cap="(ref:diagram-cap)"}
+knitr::include_graphics(paste0(here(),"/Papers/maze_diagram_cropped.pdf"))
+```
+One advantage of the Maze task is that it forces incremental processing and automatically excludes inattentive participants by terminating a sentence when a participant makes an error. Thus, only participants who have processed the sentence and are paying attention contribute data at critical regions later in the sentence. However, this means we don't have data after a participant makes a mistake in an item. In traditional G-maze tasks, with hand-crafted distractors and attentive participants, this is a small issue. However, this data loss is much worse with A-maze materials and crowd-sourced participants [@boyceMazeMadeEasy2020]. The high errors are likely from some combination of participants guessing randomly and from auto-generated distractors that in fact fit the sentence; as @boyceMazeMadeEasy2020 noted, some distractors, especially early in the sentence, were problematic and caused considerable data loss. 
 
-[ how this causes problems for 2020 and theoretically] 
-However, this data loss was worse with A-maze materials and crowd-sourced participants [@boyceMazeMadeEasy2020]. The high errors could be from participants guessing randomly or from auto-generated distractors that in fact fit the sentence. @boyceMazeMadeEasy2020 noted that some distractors, especially early in the sentence were problematic and caused considerable data loss.
+We could try to improve the situation by auto-generating better distractors or hand-replacing problematic ones. However, the inherent data losses poses a more fundamental problem: even with attentive participants and good distractors, the Maze paradigm will eventually run into problems as error rates compound over long materials where few participants will make it to the end. For instance, with a 1% error rate, `r round(.99**15*100)`% would complete each 15-word sentence, but only `r round(.99**50*100)`% of participants would complete a 50 word vignette, and `r round(.99**200*100)`% a 200 word passages.  In order to run longer materials, we need something to do when participants make a mistake, other than terminate the entire item.
 
-Given the appeals of using A-maze, it would be adventageous to get around this problem. Additionally, even with attentive participants and good distractors, the Maze paradigm will eventually run into problems as error rates compound over long materials, and few participants will make it to the end. For instance, with a 1% error rate, `r round(.99**15*100)`% would complete each 15-word sentence, but only `r round(.99**50*100)`% of participants would complete each 50 word vignette, and `r round(.99**200*100)`% each 200 word passages.  In order to run longer materials, we need something to do when participants make a mistake, other than terminate the entire item.
+To resolve this, we introduce an *error-correction* variant of Maze, where we let participants continue on when they make a mistake. We present them with an error message and wait until they select the correct option, before continuing the sentence as normal. This *error-correction* variant is shown in Figure \@ref(fig:diagram). We make this "error-correction" Maze available as an option in a modification of the Ibex Maze implementation introduced in @boyceMazeMadeEasy2020 (TODO repo link). The code records both the RT to the first click and also the total RT until the correct answer is selected as separate values.
 
-To resolve this, we introduce an *error-correction* variant of Maze, where we let participants continue on when they make a mistake. To do this, we present them with an error message, and wait until they select the correct option, before continuing the sentence as normal. We make this "error-correction" Maze available as an option in a modification of the Ibex Maze implementation introduced in CITE ME (TODO repo link). The code records both the RT to the first click and also the total RT until the correct answer is selected as separate values. TODO diagram goes here
-
-[ why this error thing seems really cool and could work] 
-Our goal is that this error-correction will minimize the problems of having occassional poor auto-generated distractors by letting participants continue on and still read the whole item. It will also enable us to run long materials on Maze, thus expanding the range of questions that Maze can be used on. 
+Our goal is that this error-correction will minimize the problems of having occasional poor auto-generated distractors by letting participants continue on and still read the whole item. It will also enable us to run long materials on Maze, thus expanding the range of questions that Maze can be used on. 
 
 
 # Natural Stories corpus
@@ -207,15 +175,15 @@ data_sentence <- data_before <- data_good %>%
   mutate(sent.correct=ifelse(total_mistake==0,1,0))
 ```
 
-We constructed A-maze distractors for the Natural stories corpus (CITE) and recruited 100 MTurkers to each read a story in the Maze paradigm. 
+We constructed A-maze distractors for the Natural stories corpus [@futrellNaturalStoriesCorpus2020] and recruited 100 MTurkers to each read a story in the Maze paradigm. 
 
-## Materials (good)
-We took the texts of the Natural Stories corpus (CITE) and split it into sentences because the A-Maze process works on the sentence level. (This involved some judgment calls due to quoted speech). We used the original comprehension questions provided in the Natural Stories corpus. To familiarize participants with the task, we wrote a short practice passage and corresponding comprehension questions.
-We then ran the sentences of the items through the A-maze generation process. We updated the code of the generation process to fix some issues identified in that paper; the code used is available at REPO. The underlying method did not change, but features such as appropriately handling more types of punctuation (needed for the Natural Stories corpus) were added. We ran the materials using FOOBAR paramters. We used the auto-generated distractors as they were, without checking them for quality. Materials are available at REPO.
+## Materials
+We took the texts of the Natural Stories corpus [@futrellNaturalStoriesCorpus2020] and split it into sentences because the A-Maze process works on the sentence level. We used the original comprehension questions provided in the Natural Stories corpus. To familiarize participants with the task, we wrote a short practice passage and corresponding comprehension questions.
+We then ran the sentences of the items through the A-maze generation process. We updated the code of the generation process to fix some issues identified in that paper; the code used is available at REPO. The underlying method did not change, but features such as appropriately handling more types of punctuation (needed for the Natural Stories corpus) were added. We ran the materials using FOOBAR parameters. We used the auto-generated distractors as they were, without checking them for quality. Materials are available at REPO.
 TODO other notable changes to the codebase??
 
 ## Participants
-We recruited 100 participants from Amazon Mechanical Turk, and paid each participant 3.50 dollars. We estimated that reading a 1000 word story would take 17 minutes at 1 word/second (based on previous work), so we expected the task to take around 20 minutes total. In fact, it appears to have taken most attentive participants around 20 minutes to read the story, and thus closer to 25 minutes for the overall study. We excluded data from those who did not report English as their native language, leaving `r data_filt %>% select(subject) %>% unique() %>% nrow()` participants. 
+We recruited 100 participants from Amazon Mechanical Turk, and paid each participant 3.50 dollars. We excluded data from those who did not report English as their native language, leaving `r data_filt %>% select(subject) %>% unique() %>% nrow()` participants. 
 
 ## Procedure
 Participants first gave their informed consent and saw task instructions. Then they read a short practice story in the Maze paradigm and answered 2 binary-choice practice comprehension questions, before reading the main story in the A-maze task. After the story, they answered the 6 main comprehension questions, commented on their experience, answered optional demographic questions, saw an debriefing and were given a code to enter into Mturk for payment. The experiment was implemented in Ibex (CITE) and the experimental code is availabe at REPO.  
@@ -225,11 +193,11 @@ Analyses were done in R (CITE), using the following CURATE packages. We used `r 
 
 # Results
 
-## Reading stories in the Maze task (good)
+## Reading stories in the Maze task 
 
-(ref:error-cap) A. Correlation between a participant's accuracy on the Maze task (fraction of words selected correctly) and their average reaction time (in ms). Many participants (marked in green) chose the correct word >80% of the time; others (in red) appear to be randomly guessing and were excluded from further analysis. B. Performance on comprehension questions. Participants who had >80% task accuracy tended to do well on comprehension questions; those who were at chance on the task were also at chance on comprehension questions. 
+(ref:error-cap) A. Correlation between a participant's accuracy on the Maze task (fraction of words selected correctly) and their average reaction time (in ms). Many participants (marked in green) chose the correct word >80% of the time; others (in red) appear to be randomly guessing and were excluded from further analysis. B. Performance on the comprehension questions. Participants who had >80% task accuracy tended to do well on comprehension questions; those who were at chance on the task were also at chance on comprehension questions. 
 
-```{r errors, out.height="25%", fig.width=6, fig.height=2, fig.pos='t', fig.cap="(ref:error-cap)"}
+```{r errors, out.height="25%", fig.width=8, fig.height=3, fig.pos='t', fig.cap="(ref:error-cap)"}
 error_plot <- ggplot(data_error_summ, aes(x=pct_correct, y=mean_rt, color=accurate))+
   geom_point(size=1)+
   labs(x="Fraction words selected correctly",
@@ -253,7 +221,7 @@ Our first concern was whether this error-correction paradigm on long passages wo
 
 Participant accuracy reflects how well participants can navigate the task and whether the auto-generated distractors are of acceptable quality. We calculated the per-word error rate for each participant and graphed it against their average reaction time. (To avoid biasing the average if a participant took a pause before returning to the task, RTs greater than 5 seconds were excluded.) As seen in Figure \@ref(fig:errors)A, there is a cluster of participants who make relatively few errors (marked in green), with some reaching 99% accuracy. This indicates that the distractors were generally appropriate and that some participants can maintain focus on the task for the whole story. These careful participants tend to take around 1 second for each word selection, which is much slower than other paradigms CITE SPR something. We also have a cluster of participants (in red) who we infer sped through the task clicking randomly. This distribution is likely due to the mix of workers on Mturk; as we did not use qualification cutoffs. 
 
-Another check is whether participants comprehended the story. We counted how many of the binary-choice comprehension questions each participant got right (out of 6), and group them by their performance on the Maze task. As seen in @ref(fig:errors)B, most participants were were accurate on the task also did well on comprehension questions, while participants who were at chance on the Maze task were also at chance on the comprehension questions. Participants usually answered quickly (within 10 seconds), so we do not believe they were looking up the answers on the internet. These are not especially hard questions, and we can't rule out that some participants may have been able to guess the answers without reading the story. Nonetheless, this provides preliminary evidence that people can understand and remember details of stories they read during the Maze task. 
+Another check is whether participants comprehended the story. We counted how many of the binary-choice comprehension questions each participant got right (out of 6), and group them by their performance on the Maze task. As seen in Figure \@ref(fig:errors)B, most participants were were accurate on the task also did well on comprehension questions, while participants who were at chance on the Maze task were also at chance on the comprehension questions. Participants usually answered quickly (within 10 seconds), so we do not believe they were looking up the answers on the internet. These are not especially hard questions, and we can't rule out that some participants may have been able to guess the answers without reading the story. Nonetheless, this provides preliminary evidence that people can understand and remember details of stories they read during the Maze task. 
 
 Given that Maze task accuracy and comprehension question accuracy are correlated, but task accuracy is finer-grained, we use task performance as our exclusion metric. This easy to calculate speed and accuracy comparision makes it easy to see who was paying attention to the task; we exclude the random guessers and only analyse data from participants with at least 80% accuracy (in the gap between high-performers and low-performers). 
 
@@ -303,35 +271,19 @@ data_anything_goes <- data_filt %>%
 
 ```
 
-The relationship between a word's predictability and it's reading time is of interest. CITE It's well-established that for eye-tracking and SPR, RTs are roughly linear in term of a words surprisal (negative log probability). We wanted to check if this linear relationship also holds for Maze. Two other common word-features that affect RT are word length and a word's overall frequency. CITE
-
-To assess this, we create a set of predictors of frequency, word length, and surprisals from several models. For length, we use the length of characters (excluding end punctuation). For a measure of unigram frequency, we tokenize the CITE gulordava training data (this tokenizes off punctuation, but preserves case) and tally up instances. For the models, we use the log2 frequency of the expected occurances in 1 billion words (thus frequency is log, but higher values indicate higher frequency words). For surprisals, we get per-word surprisals for each of 3 different language models: a Kneser-Ney smoothed 5-gram, GRNN CITE, and Transformer-XL CITE. We center, but do not rescale these predictors. For all of these predictors, we consider both the predictor at the current word as well as lagged predictors from the previous word. CITE some SPR stuff This is an additional test of localization. The model formula we use is rt ~ surp* length +  freq * length + past_surp * past_length + past_freq * past_length.
-
-We only include words that were in the vocabularies of all three models as a single token and for which we have frequency information. This has the effect of excluding words that had punctuation as well as some uncommon or proper nouns. We also exclude the first word of every sentence (which had a dummy distractor). We do not analyse RTs for words where the RT was <100 or >5000 ms (<100 is likely a recording error, >5000 is likely the participant getting distracted). We also omit words where the participant made a mistake and the two words after a mistake. 
-
-### GAM
-For GAM models, we center length and frequency but not surprisal. We want surprisal interpretable, but we also will be plotting it (at least for the bootstrapping) at length and frequencies set to 0, so they need to be centered. (Not sure this last piece is actually true/matters). 
-
-
-
 
 
 ### GAMs
 
-## Try 1
-Using only pre-error data.
+We wanted to see if Maze also showed a linear relationship between surprisal and RT, and whether this was localized at the current word or whether previous word surprisals were also influential. To do this, we created a set of predictors of frequency, word length, and surprisals from several different langauge models, and fit generalized additive models to check for a linear relationship.
+ For length, we use the length of characters (excluding end punctuation). For a measure of unigram frequency, we tokenize the training data from @gulordava18 (this tokenizes off punctuation, but preserves case) and tally up instances. For the models, we use the log2 frequency of the expected occurances in 1 billion words (thus frequency is log, but higher values indicate higher frequency words). For surprisals, we get per-word surprisals for each of 3 different language models: a Kneser-Ney smoothed 5-gram, GRNN [@gulordava], and Transformer-XL [@daiTransformerXLAttentiveLanguage2019a]. We centered but did not rescale the length and frequency predictors; for interpretability, we kept surprisal uncentered. For all of these predictors, we consider both the predictor at the current word as well as lagged predictors from the previous word. CITE some papers that did the same thing . We used smooths for the surprisal terms and tensor effects for the frequency by length effects and interactions. 
 
-Does not have hierarchical effects. Has smooths for the surprisals, and tensor effects/interactions for the freq x length
+We only include words that were in the vocabularies of all three models as a single token and for which we have frequency information. This has the effect of excluding words that had punctuation as well as some uncommon or proper nouns. We also exclude the first word of every sentence (which had a dummy distractor). We do not analyse RTs for words where the RT was <100 or >5000 ms (<100 is likely a recording error, >5000 is likely the participant getting distracted). We also omit words where the participant made a mistake and the two words after a mistake. 
 
-```{r}
-#mean by subject for each word
+(ref:gam-cap) GAM predictions of reaction time (RT) as a function of either current word surprisal (top) or previous word surprisal (bottom). Density of data is shown along the x-axis. For each of the 3 language models used, there is a linear relationship between current word surprisal and RT (at least when there is enough data). There is no relationship between previous word surprisal and RT. 
+
+```{r gam, out.height="40%", fig.width=8, fig.height=3, fig.pos='t', fig.cap="(ref:gam-cap)"}
 labelled_pre_error <- read_rds(paste0(here(),"/Analysis/pre_error.rds"))
-d_lm <- labelled_pre_error %>% group_by(word, txl_center, ngram_center, grnn_center, freq_center, length_center,
-                                        past_c_txl, past_c_ngram, past_c_grnn, past_c_freq, past_c_length, Word_ID) %>% 
-  summarize(mean_rt=mean(rt))
-```
-
-```{r for gam}
 
 ngram_data <- labelled_pre_error %>% select(rt, surprisal=ngram_surp, prev_surp=past_ngram, 
                                             freq=freq_center, len=length_center,
@@ -352,31 +304,8 @@ all_data <- ngram_data %>% union(grnn_data) %>% union(txl_data) %>%
   select(surprisal, prev_surp,model) %>% 
   pivot_longer(cols=`surprisal`:`prev_surp`) %>% 
   mutate(s=ifelse(name=="surprisal", "Current","Previous"))
-```
 
-```{r gams, eval=F}
-gam_ngram_1 <- gam(rt ~ s(surprisal, bs="cr", k=20)+ te(freq, len, bs="cr")+s(prev_surp, bs="cr", k=20)+te(prev_freq, prev_len, bs="cr"), data=ngram_data, method="REML")
-
-gam_grnn_1 <- gam(rt ~ s(surprisal, bs="cr", k=20)+ te(freq, len, bs="cr")+s(prev_surp, bs="cr", k=20)+te(prev_freq, prev_len, bs="cr"), data=grnn_data, method="REML")
-
-gam_txl_1 <- gam(rt ~ s(surprisal, bs="cr", k=20)+ te(freq, len, bs="cr")+s(prev_surp, bs="cr", k=20)+te(prev_freq, prev_len, bs="cr"), data=txl_data, method="REML")
-
-```
-
-```{r plot-gam, eval=F}
-
-
-a <- get_gam_predictions(model=gam_ngram_1, series=surprisal, series_length=100) %>% select(surprisal, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="5-gram", s="Current")
-b <- get_gam_predictions(model=gam_ngram_1, series=prev_surp, series_length=100) %>% select(surprisal=prev_surp, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="5-gram", s="Previous")
-c <- get_gam_predictions(model=gam_grnn_1, series=surprisal, series_length=100) %>% select(surprisal, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="GRNN", s="Current")
-d <- get_gam_predictions(model=gam_grnn_1, series=prev_surp, series_length=100) %>% select(surprisal=prev_surp, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="GRNN", s="Previous")
-e <- get_gam_predictions(model=gam_txl_1, series=surprisal, series_length=100) %>% select(surprisal, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="TXL", s="Current")
-f <- get_gam_predictions(model=gam_txl_1, series=prev_surp, series_length=100) %>% select(surprisal=prev_surp, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="TXL", s="Previous")
-```
-
-```{r, eval=F}
-all <- a %>% union(b) %>% union(c) %>% union(d) %>% union(e) %>% union(f)
-
+all <-read_rds(paste0(here(),"/Analysis/gam_predictions.rds"))
 gam1 <-  ggplot(all, aes(x=surprisal, y=rt, ymin=CI_lower, ymax=CI_upper))+
   geom_line()+
   geom_ribbon(alpha=.3)+
@@ -390,25 +319,120 @@ dens2 <-   ggplot(all_data, aes(x=value))+
   geom_density(fill="gray",)+
   facet_grid(.~model)+
   labs(x="Surprisal (bits)", y="")+
-  theme(axis.text.y = element_blank(), strip.text=element_blank(), axis.ticks.y =element_blank(), axis.title.y=element_blank(), panel.grid=element_blank(), plot.margin = unit(c(0, 0, 0, 0), "cm"))
-
-bot <- plot_grid(NA, dens2, NA, nrow=1, rel_widths = c(.16, 1, .08))
-
- plot_grid(gam1, bot, nrow=2, rel_heights = c(1, .3))
+  theme(strip.text.x=element_blank(),axis.text.y=element_blank(), panel.grid=element_blank(), axis.ticks.y=element_blank(), plot.margin = unit(c(0, 0, 0, 0), "cm"))
 
 
-#confirm that this really is just a prettied up version of what the usual output is
-#plot(gam_txl_1, seWithMean = TRUE, shift = coef(gam_txl_1)[1], select=1)
+p2 = align_plots(gam1, dens2, align = "v", axis="lr")
+plot_grid(p2[[1]], p2[[2]], nrow=2, rel_heights = c(1, .3))
+
 
 ```
 
+The smooths for the current and previous words surprisals are shown in Figure \@ref(fig:gam). Note that for each of the models, high-surprisal words at relatively rare, with much of the data for words between 0 and 15 bits of surprisal. All of the models show a roughly linear relationship between current word surprisal and RT, especially in the region with more data. All of the models show a flat relationship between previous word surprisal and RT. This is a sign of localization as the previous word's surprisal is not affecting RT, only the word's own suprisal is. The linear relationship matches that found with other methodologies. 
+
+Given the linear relationship, we next fit linear models to look at coefficients and model fit. We fit BRMS models. 
+
+### BRM models
+
+We include a by-subject effect for everything, and a by_word random intercept (full mixed effects). 
+
+Priors:
+
+- normal(1000,1000) for intercept -- we think RTs are about 1 second usually
+- normal(0,500) for beta and sd -- we don't really know what effects are
+- lkj(1) for correlations -- we don't have reason to think correlations might go any particular way 
 
 
-### Frequentist LMs
+```{r}
 
+show_summary <- function(model){
+  intervals <- gather_draws(model, `b_.*`, regex=T) %>% mean_qi()
+  
+  stats <- gather_draws(model, `b_.*`, regex=T) %>% 
+    mutate(above_0=ifelse(.value>0, 1,0)) %>% 
+    group_by(.variable) %>% 
+    summarize(pct_above_0=mean(above_0)) %>% 
+    mutate(`P` = signif(2*pmin(pct_above_0,1-pct_above_0), digits=2)) %>% 
+    left_join(intervals, by=".variable") %>% 
+    mutate(lower=round(.lower, digits=1),
+           upper=round(.upper, digits=1),
+           E=round(.value, digits=1),
+           `Estimate`=str_c(E," [",lower,", ", upper,"]"),
+           Term=str_sub(.variable, 3, -1),
+           ) %>% 
+    select(Term, `Estimate`)
+  
+  stats
+}
+```
 
+```{r pre-error}
+brm_txl_interact <- read_rds(paste0(here(),"/Analysis/brm_txl_interact.rds"))
+brm_grnn_interact <- read_rds(paste0(here(),"/Analysis/brm_grnn_interact.rds"))
+brm_ngram_interact <- read_rds(paste0(here(),"/Analysis/brm_ngram_interact.rds"))
+a <- show_summary(brm_txl_interact) %>% mutate(model="TXL") %>% mutate(Term=str_replace(Term,"txl","surp"))
+b <- show_summary(brm_grnn_interact) %>% mutate(model="GRNN") %>% mutate(Term=str_replace(Term,"grnn","surp"))
+c <- show_summary(brm_ngram_interact) %>% mutate(model="5-gram") %>% mutate(Term=str_replace(Term,"ngram","surp"))
 
-## Models
+summ <- a %>% union(b) %>% union(c) %>% pivot_wider(names_from="model", values_from=c(`Estimate`)) %>% 
+  mutate(Term=factor(Term, 
+                        levels=c("Intercept", 
+                                 "surp_center",
+                                 "length_center",
+                                 "freq_center",
+                                 "surp_center:length_center",
+                                 "length_center:freq_center",
+                                 "past_c_surp",
+                                 "past_c_length",
+                                 "past_c_freq",
+                                 "past_c_surp:past_c_length",
+                                 "past_c_length:past_c_freq")
+                                 )) %>% 
+  arrange(Term) %>% 
+  mutate(Term=c("Intercept", "Surprisal", "Length", "Frequency",
+                  "Surp x Length", "Freq x Length", "Past Surprisal",
+                  "Past Length", "Past Freq", "Past Surp x Length", "Past Freq x Length")) %>% 
+  select(Term, `5-gram`, `GRNN`, TXL) 
+
+knitr::kable(summ, format="latex", position="t",caption="TODO")
+```
+
+```{r post-error}
+brm_txl_interact_post <- read_rds(paste0(here(),"/Analysis/brm_txl_interact_post.rds"))
+brm_grnn_interact_post <- read_rds(paste0(here(),"/Analysis/brm_grnn_interact_post.rds"))
+brm_ngram_interact_post <- read_rds(paste0(here(),"/Analysis/brm_ngram_interact_post.rds"))
+
+d <- show_summary(brm_txl_interact_post) %>% mutate(model="TXL") %>% mutate(Term=str_replace(Term,"txl","surp"))
+e <- show_summary(brm_grnn_interact_post) %>% mutate(model="GRNN") %>% mutate(Term=str_replace(Term,"grnn","surp"))
+f <- show_summary(brm_ngram_interact_post) %>% mutate(model="5-gram") %>% mutate(Term=str_replace(Term,"ngram","surp"))
+
+summ <- d %>% union(e) %>% union(f) %>% pivot_wider(names_from="model", values_from=c(`Estimate`)) %>% 
+   mutate(Term=factor(Term, 
+                        levels=c("Intercept", 
+                                 "surp_center",
+                                 "length_center",
+                                 "freq_center",
+                                 "surp_center:length_center",
+                                 "length_center:freq_center",
+                                 "past_c_surp",
+                                 "past_c_length",
+                                 "past_c_freq",
+                                 "past_c_surp:past_c_length",
+                                 "past_c_length:past_c_freq")
+                                 )) %>% 
+  arrange(Term) %>% 
+  mutate(Term=c("Intercept", "Surprisal", "Length", "Frequency",
+                  "Surp x Length", "Freq x Length", "Past Surprisal",
+                  "Past Length", "Past Freq", "Past Surp x Length", "Past Freq x Length")) %>% 
+  select(Term, `5-gram`, `GRNN`, TXL) 
+
+knitr::kable(summ, format="latex", position="t",caption="TODO")
+
+```
+
+As we can see in Table \@ref(tab:pre-error) and Table \@ref(tab:post-error). 
+
+### Model comparison
 
 We want to be able to do nested model comparision, so we want models with 
 - only length, frequency fx
@@ -418,6 +442,9 @@ We want to be able to do nested model comparision, so we want models with
 For now, no interactions between surprisal and others, and if we include a predictor, include both current and lagged of it. 
 
 ```{r}
+d_lm <- labelled_pre_error %>% group_by(word, txl_center, ngram_center, grnn_center, freq_center, length_center,
+                                        past_c_txl, past_c_ngram, past_c_grnn, past_c_freq, past_c_length, Word_ID) %>% 
+  summarize(mean_rt=mean(rt))
 
 no_surp <- lmer(mean_rt ~ freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d_lm)
 
@@ -503,162 +530,6 @@ Ngram+Grnn is not better than Grnn only. Otherwise, pairs are better than single
 Past surprisal predictors don't help (with or without past freq,length effects in the models), but past freq,length do (with or without past surprisal predictors). 
 
 
-## What if we don't exclude participants
-
-One potentially useful comparison with past SPR/eye-tracking is if we are more inclusive of participants, do we get data that looks more like theirs. (Perhaps our exclusion criteria are more robust?)
-
-This is all data from participants who speak English that wasn't a mistake. (So, includes bad participants and post-mistake data.)
-
-```{r freq_all}
-#mean by subject for each word
-labelled_anything_goes <- read_rds(paste0(here(),"/Analysis/non-selective.rds"))
-d_lm2 <- labelled_anything_goes %>% group_by(word, txl_center, ngram_center, grnn_center, freq_center, length_center,
-                                        past_c_txl, past_c_ngram, past_c_grnn, past_c_freq, past_c_length, Word_ID) %>% 
-  summarize(mean_rt=mean(rt))
-```
-
-```{r}
-
-no_surp <- lmer(mean_rt ~ freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d_lm2)
-
-ngram_only <- lmer(mean_rt ~ ngram_center + past_c_ngram + freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d_lm2)
-
-grnn_only <- lmer(mean_rt ~ grnn_center + past_c_grnn + freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d_lm2)
-
-txl_only <- lmer(mean_rt ~ txl_center + past_c_txl + freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d_lm2)
-
-#summary(no_surp)
-#summary(ngram_only)
-#summary(grnn_only)
-#summary(txl_only)
-
-```
-
-BRM models from this same very permissive data. 
-```{r brm-models}
-
-any_grnn <- read_rds(paste0(here(),"/Analysis/brm_grnn_any_center.rds"))
-any_txl <- read_rds(paste0(here(),"/Analysis/brm_txl_any_center.rds"))
-any_ngram <- read_rds(paste0(here(),"/Analysis/brm_ngram_any_center.rds"))
-
-#summary(any_grnn)
-#summary(any_txl)
-#summary(any_ngram)
-
-
-```
-
-```{r}
-
-show_summary <- function(model){
-  intervals <- gather_draws(model, `b_.*`, regex=T) %>% mean_qi()
-  
-  stats <- gather_draws(model, `b_.*`, regex=T) %>% 
-    mutate(above_0=ifelse(.value>0, 1,0)) %>% 
-    group_by(.variable) %>% 
-    summarize(pct_above_0=mean(above_0)) %>% 
-    mutate(`P` = signif(2*pmin(pct_above_0,1-pct_above_0), digits=2)) %>% 
-    left_join(intervals, by=".variable") %>% 
-    mutate(lower=round(.lower, digits=1),
-           upper=round(.upper, digits=1),
-           E=round(.value, digits=1),
-           `CI`=str_c("[",lower,", ", upper,"]"),
-           Term=str_sub(.variable, 3, -1),
-           ) %>% 
-    select(Term, `E`, `CI`,`P`)
-  
-  stats
-}
-a <- show_summary(any_txl) %>% mutate(model="TXL") %>% mutate(Term=str_replace(Term,"txl","surp"))
-b <- show_summary(any_grnn) %>% mutate(model="GRNN") %>% mutate(Term=str_replace(Term,"grnn","surp"))
-c <- show_summary(any_ngram) %>% mutate(model="5-gram") %>% mutate(Term=str_replace(Term,"ngram","surp"))
-
-summ <- a %>% union(b) %>% union(c) %>% pivot_wider(names_from="model", values_from=c(`E`,`CI`,`P`)) %>% 
-  select(Term, `E_5-gram`, `CI_5-gram`, `P_5-gram`, `E_GRNN`, CI_GRNN, P_GRNN, E_TXL, CI_TXL, P_TXL)
-
-
-```
-## BRM models
-
-We include a by-subject effect for everything, and a by_word random intercept (full mixed effects). 
-
-Priors:
-
-- normal(1000,1000) for intercept -- we think RTs are about 1 second usually
-- normal(0,500) for beta and sd -- we don't really know what effects are
-- lkj(1) for correlations -- we don't have reason to think correlations might go any particular way 
-
-```{r}
-  priors <- c(
-      set_prior("normal(1000, 1000)", class="Intercept"),
-      set_prior("normal(0, 500)", class="b"),
-      set_prior("normal(0, 500)", class="sd"),
-      set_prior("lkj(1)",       class="cor"))
-  
-
-```
-
-### On pre-error data only 
-
-
-```{r}
-
-show_summary <- function(model){
-  intervals <- gather_draws(model, `b_.*`, regex=T) %>% mean_qi()
-  
-  stats <- gather_draws(model, `b_.*`, regex=T) %>% 
-    mutate(above_0=ifelse(.value>0, 1,0)) %>% 
-    group_by(.variable) %>% 
-    summarize(pct_above_0=mean(above_0)) %>% 
-    mutate(`P` = signif(2*pmin(pct_above_0,1-pct_above_0), digits=2)) %>% 
-    left_join(intervals, by=".variable") %>% 
-    mutate(lower=round(.lower, digits=1),
-           upper=round(.upper, digits=1),
-           E=round(.value, digits=1),
-           `CI`=str_c("[",lower,", ", upper,"]"),
-           Term=str_sub(.variable, 3, -1),
-           ) %>% 
-    select(Term, `E`, `CI`,`P`)
-  
-  stats
-}
-brm_txl_interact <- read_rds(paste0(here(),"/Analysis/brm_txl_interact.rds"))
-brm_grnn_interact <- read_rds(paste0(here(),"/Analysis/brm_grnn_interact.rds"))
-brm_ngram_interact <- read_rds(paste0(here(),"/Analysis/brm_ngram_interact.rds"))
-a <- show_summary(brm_txl_interact) %>% mutate(model="TXL") %>% mutate(Term=str_replace(Term,"txl","surp"))
-b <- show_summary(brm_grnn_interact) %>% mutate(model="GRNN") %>% mutate(Term=str_replace(Term,"grnn","surp"))
-c <- show_summary(brm_ngram_interact) %>% mutate(model="5-gram") %>% mutate(Term=str_replace(Term,"ngram","surp"))
-
-summ <- a %>% union(b) %>% union(c) %>% pivot_wider(names_from="model", values_from=c(`E`,`CI`,`P`)) %>% 
-  select(Term, `E_5-gram`, `CI_5-gram`, `P_5-gram`, `E_GRNN`, CI_GRNN, P_GRNN, E_TXL, CI_TXL, P_TXL)
-
-```
-
-### On post-error as well
-
-
-```{r}
-show_summary_2 <- function(model){
-  intervals <- gather_draws(model, `b_.*`, regex=T) %>% mean_qi()
-  
-  stats <- gather_draws(model, `b_.*`, regex=T) %>% 
-    mutate(above_0=ifelse(.value>0, 1,0)) %>% 
-    group_by(.variable) %>% 
-    summarize(pct_above_0=mean(above_0)) %>% 
-    mutate(`P-value equivalent` = signif(2*pmin(pct_above_0,1-pct_above_0), digits=2)) %>% 
-    left_join(intervals, by=".variable") %>% 
-    mutate(lower=round(.lower, digits=2),
-           upper=round(.upper, digits=2),
-           `Credible Interval`=str_c("[",lower,", ", upper,"]"),
-           Term=str_sub(.variable, 3, -1),
-           Estimate=round(.value, digits=2)) %>% 
-    select(Term, Estimate, `Credible Interval`, `P-value equivalent`)
-  
-  stats
-}
-```
-
-
 ## Comparision with SPR
 
 We want to compare how good our participants were on the comprehension questions to how good people were on the SPR experiment reported in Futrell et al (2017). They had each story read about 100 times across 181 participants (participants generally read 5 stories). This means they have about 10 times as much data as we do. However, reading times in a story were excluded based on the comprehension of that story, so it makes sense to compare per-story accuracies with our per-story accuracies.
@@ -668,23 +539,26 @@ When participants do make errors, they correct them quickly, generally within on
 
 
 While we are planning on analysing data after mistakes, it might be interesting to know how much of the data is pre-mistake, and how many of the sentences are completed error-free. If we only exclude the errors and the first words of sentences, there are `r nrow(data_non_error)` words. If we also exclude all words after mistakes, there are `r nrow(data_before)` words. We will exclude only a couple of words after each mistake, but we could also opt to analyse only the pre-error sections. Of the `r nrow(data_sentence)` sentences that good participants completed, `r filter(data_sentence, sent.correct==1) %>% nrow()` were completed entirely correctly. 
+
 # Discussion
+[summarize results] 
+- error-correction paradigm
+- test on natural stories
+- it works
+
 We've shown another way to adapt the Maze task to make it suitable for a wider range of experiments. While we think that error-correction Maze is generally a good idea, especially when using A-maze, this is an orthagonal adjustment to the task. By using the Natural Stories corpus, we establish that Maze works for longer naturalistic tasks, with participants able to do the task and understand what they are reading. Additionally, their RTs reflect expected patterns in terms of length and surprisal. While there are some differences, especially in scale, to that found with other incremental processing paradigms, we think this is a reason to explore more. Could be a statistical thing (???) or due to task differences. Comparisons between methods could be very useful for identifying how task demands influence processing. 
 
 All the code is available, and we encourage researchers to consider trying out Maze if they think it's appropriate to their experiments. 
 
-This is just one other data point on A-maze, so we still don't know how widely the method holds up; however the fact that it works on such disparate materials gives us hope that it will be useful for a variety of paradigms. 
 
-With new methods, its useful to try to establish how widely they work. We hope to test A-maze on an experiment that is very different from the syntactic disambiguation, in order to learn whether it works for a different type of psycholinguistic material. 
+
 While Maze has traditionally been limited to single sentence items; we innovate on how the materials are presented and show that it is possible for participants to read naturalistic passages that are presented in the Maze paradigm. We confirm that participants can understand what they are reading, and that Maze shows linear surprisal effects. This opens up another area of research to being amenable to the new A-maze paradigm. 
 
-This is just one other data point on A-maze, so we still don't know how widely the method holds up; however the fact that it works on such disparate materials gives us hope that it will be useful for a variety of paradigms. 
 
 The Maze task might be espeically good for comparing with NNs because of the forced incrementality. While eventually we do want to figure out models of more natural reading, this might be a useful complement b/c we don't have to deal with nasty spillover. 
 Might be extra good to do with pauses for mistakes to fix the incentives. 
-This simple tweak in principle solves several problems. Firstly, it allows for running longer materials, potentially expanding the range of questions Maze is suitable for. Now, when participants make the occassional mistake or misclick, they can continue with the story, seeing every word of it. Thus, they provide reading times in later sentences and see all the context. Seeing the error message and resolving it is quick and does not disrupt the (already slow)  reading process too much.
 
-Secondly, this error-correction compensates for some of the shortcomings of A-Maze identified in @boyceMazeMadeEasy2020; distractors might still cause participants to make unavoidable mistakes, but at least the still see the rest of the sentence and we get their data. We believe (although don't have evidence) that being able to correct mistakes may reduce frustration related to unavoidable mistakes from impossible choices and accidental misclicks. Whether this also solves the data loss problem from the researcher perspective within a sentence depends on whether post-mistake data are high-quality and trustworthy; this is a hard-to-assess question of potential interest. 
+Secondly, this error-correction compensates for some of the shortcomings of A-Maze identified in @boyceMazeMadeEasy2020; distractors might still cause participants to make unavoidable mistakes, but at least the still see the rest of the sentence and we get their data.  Whether this also solves the data loss problem from the researcher perspective within a sentence depends on whether post-mistake data are high-quality and trustworthy; this is a hard-to-assess question of potential interest. 
 
 Even if researchers exclude all post-mistake data from analysis, this process can still address the question of whether errors are due to inattentive participants or bad distractors (as discussed in @boyceMazeMadeEasy2020, section XX). When we have a participants selection for every word, we can easy calculate a per-word error rate for each participant, without having to address the censoring present in error-terminating Maze (where we can't know if a participant would have made more mistakes after the first; with error correction, we know how may more they did make). If participants are guessing, we'll see high per-word error rates, if the early distractors are bad, we'll see low per-word error rates (with errors concentrated at the start of the sentences).  This per-word error rate metric measures participants task accuracy, and allows us to exclude data from inattentive participants. This provides a convenient and clear-cut way of controlling data quality after the fact. 
 
