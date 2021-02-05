@@ -278,7 +278,7 @@ data_anything_goes <- data_filt %>%
 We wanted to see if Maze also showed a linear relationship between surprisal and RT, and whether this was localized at the current word or whether previous word surprisals were also influential. To do this, we created a set of predictors of frequency, word length, and surprisals from several different langauge models, and fit generalized additive models to check for a linear relationship.
  For length, we use the length of characters (excluding end punctuation). For a measure of unigram frequency, we tokenize the training data from @gulordava18 (this tokenizes off punctuation, but preserves case) and tally up instances. For the models, we use the log2 frequency of the expected occurances in 1 billion words (thus frequency is log, but higher values indicate higher frequency words). For surprisals, we get per-word surprisals for each of 3 different language models: a Kneser-Ney smoothed 5-gram, GRNN [@gulordava], and Transformer-XL [@daiTransformerXLAttentiveLanguage2019a]. We centered but did not rescale the length and frequency predictors; for interpretability, we kept surprisal uncentered. For all of these predictors, we consider both the predictor at the current word as well as lagged predictors from the previous word. CITE some papers that did the same thing . We used smooths for the surprisal terms and tensor effects for the frequency by length effects and interactions. 
 
-We only include words that were in the vocabularies of all three models as a single token and for which we have frequency information. This has the effect of excluding words that had punctuation as well as some uncommon or proper nouns. We also exclude the first word of every sentence (which had a dummy distractor). We do not analyse RTs for words where the RT was <100 or >5000 ms (<100 is likely a recording error, >5000 is likely the participant getting distracted). We also omit words where the participant made a mistake and the two words after a mistake. 
+We only include words that were in the vocabularies of all three models as a single token and for which we have frequency information. This has the effect of excluding words that had punctuation as well as some uncommon or proper nouns. We also exclude the first word of every sentence (which had a dummy distractor). We do not analyse RTs for words where the RT was <100 or >5000 ms (<100 is likely a recording error, >5000 is likely the participant getting distracted). We also omit words where the participant made a mistake and had made a mistake earlier in the sentence (Although see supplement for results including post-mistake TODO). 
 
 (ref:gam-cap) GAM predictions of reaction time (RT) as a function of either current word surprisal (top) or previous word surprisal (bottom). Density of data is shown along the x-axis. For each of the 3 language models used, there is a linear relationship between current word surprisal and RT (at least when there is enough data). There is no relationship between previous word surprisal and RT. 
 
@@ -334,13 +334,7 @@ Given the linear relationship, we next fit linear models to look at coefficients
 
 ### BRM models
 
-We include a by-subject effect for everything, and a by_word random intercept (full mixed effects). 
-
-Priors:
-
-- normal(1000,1000) for intercept -- we think RTs are about 1 second usually
-- normal(0,500) for beta and sd -- we don't really know what effects are
-- lkj(1) for correlations -- we don't have reason to think correlations might go any particular way 
+We built models using BRMS, with surprisal, frequency, length and surprisal x length and frequency x length effects. Predictors were as described above, except all were centered. We used full mixed effects, including by-subject effects of everything and a per-word random intercept. We used weak priors (normal(1000,1000) for intercept, normal(0,500) for beta and sd, and lkj(1) for correlations). TODO CITE also maybe this is too details-y methods. 
 
 
 ```{r}
@@ -394,52 +388,16 @@ summ <- a %>% union(b) %>% union(c) %>% pivot_wider(names_from="model", values_f
                   "Past Length", "Past Freq", "Past Surp x Length", "Past Freq x Length")) %>% 
   select(Term, `5-gram`, `GRNN`, TXL) 
 
-knitr::kable(summ, format="latex", position="t",caption="TODO")
+knitr::kable(summ, format="latex", position="t",caption="Predictions from fitted Bayesian regression models. All terms were centered, but not rescaled. Units are in ms. Surprisal is per bit, length per character, and frequency per $log_2$ occurance per billion words.")
 ```
 
-```{r post-error}
-brm_txl_interact_post <- read_rds(paste0(here(),"/Analysis/brm_txl_interact_post.rds"))
-brm_grnn_interact_post <- read_rds(paste0(here(),"/Analysis/brm_grnn_interact_post.rds"))
-brm_ngram_interact_post <- read_rds(paste0(here(),"/Analysis/brm_ngram_interact_post.rds"))
 
-d <- show_summary(brm_txl_interact_post) %>% mutate(model="TXL") %>% mutate(Term=str_replace(Term,"txl","surp"))
-e <- show_summary(brm_grnn_interact_post) %>% mutate(model="GRNN") %>% mutate(Term=str_replace(Term,"grnn","surp"))
-f <- show_summary(brm_ngram_interact_post) %>% mutate(model="5-gram") %>% mutate(Term=str_replace(Term,"ngram","surp"))
 
-summ <- d %>% union(e) %>% union(f) %>% pivot_wider(names_from="model", values_from=c(`Estimate`)) %>% 
-   mutate(Term=factor(Term, 
-                        levels=c("Intercept", 
-                                 "surp_center",
-                                 "length_center",
-                                 "freq_center",
-                                 "surp_center:length_center",
-                                 "length_center:freq_center",
-                                 "past_c_surp",
-                                 "past_c_length",
-                                 "past_c_freq",
-                                 "past_c_surp:past_c_length",
-                                 "past_c_length:past_c_freq")
-                                 )) %>% 
-  arrange(Term) %>% 
-  mutate(Term=c("Intercept", "Surprisal", "Length", "Frequency",
-                  "Surp x Length", "Freq x Length", "Past Surprisal",
-                  "Past Length", "Past Freq", "Past Surp x Length", "Past Freq x Length")) %>% 
-  select(Term, `5-gram`, `GRNN`, TXL) 
-
-knitr::kable(summ, format="latex", position="t",caption="TODO")
-
-```
-
-As we can see in Table \@ref(tab:pre-error) and Table \@ref(tab:post-error). 
+As we can see in Table \@ref(tab:pre-error), we find large effects of surprisal and length, but minimal effects of frequency. These effects are larger than what is usually reported in other methods CITE, but this could be due to the overall slowness of the method; the intercepts are also much bigger. The lack of frequency effects is somewhat surprising, and some CITE argue that they aren't real anyway. Notably the coefficients for the lagged terms are smaller than surprisal and length of the current word.  
 
 ### Model comparison
 
-We want to be able to do nested model comparision, so we want models with 
-- only length, frequency fx
-- each 1 surprisal model as predictor
-- all the surprisals
-
-For now, no interactions between surprisal and others, and if we include a predictor, include both current and lagged of it. 
+We also ran a nested model comparison with models fit in lmer. For this, we fit models with only frequency and length as predictors, as well as models that also had one or more sources of surprisal. For all effects, we included both current and lagged versions of it. The model with all 3 surprisal predictors is better than any model with only one. Any one surprisal predictor is better than no surprisals predictors. However, adding ngram predictors to a model that already has txl & grnn does not help. In other cases, adding the 3rd surprisal source to the other two does help. Ngram+Grnn is not better than Grnn only. Otherwise, pairs are better than singletons. This suggests that Ngram's info is a subset of GRNN, but not a subset of TXL. 
 
 ```{r}
 d_lm <- labelled_pre_error %>% group_by(word, txl_center, ngram_center, grnn_center, freq_center, length_center,
@@ -518,27 +476,17 @@ anova(all_surp, only_surp_lag)
 
 anova(only_surp_lag, no_lag)
 ```
-In general, adding to the model makes it better. 
-
-The model with all 3 surprisal predictors is better than any model with only one. Any one surprisal predictor is better than no surprisals predictors. 
-
-However, adding ngram predictors to a model that already has txl & grnn does not help. 
-In other cases, adding the 3rd surprisal source to the other two does help. 
-
-Ngram+Grnn is not better than Grnn only. Otherwise, pairs are better than singletons. This suggests that Ngram's info is a subset of GRNN, but not a subset of TXL. 
-
-Past surprisal predictors don't help (with or without past freq,length effects in the models), but past freq,length do (with or without past surprisal predictors). 
 
 
-## Comparision with SPR
 
-We want to compare how good our participants were on the comprehension questions to how good people were on the SPR experiment reported in Futrell et al (2017). They had each story read about 100 times across 181 participants (participants generally read 5 stories). This means they have about 10 times as much data as we do. However, reading times in a story were excluded based on the comprehension of that story, so it makes sense to compare per-story accuracies with our per-story accuracies.
+<!-- ## Comparision with SPR
+We want to compare how good our participants were on the comprehension questions to how good people were on the SPR experiment reported in Futrell et al (2017). They had each story read about 100 times across 181 participants (participants generally read 5 stories). This means they have about 10 times as much data as we do. However, reading times in a story were excluded based on the comprehension of that story, so it makes sense to compare per-story accuracies with our per-story accuracies. -->
 
-## Error patterns
+<!-- ## Error patterns
 When participants do make errors, they correct them quickly, generally within one second, which means it's probably not disrupting their reading much. 
 
 
-While we are planning on analysing data after mistakes, it might be interesting to know how much of the data is pre-mistake, and how many of the sentences are completed error-free. If we only exclude the errors and the first words of sentences, there are `r nrow(data_non_error)` words. If we also exclude all words after mistakes, there are `r nrow(data_before)` words. We will exclude only a couple of words after each mistake, but we could also opt to analyse only the pre-error sections. Of the `r nrow(data_sentence)` sentences that good participants completed, `r filter(data_sentence, sent.correct==1) %>% nrow()` were completed entirely correctly. 
+While we are planning on analysing data after mistakes, it might be interesting to know how much of the data is pre-mistake, and how many of the sentences are completed error-free. If we only exclude the errors and the first words of sentences, there are `r nrow(data_non_error)` words. If we also exclude all words after mistakes, there are `r nrow(data_before)` words. We will exclude only a couple of words after each mistake, but we could also opt to analyse only the pre-error sections. Of the `r nrow(data_sentence)` sentences that good participants completed, `r filter(data_sentence, sent.correct==1) %>% nrow()` were completed entirely correctly. -->
 
 # Discussion
 [summarize results] 
