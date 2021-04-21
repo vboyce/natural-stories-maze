@@ -1,4 +1,4 @@
-\documentclass[12pt, xcolor=beamer,table,usenames,dvipsnames, ignorenonframetext, ngerman]{beamer}
+\documentclass[ 12pt, xcolor=beamer,table,usenames,dvipsnames, ignorenonframetext, ngerman]{beamer}
 \usetheme{Frankfurt}
 \usecolortheme{dove}
 \usepackage{appendixnumberbeamer}
@@ -66,19 +66,25 @@
 \maketitle
 \end{frame}
 
-\begin{frame}{Road map} %Acknowledge collaborators 
-	%TODO: find a picture of Richard!!
-	Methods talk 
-	- briefly summarize RT methods, introduce Maze task
-	- talk through study 1 (w/ Roger and Richard) where we created and tested this variant method
-	- talk through study 2 where I tweaked the method and did another study
-	- have a little historical revisionism -- there were some boring implementational tweaks, so what I'll present is a little different that what was used in the first study
+\begin{frame}{Plan} %Acknowledge collaborators 
+	\pause
+%Methods \& experiments to test them
+\bigskip
+\begin{itemize}
+	\item Maze task
+	\item A-maze
+	\item Study 1: methods comparison
+	\item Variant of A-maze
+	\item Study 2: test on Natural Stories Corpus
+\end{itemize}\pause 
 	\begin{tikzpicture}[remember picture,overlay]
-	\node[xshift=-1.8cm,yshift=-1cm] at (current page.east) {\includegraphics[clip, trim=.1cm 0cm .2cm 0cm,width=.2\textwidth]{../Images/roger.jpg}};
+	\node[xshift=-2cm,yshift=0cm] at (current page.east) {\includegraphics[clip, trim=.1cm 0cm .2cm 0cm,width=.2\textwidth]{../Images/roger.jpg}};
 	\end{tikzpicture}
-	
+		\begin{tikzpicture}[remember picture,overlay]
+	\node[xshift=-2cm,yshift=2cm] at (current page.south east) {\includegraphics[clip, trim=.1cm 0cm .2cm 0cm,width=.2\textwidth]{../Images/richard.jpg}};
+	\end{tikzpicture}
 	\begin{tikzpicture}[remember picture,overlay]
-	\node[xshift=2.5cm,yshift=-1.5cm] at (current page.north west) {\includegraphics[width=.3\textwidth]{../Images/cpl_header.png}};
+	\node[xshift=-2cm,yshift=-2cm] at (current page.north east) {\includegraphics[width=.3\textwidth]{../Images/cpl_header.png}};
 	\end{tikzpicture}
 	
 \end{frame}
@@ -92,9 +98,9 @@ Linguistic and psycholinguistic theories make predictions about processing diffi
 \pause
 
 Examples of increased difficulty
-\begin{itemize}\pause
-	\item Constructions not in the grammar \pause
-	\item Lexical items that are harder to retrieve \pause
+\begin{itemize}
+	\item Constructions not in the grammar 
+	\item Lexical items that are harder to retrieve 
 	\item Words that force reparsing or reanalysis
 \end{itemize}
 \pause
@@ -158,7 +164,7 @@ RT patterns may be phenomena that theories need to explain.
 \end{column}
 \end{columns}
 	\bigskip
-\onslide<8->{Different methods have different trade-offs}
+\onslide<9->{Different methods have different trade-offs}
 \end{frame}
 
 \begin{frame}[c]{An alternative: Maze}
@@ -236,10 +242,14 @@ Central claim: forces extremely incremental processing (no spillover)
 \begin{frame}{Run on web}
 	
 	\pause
-	Wrote an Ibex module \pause
-	
-	\begin{center}\includegraphics[width=.7\textwidth]{../Images/screenshot.png} \end{center}\pause
-	
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+				Wrote an Ibex module
+		\end{column}
+		\begin{column}{0.5\textwidth} 
+			\begin{center}\includegraphics[width=\textwidth]{../Images/screenshot.png} \end{center}\pause
+		\end{column}
+	\end{columns}
 
 Test by replicating Witzel et al. (2012)
 \begin{itemize}
@@ -342,14 +352,12 @@ Language models (LMs)
 	\item Trained on large corpora to predict the next word
 	\item Given a partial sentence, return probabilities of the next word
 \end{itemize}
-\pause
 Surprisal: negative log probability
 \begin{itemize}
 	\item 2 bits of surprisal = 1/4
 	\item 10 bits of surprisal $\approx$ 1/1000 
 	\item +1 surprisal = half as likely
 \end{itemize}
-\pause
 \begin{tikzpicture}
 \node (A) at (0,0) {"The dog chased ..."};
 \node  (B) at (4,0) [draw, minimum width=1.5cm, minimum height=1.5cm, fill=black] {\textcolor{white}{LM}} ;
@@ -393,8 +401,6 @@ Surprisal: negative log probability
 
 \begin{frame}{Does it work?} 
 	%\vskip -2em
-	\small
-	From ``Maze Made Easy'' (Boyce et al 2020)
 	\medskip
 	
 	\centering
@@ -410,8 +416,8 @@ Surprisal: negative log probability
 	%\vskip -2em
 	{\large Yes, at least well enough.} \pause
 	\begin{itemize}
-		\item Sometimes generates plausible distractors. \pause
-		\item Sloggett et al 2020 also found A-maze results comparable with G-maze
+		\item Caveat: Sometimes generates plausible distractors. \pause
+		\item Sloggett et al (2020) also found A-maze results comparable with G-maze
 	\end{itemize} 
 \end{frame}
 
@@ -473,7 +479,7 @@ Surprisal: negative log probability
 
 \begin{frame}{Maze with Error Correction}
 	
-	Incidentally, also ``solves'' problem of bad distractors!
+%	Incidentally, also ``solves'' problem of bad distractors!
 	
 	\begin{columns}
 		\begin{column}{0.4\textwidth}
@@ -583,11 +589,12 @@ A: \hspace{3em} 1630's\hspace{3em} 1730's \end{small}
 
 
 \begin{frame}{Surprisal Effects}
-	\includegraphics[width=.9\textwidth]{../Images/amaze_gam.pdf}	
+	\includegraphics[width=\textwidth]{../Images/amaze_gam.pdf}	
 \end{frame}
 
 
 \begin{frame}{SPR comparison}
+	Using SPR data collected by Futrell et al. (2017)
 	
 	\includegraphics[width=\textwidth]{../Images/spr_gam.pdf}
 	
@@ -624,14 +631,14 @@ A: \hspace{3em} 1630's\hspace{3em} 1730's \end{small}
 	
 \end{frame}
 \begin{frame}{Surprisal Effects}
-	Takeaways: \pause
+	Takeaways: 
 	\begin{itemize}
-		\item Minimal frequency effects (consistent with Shain 2019) \pause
-		\item Large effects of Length, Surprisal \pause
-		\item Very little spillover \pause
+		\item Minimal frequency effects (consistent with Shain 2019) 
+		\item Large effects of Length, Surprisal
+		\item Very little spillover 
 	\end{itemize}
 	%	
-	Model comparison: GRNN is best, but TXL complementary
+%	Model comparison: GRNN is best, but TXL complementary
 \end{frame}
 
 \begin{frame}{Summary}
@@ -652,12 +659,9 @@ Easy to use! \pause
 	\item Runs on command line \pause
 	\item Match distractors across minimal pair sentences \pause
 	\item Customize surprisal thresholds, vocabulary lists \pause
-	\item Can output pre-formatted for Ibex
+	\item Can output pre-formatted for Ibex\pause
 \end{itemize}
-\medskip
-\end{frame}
 
-\begin{frame}{Consider A-maze!} \pause
 Adapt A-maze to your projects:
 \begin{itemize}
 	\item Written in Python 3 
@@ -665,8 +669,9 @@ Adapt A-maze to your projects:
 	\item Add more frequency sources 
 	\item Extend to non-English languages
 \end{itemize}
-
+\medskip
 \end{frame}
+
 
 \begin{frame}{}
 
@@ -679,7 +684,7 @@ with links to the following:
 
 \item Web-maze code: github.com/vboyce/Ibex-with-Maze
 
-\item Paper: psyarxiv.com/b7nqd/
+\item Exp 1 Paper: psyarxiv.com/b7nqd/
 \end{itemize}
 \end{frame}
 
@@ -760,13 +765,13 @@ Can specify labels for each word to pair (within item)
 \end{frame}
 
 \begin{frame}{Why such large effects?}
-	\pause
-	Bayesian Reader (Norris 2006): Look at words long enough to ID with some threshold of certainty \pause
+	Bayesian Reader (Norris 2006): Look at words long enough to ID with some threshold of certainty 
 	
-	Possible mechanisms for difference: \pause
+	
+	Possible mechanisms for difference: 
 	\begin{itemize}
-		\item Higher threshold \pause 
-		\item Fewer available resources for processing \pause
+		\item Higher threshold 
+		\item Fewer available resources for processing
 		\item Presence of second word 
 	\end{itemize}
 	
