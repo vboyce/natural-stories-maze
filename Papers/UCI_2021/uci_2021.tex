@@ -3,7 +3,7 @@
 \usecolortheme{dove}
 \usepackage{appendixnumberbeamer}
 %\setbeamersize{text margin left=20pt,text margin right=20pt,}
-
+\useoutertheme{miniframes}
 \beamertemplatenavigationsymbolsempty 
 \setbeamertemplate{mini frames}{}
 \setbeamertemplate{itemize item}{\textbullet}
@@ -19,6 +19,11 @@
 	\fi%
 }
 \setbeamercolor{footline}{fg=black}
+\setbeamercolor{palette primary}{bg=blue!15,fg=black}
+\setbeamercolor{background canvas}{bg=blue!5}
+\setbeamercolor{palette secondary}{bg=blue!5}
+\setbeamercolor{palette tertiary}{bg=blue!5}
+\setbeamercolor{palette quaternary}{bg=blue!5}
 \usepackage{soul}
 \makeatletter
 \let\HL\hl
@@ -593,12 +598,6 @@ A: \hspace{3em} 1630's\hspace{3em} 1730's \end{small}
 \end{frame}
 
 
-\begin{frame}{SPR comparison}
-	Using SPR data collected by Futrell et al. (2017)
-	
-	\includegraphics[width=\textwidth]{../Images/spr_gam.pdf}
-	
-\end{frame}
 
 \begin{frame}{Surprisal Effects}
 	\vskip -2em
@@ -729,6 +728,12 @@ Can specify labels for each word to pair (within item)
 \end{frame}
 
 
+\begin{frame}{SPR comparison}
+	Using SPR data collected by Futrell et al. (2017)
+	
+	\includegraphics[width=\textwidth]{../Images/spr_gam.pdf}
+	
+\end{frame}
 \begin{frame}{Caveats}
 	
 	{\large Definitely some bad distractors}
