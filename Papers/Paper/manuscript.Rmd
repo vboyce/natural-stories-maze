@@ -378,7 +378,7 @@ show_summary <- function(model){
 }
 ```
 
-```{r pre-error}
+```{r pre-error-prep, eval=F}
 brm_txl_interact <- read_rds(paste0(here(),"/Analysis/brm_txl_interact.rds"))
 brm_grnn_interact <- read_rds(paste0(here(),"/Analysis/brm_grnn_interact.rds"))
 brm_ngram_interact <- read_rds(paste0(here(),"/Analysis/brm_ngram_interact.rds"))
@@ -386,7 +386,12 @@ a <- show_summary(brm_txl_interact) %>% mutate(model="TXL") %>% mutate(Term=str_
 b <- show_summary(brm_grnn_interact) %>% mutate(model="GRNN") %>% mutate(Term=str_replace(Term,"grnn","surp"))
 c <- show_summary(brm_ngram_interact) %>% mutate(model="5-gram") %>% mutate(Term=str_replace(Term,"ngram","surp"))
 
-summ <- a %>% union(b) %>% union(c) %>% pivot_wider(names_from="model", values_from=c(`Estimate`)) %>% 
+summ <- a %>% union(b) %>% union(c) %>% write_rds(here("Analysis/brms_summary.rds"))
+
+```
+
+```{r pre-error}
+summ <- read_rds(here("Analysis/brms_summary.rds")) %>% pivot_wider(names_from="model", values_from=c(`Estimate`)) %>% 
   mutate(Term=factor(Term, 
                         levels=c("Intercept", 
                                  "surp_center",
@@ -416,7 +421,7 @@ As we can see in Table \@ref(tab:pre-error), we find large effects of surprisal 
 As a last analysis, we checked which of our surprisal models had the best fit using a nested model comparison. 
 We found that all surprisal sources provide predictive value over none, but that the information provided by the Ngram model does not provide additional value to a model that already has GRNN in it. TXL and GRNN appear to contain some complementary predictive value. 
 
-```{r}
+```{r,include=F, eval=F}
 d_lm <- labelled_pre_error %>% group_by(word, txl_center, ngram_center, grnn_center, freq_center, length_center,
                                         past_c_txl, past_c_ngram, past_c_grnn, past_c_freq, past_c_length, Word_ID) %>% 
   summarize(mean_rt=mean(rt))
@@ -462,7 +467,7 @@ no_surp_lag <-  lmer(mean_rt ~ ngram_center +
                    freq_center*length_center+(1|word), data=d_lm)
 ```
 
-```{r, include=F}
+```{r, include=F, eval=F}
 anova(all_surp, txl_only)
 anova(all_surp, grnn_only)
 anova(all_surp, ngram_only)
@@ -495,7 +500,7 @@ anova(only_surp_lag, no_lag)
 
 ## Comparison with SPR
 
-```{r read_data}
+```{r read_data, eval=F}
 d.raw.a <- here("Data/SPR/batch1_pro.csv") %>% 
   read_csv() 
 
@@ -513,7 +518,7 @@ d.raw <- d.raw.a %>% union(d.raw.b) %>%
 
 ```
 
-```{r surprisals}
+```{r surprisals, eval=F}
 
 tokenization <- here("Data/SPR/all_stories.tok.txt") %>% 
   read_delim(delim="\t") %>% 
@@ -542,7 +547,7 @@ past_word <- surprisals %>%
 
 ```
 
-```{r filter}
+```{r filter, eval=F}
 
 d.filter <- d.raw %>% 
   inner_join(past_word, by=c("zone", "item")) %>% 
@@ -555,7 +560,7 @@ d.subset <- d.filter #%>% filter(Story_Num==1)
 ```
 
 
-```{r pre_gam}
+```{r pre_gam, eval=F}
 ngram_data <- d.subset %>% select(rt=RT, surprisal=ngram_surp, prev_surp=past_ngram, 
                                             freq=freq_center, len=length_center,
                                             prev_freq=past_c_freq, prev_len=past_c_length
@@ -600,14 +605,14 @@ all <- a %>% union(b) %>% union(c) %>% union(d) %>% union(e) %>% union(f) %>% wr
 
 ```
 
-```{r prep-brms}
+```{r prep-brms, eval=F}
 d.for.lm <- d.subset %>%
   mutate(Word_ID=as_factor(str_c(Story_Num, Word_In_Story_Num, sep="_"))) %>% 
   mutate(subject=factor(WorkerId),
-         rt=RT) %>% write_rds("for_brms.rds")
+         rt=RT) 
 ```
 
-```{r}
+```{r, eval=F}
 #mean by subject for each word
 d.byword <- d.for.lm %>% rename(word=Word) %>% 
   group_by(word, txl_center, ngram_center, grnn_center, freq_center, length_center,
@@ -615,7 +620,7 @@ d.byword <- d.for.lm %>% rename(word=Word) %>%
   summarize(mean_rt=mean(rt))
 ```
 
-```{r}
+```{r, eval=F}
 
 ngram_only <- lmer(mean_rt ~ ngram_center + past_c_ngram + freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d.byword)
 
@@ -660,8 +665,7 @@ p2 = align_plots(gam1, dens2, align = "v", axis="lr")
 plot_grid(p2[[1]], p2[[2]], nrow=2, rel_heights = c(1, .3))
 
 ```
-
-```{r spr-table}
+```{r spr-prep, eval=F}
 ngram_only_tidy <- tidy(ngram_only, effects="fixed") %>% mutate(type="5-gram") %>% 
   mutate(term=str_replace(term, "ngram", "surp"))
 
@@ -671,7 +675,11 @@ txl_only_tidy <- tidy(txl_only, effects="fixed") %>% mutate(type="TXL") %>%
 grnn_only_tidy <- tidy(grnn_only, effects="fixed") %>% mutate(type="GRNN") %>% 
    mutate(term=str_replace(term, "grnn", "surp"))
 
-all_tidy <- ngram_only_tidy %>% union(txl_only_tidy) %>% union(grnn_only_tidy) %>% 
+all_tidy <- ngram_only_tidy %>% union(txl_only_tidy) %>% union(grnn_only_tidy) %>% write_rds(here("Analysis/SPR_lmer_summ.rds"))
+```
+```{r spr-table}
+
+all_tidy <- read_rds(here("Analysis/SPR_lmer_summ.rds")) %>% 
   select(Term=term, estimate, std.error, type) %>% 
   mutate(Ci_high=estimate+1.96*std.error,
          Ci_low=estimate-1.96*std.error,
