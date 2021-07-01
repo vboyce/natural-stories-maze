@@ -528,7 +528,7 @@ tokenization <- here("Data/SPR/all_stories.tok.txt") %>%
 
 #something is going on is story 2, sentence 4 His brother had blatantly peeked..." 
 #they have it as "peaked", not sure what was displayed, but we can inner join
-surprisals <- here("Data/SPR/natural_stories_surprisals2.rds") %>% 
+surprisals <- here("Data/SPR/natural_stories_surprisals.rds") %>% 
   read_rds() %>% 
   inner_join(tokenization, by=c("Word_In_Story_Num", "Story_Num", "Word")) %>% 
   filter(ngram_token_count==1 & txl_token_count==1 & grnn_token_count==1) %>% 

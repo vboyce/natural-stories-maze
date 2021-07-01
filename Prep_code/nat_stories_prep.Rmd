@@ -7,6 +7,10 @@ output: github_document
 ```{r}
 library(tidyverse)
 library(readr)
+library(here)
+
+prep_dir <- "Prep_code"
+materials <- "Materials"
 ```
 # Initial
 These are used to set things up that exist in other saved files.
@@ -56,11 +60,30 @@ for_maze <- read_delim("../Materials/natural_stories_sentences.tsv", delim="\t")
   mutate(label=str_c(Story_Num, Sentence_Num, sep="_"), item=row_number()) %>% 
   select(label, item, Sentence) %>% 
    write_delim("ns_pre_maze.txt", delim=";", col_names=F, quote_escape = F)
+```
+
+# Surprisals
+For GPT (and some others), run get_surps.sh.
+```{r}
+# For models
+sentences <- read_delim(here(materials,"natural_stories_sentences.tsv"),delim="\t") %>% 
+  pull(Sentence) %>% 
+  write_lines(here(prep_dir,"sentences.txt"))
+
+words <-labelled %>% write_tsv(here(prep_dir,"words.txt"))
 
 ```
 
+
 # Parsing surprisals, etc
 
+```{r gpt}
+
+gpt_translator <- read_tsv(here(prep_dir,"gpt_surp_trans.txt"), col_names=c("Story_Num","Sentence_Num","Word_In_Sentence_Num","Word_In_Story_Num","Word","Token", "Surprisal")) %>% 
+  group_by(Story_Num, Sentence_Num,Word_In_Sentence_Num,Word,Word_In_Story_Num) %>% 
+  summarize(gpt_surp=sum(Surprisal),
+            gpt_token_count=n())
+```
 
 ```{r grnn}
 
@@ -129,22 +152,14 @@ freq <- read_delim("ns_freq.txt", delim="\t",
 ```
 
 ```{r conglomerate}
+
 all <- txl_translator %>% 
   left_join(ngram_translator, by=c("Story_Num", "Sentence_Num","Word_In_Sentence_Num", "Word", "Word_In_Story_Num")) %>% 
   left_join(grnn_translator, by=c("Story_Num", "Sentence_Num","Word_In_Sentence_Num", "Word", "Word_In_Story_Num")) %>%
+  left_join(gpt_translator, by=c("Story_Num", "Sentence_Num","Word_In_Sentence_Num", "Word", "Word_In_Story_Num")) %>% 
   left_join(freq, by=c("Story_Num", "Sentence_Num","Word_In_Sentence_Num", "Word", "Word_In_Story_Num")) %>% 
-  filter(Word_In_Sentence_Num!=0) %>% 
   ungroup() %>% 
   write_rds("natural_stories_surprisals.rds")
-
-all <- txl_translator %>% 
-  left_join(ngram_translator, by=c("Story_Num", "Sentence_Num","Word_In_Sentence_Num", "Word", "Word_In_Story_Num")) %>% 
-  left_join(grnn_translator, by=c("Story_Num", "Sentence_Num","Word_In_Sentence_Num", "Word", "Word_In_Story_Num")) %>%
-  left_join(freq, by=c("Story_Num", "Sentence_Num","Word_In_Sentence_Num", "Word", "Word_In_Story_Num")) %>% 
-  #filter(Word_In_Sentence_Num!=0) %>% 
-  ungroup() %>% 
-  write_rds("natural_stories_surprisals2.rds")
 ```
 
-Note that word 0's of sentences will be removed b/c we definitely don't trust them
-  
+
