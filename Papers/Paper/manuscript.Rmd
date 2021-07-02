@@ -97,7 +97,7 @@ Using this tweak, we test A-maze on the passages from the Natural Stories corpus
 (ref:diagram-cap) Schematic of error-correction Maze. A participant reads a sentence word by word, choosing the correct word at each time point (selections marked in blue ovals). When they make a mistake, an error message is displayed, so they try again and continue with the sentence. 
 
 ```{r diagram, out.height="25%", fig.width=8, fig.height=3, fig.pos='t', fig.cap="(ref:diagram-cap)"}
-knitr::include_graphics(paste0(here(),"/Papers/maze_diagram_cropped.pdf"))
+knitr::include_graphics(here("Papers/maze_diagram_cropped.pdf"))
 ```
 One advantage of the Maze task is that it forces incremental processing and automatically excludes inattentive participants by terminating a sentence when a participant makes an error. Thus, only participants who have processed the sentence and are paying attention contribute data at critical regions later in the sentence. However, this means we don't have data after a participant makes a mistake in an item. In traditional G-maze tasks, with hand-crafted distractors and attentive participants, this is a small issue. However, this data loss is much worse with A-maze materials and crowd-sourced participants [@boyceMazeMadeEasy2020]. The high errors are likely from some combination of participants guessing randomly and from auto-generated distractors that in fact fit the sentence; as @boyceMazeMadeEasy2020 noted, some distractors, especially early in the sentence, were problematic and caused considerable data loss. 
 
@@ -112,7 +112,7 @@ This variant of Maze expands the types of materials that can be used with maze t
 
 ```{r participants}
 
-data <- read_rds(paste0(here(),"/Data/cleaned.rds"))
+data <- read_rds(here("Data/cleaned.rds"))
 
 data_filt <- data %>% 
   filter(native %in% c("ENG", "English", "ENGLISH", "english")) #I peeked at what people put that semantically maps to english
@@ -301,21 +301,20 @@ We fitted generalized additive models to test whether the RTs from the Maze expe
 (ref:gam-cap) GAM predictions of reaction time (RT) as a function of either current word surprisal (top) or previous word surprisal (bottom). Density of data is shown along the x-axis. For each of the 3 language models used, there is a linear relationship between current word surprisal and RT (at least when there is enough data). There is no relationship between previous word surprisal and RT. 
 
 ```{r gam, out.height="40%", fig.width=8, fig.height=3, fig.pos='t', fig.cap="(ref:gam-cap)"}
-labelled_pre_error <- read_rds(paste0(here(),"/Analysis/pre_error.rds"))
+labelled_pre_error <- read_rds(here("Data/maze_pre_error.rds"))
 
-ngram_data <- labelled_pre_error %>% select(rt, surprisal=ngram_surp, prev_surp=past_ngram, 
+ngram_data <- labelled_pre_error %>% select(rt, surprisal=ngram_surp, prev_surp=past_ngram_surp, 
                                             freq=freq_center, len=length_center,
-                                            prev_freq=past_c_freq, prev_len=past_c_length
-                                            ) %>% mutate(model="5-gram")
-
-grnn_data <- labelled_pre_error %>% select(rt, surprisal=grnn_surp, prev_surp=past_grnn, 
+                                            prev_freq=past_freq_center, prev_len=past_length_center, subject
+                                            ) %>% mutate(model="5-gram") 
+grnn_data <- labelled_pre_error %>% select(rt, surprisal=grnn_surp, prev_surp=past_grnn_surp, 
                                             freq=freq_center, len=length_center,
-                                            prev_freq=past_c_freq, prev_len=past_c_length
+                                            prev_freq=past_freq_center, prev_len=past_length_center, subject
                                             )%>% mutate(model="GRNN")
 
-txl_data <- labelled_pre_error %>% select(rt, surprisal=txl_surp, prev_surp=past_txl, 
+txl_data <- labelled_pre_error %>% select(rt, surprisal=txl_surp, prev_surp=past_txl_surp, 
                                             freq=freq_center, len=length_center,
-                                            prev_freq=past_c_freq, prev_len=past_c_length
+                                            prev_freq=past_freq_center, prev_len=past_length_center,subject
                                             ) %>% mutate(model="TXL")
 
 all_data <- ngram_data %>% union(grnn_data) %>% union(txl_data) %>% 
@@ -323,7 +322,7 @@ all_data <- ngram_data %>% union(grnn_data) %>% union(txl_data) %>%
   pivot_longer(cols=`surprisal`:`prev_surp`) %>% 
   mutate(s=ifelse(name=="surprisal", "Current","Previous"))
 
-all <-read_rds(paste0(here(),"/Analysis/gam_predictions.rds"))
+all <-read_rds(here("Analysis/gam_predictions.rds"))
 gam1 <-  ggplot(all, aes(x=surprisal, y=rt, ymin=CI_lower, ymax=CI_upper))+
   geom_line()+
   geom_ribbon(alpha=.3)+
@@ -340,7 +339,7 @@ dens2 <-   ggplot(all_data, aes(x=value))+
   theme(strip.text.x=element_blank(),axis.text.y=element_blank(), panel.grid=element_blank(), axis.ticks.y=element_blank(), plot.margin = unit(c(0, 0, 0, 0), "cm"))
 
 
-p2 = align_plots(gam1, dens2, align = "v", axis="lr")
+p2 = cowplot::align_plots(gam1, dens2, align = "v", axis="lr")
 plot_grid(p2[[1]], p2[[2]], nrow=2, rel_heights = c(1, .3))
 ggsave("sample_plot.pdf")
 
@@ -661,7 +660,7 @@ dens2 <-   ggplot(all_data, aes(x=value))+
         plot.margin = unit(c(0, 0, 0, 0), "cm"))
 
 
-p2 = align_plots(gam1, dens2, align = "v", axis="lr")
+p2 = cowplot::align_plots(gam1, dens2, align = "v", axis="lr")
 plot_grid(p2[[1]], p2[[2]], nrow=2, rel_heights = c(1, .3))
 
 ```

@@ -56,7 +56,7 @@ comprehension questions (out of 6) they got right, and the grids are
 faceted on the SPR exclusion criteria for comparison. (Practice items
 and practice questions are not included here.)
 
-    ## `summarise()` regrouping output by 'subject' (override with `.groups` argument)
+    ## `summarise()` has grouped output by 'subject'. You can override using the `.groups` argument.
 
 ![](nat_stories_files/figure-gfm/errors-1.png)<!-- -->
 
@@ -83,7 +83,7 @@ want to check based on length.
 
 ![](nat_stories_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
 
-    ## `summarise()` regrouping output by 'subject' (override with `.groups` argument)
+    ## `summarise()` has grouped output by 'subject'. You can override using the `.groups` argument.
 
     ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
 
@@ -103,7 +103,7 @@ the time spent doing maze, including practice items and correcting
 mistakes. It does not include time to read instructions, answer
 comprehension questions or fill out demographics.
 
-    ## `summarise()` regrouping output by 'subject' (override with `.groups` argument)
+    ## `summarise()` has grouped output by 'subject'. You can override using the `.groups` argument.
 
 ![](nat_stories_files/figure-gfm/total-rt-1.png)<!-- -->
 
@@ -2588,7 +2588,7 @@ between when the studies were run.)
 
 # Error analysis
 
-    ## `summarise()` regrouping output by 'subject' (override with `.groups` argument)
+    ## `summarise()` has grouped output by 'subject'. You can override using the `.groups` argument.
 
 ![](nat_stories_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
 
@@ -2603,8 +2603,6 @@ correct on the maze.
 This includes data from 63 participants.
 
 When in sentences do errors occur?
-
-    ## `summarise()` ungrouping output (override with `.groups` argument)
 
 ![](nat_stories_files/figure-gfm/when-error-1.png)<!-- -->
 
@@ -2636,7 +2634,7 @@ are 59441 words. If we also exclude all words after mistakes, there are
 40862 words. We will exclude only a couple of words after each mistake,
 but we could also opt to analyse only the pre-error sections.
 
-    ## `summarise()` regrouping output by 'sentence' (override with `.groups` argument)
+    ## `summarise()` has grouped output by 'sentence'. You can override using the `.groups` argument.
 
 Of the 2969 sentences that good participants completed, 1658 were
 completed entirely correctly.

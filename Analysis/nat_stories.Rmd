@@ -13,9 +13,12 @@ library(rstan)
 library(tidybayes)
 library(knitr)
 library(cowplot)
+library(here)
 theme_set(theme_bw())
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
+
+data_dir <- "Data"
 ```
 
 # Experiment
@@ -35,7 +38,7 @@ We recruited 100 participants, across the 10 stories. (Stories were randomized, 
 
 ```{r participants}
 
-data <- read_rds("../Data/cleaned.rds")
+data <- read_rds(here(data_dir,"cleaned.rds"))
 
 data_filt <- data %>% filter(native %in% c("ENG", "English", "ENGLISH", "english")) #I peeked at what people put that semantically maps to english
 ```
@@ -110,7 +113,7 @@ ggplot(for_plot, aes(x=pct_correct, y=mean_rt, color=accurate))+
   guides(color=FALSE)
 
 
-ggsave("../Papers/error.pdf", width=3, height=2.1, unit="in")
+#ggsave("../Papers/error.pdf", width=3, height=2.1, unit="in")
 
 ggplot(for_plot, aes(x=pct_correct, y=mean_rt))+
   geom_point()+
@@ -121,7 +124,7 @@ ggplot(for_plot, aes(x=pct_correct, y=mean_rt))+
     #scale_color_manual(values=c(">80% correct"="darkgreen","<80% correct"="darkred"))+
   guides(color=FALSE)
 
-ggsave("../error.jpg", width=5, height=3, unit="in")
+#ggsave("../error.jpg", width=5, height=3, unit="in")
 
 some <- data_filt %>% select(subject, num_correct) %>% 
   unique() %>% 
@@ -136,7 +139,7 @@ ggplot(some, aes(x=num_correct,fill=accurate))+
   scale_fill_manual(values=c(">80% correct"="darkgreen","<80% correct"="darkred"))+
 guides(fill=FALSE)
 
-ggsave("../Papers/comp.pdf", width=3, height=1.5, unit="in")
+#ggsave("../Papers/comp.pdf", width=3, height=1.5, unit="in")
 
 ```
 
@@ -231,14 +234,35 @@ Here I plot the distribution of accuracies (number correct out of 6) for their p
 ```{r spr, include=F}
 #want to compare to SPR data from paper
 
-spr <- read_csv("../ns_spr_1.csv") %>% 
-  union(read_csv("../ns_spr_2.csv")) %>% 
-  select(WorkerId, correct, item) %>% 
-  unique() %>% 
+d.raw.a <- here("Data/SPR/batch1_pro.csv") %>% 
+  read_csv() 
+
+d.raw.b <- here("Data/SPR/batch2_pro.csv") %>% 
+  read_csv()
+
+offset=230 # following note in repo, we have to correct alignment on item 3 b/c an empty token was displayed
+
+d.raw <- d.raw.a %>% union(d.raw.b) %>% 
+  mutate(zone=if_else(item == 3 & zone > offset, zone - 3, zone - 2)) %>% 
+  select(WorkerId,correct,item) %>% unique() 
+
+# spot check that this matches number wise with their processed words
+
+all_spr <- d.raw %>% group_by(correct) %>% 
+  tally() %>% 
+  mutate(pct=n/sum(n)) %>% 
+  mutate(source="SPR") %>% 
+  select(source,correct,pct)
+
+first <- d.raw %>% 
+  group_by(WorkerId,correct) %>% 
+  mutate(num=row_number()) %>% 
+  filter(num==1) %>% 
+  select(-num) %>% 
   group_by(correct) %>% 
   tally() %>% 
-  mutate(pct=n/988) %>% 
-  mutate(source="SPR") %>% 
+  mutate(pct=n/sum(n)) %>% 
+  mutate(source="SPR 1st") %>% 
   select(source,correct,pct)
 
 all <- data_filt %>% select(subject, num_correct) %>% 
@@ -246,7 +270,7 @@ all <- data_filt %>% select(subject, num_correct) %>%
   mutate(correct=num_correct) %>% 
    group_by(correct) %>% 
   tally() %>% 
-  mutate(pct=n/95) %>% 
+  mutate(pct=n/sum(n)) %>% 
   mutate(source="all Maze") %>% 
   select(source,correct, pct)
 
@@ -257,11 +281,11 @@ some <- data_filt %>% select(subject, num_correct) %>%
   mutate(correct=num_correct) %>% 
    group_by(correct) %>% 
   tally() %>% 
-  mutate(pct=n/63) %>% 
+  mutate(pct=n/sum(n)) %>% 
   mutate(source="Maze >80% correct") %>% 
   select(source,correct, pct)
 
-to_plot <- all %>% union(some) %>% union(spr)
+to_plot <- all %>% union(some) %>% union(all_spr) %>% union(first)
 
 ggplot(to_plot, aes(x=correct, y=pct, fill=source))+geom_col(position="dodge")+facet_grid(.~source)+labs(title="Comprehension question accuracy", x="Number correct", y="Percent of participants")
 

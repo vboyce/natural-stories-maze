@@ -11,6 +11,7 @@ library(here)
 
 prep_dir <- "Prep_code"
 materials <- "Materials"
+predictors <- "Prep_code/predictors"
 ```
 # Initial
 These are used to set things up that exist in other saved files.
@@ -31,7 +32,7 @@ These are used to set things up that exist in other saved files.
 
 ```{r words}
 
-words <- read_delim("natural_stories_words.tsv",delim="\t", col_names = c("key","value")) %>% 
+words <- read_delim(here(prep_dir,"natural_stories_words.tsv"),delim="\t", col_names = c("key","value")) %>% 
   separate(key, into=c("Story_Num", "Word_In_Story_Num", "col3"), convert=T) %>% 
   filter(col3=="whole") %>% 
   select(-col3) %>% 
@@ -40,7 +41,7 @@ words <- read_delim("natural_stories_words.tsv",delim="\t", col_names = c("key",
 
 nums <- 1:64%>% as.character()
 
-labelled <- read_delim("../Materials/natural_stories_sentences.tsv", delim="\t") %>% 
+labelled <- read_delim(here(materials,"natural_stories_sentences.tsv"), delim="\t") %>% 
   separate(Sentence, into=nums, sep=" ") %>% 
   pivot_longer(cols=`1`:`64`, names_to="Word_In_Sentence_Num",values_to="Word") %>% 
   mutate(Word_In_Sentence_Num=as.integer(Word_In_Sentence_Num)-1) %>% 
@@ -56,16 +57,14 @@ labelled <- read_delim("../Materials/natural_stories_sentences.tsv", delim="\t")
 
 ```{r}
 # takes sentences, writes into format to do maze (also other things)
-for_maze <- read_delim("../Materials/natural_stories_sentences.tsv", delim="\t") %>%
+for_maze <- read_delim(here(materials,"natural_stories_sentences.tsv"), delim="\t") %>%
   mutate(label=str_c(Story_Num, Sentence_Num, sep="_"), item=row_number()) %>% 
   select(label, item, Sentence) %>% 
-   write_delim("ns_pre_maze.txt", delim=";", col_names=F, quote_escape = F)
+   write_delim(here(prep_dir,"ns_pre_maze.txt"), delim=";", col_names=F, quote_escape = F)
 ```
 
-# Surprisals
-For GPT (and some others), run get_surps.sh.
 ```{r}
-# For models
+# For gpt model models
 sentences <- read_delim(here(materials,"natural_stories_sentences.tsv"),delim="\t") %>% 
   pull(Sentence) %>% 
   write_lines(here(prep_dir,"sentences.txt"))
@@ -79,7 +78,7 @@ words <-labelled %>% write_tsv(here(prep_dir,"words.txt"))
 
 ```{r gpt}
 
-gpt_translator <- read_tsv(here(prep_dir,"gpt_surp_trans.txt"), col_names=c("Story_Num","Sentence_Num","Word_In_Sentence_Num","Word_In_Story_Num","Word","Token", "Surprisal")) %>% 
+gpt_translator <- read_tsv(here(predictors,"gpt_surp_trans.txt"), col_names=c("Story_Num","Sentence_Num","Word_In_Sentence_Num","Word_In_Story_Num","Word","Token", "Surprisal")) %>% 
   group_by(Story_Num, Sentence_Num,Word_In_Sentence_Num,Word,Word_In_Story_Num) %>% 
   summarize(gpt_surp=sum(Surprisal),
             gpt_token_count=n())
@@ -87,11 +86,11 @@ gpt_translator <- read_tsv(here(prep_dir,"gpt_surp_trans.txt"), col_names=c("Sto
 
 ```{r grnn}
 
-grnn <- read_delim("grnn_out_all.txt", delim="\t", col_names=c("model_token","grnn_surp")) %>% 
+grnn <- read_delim(here(predictors,"grnn_out_all.txt"), delim="\t", col_names=c("model_token","grnn_surp")) %>% 
   filter(model_token!="<eos>") %>% 
   mutate(num=row_number())
 
-grnn_translator <- read_delim("ns_tokens_trans.txt", delim="\t", col_names=c("Item","Word_In_Sentence_Num", "Word","token"), col_types=c(col_character(),col_integer(), col_character(),col_character())) %>% 
+grnn_translator <- read_delim(here(predictors,"ns_tokens_trans.txt"), delim="\t", col_names=c("Item","Word_In_Sentence_Num", "Word","token"), col_types=c(col_character(),col_integer(), col_character(),col_character())) %>% 
   mutate(num=row_number()) %>% 
   left_join(grnn, by="num") %>% 
   mutate(grnn_surp=ifelse(model_token==token & grnn_surp>0, grnn_surp, NA)) %>% 
@@ -105,10 +104,10 @@ grnn_translator <- read_delim("ns_tokens_trans.txt", delim="\t", col_names=c("It
 ```
 
 ```{r ngram}
-ngram <- read_delim("ngram_out_all.txt", skip=3,delim="\t", col_names=c("sentence_no","token_no","model_token","ngram_surp")) %>% 
+ngram <- read_delim(here(predictors,"ngram_out_all.txt"), skip=3,delim="\t", col_names=c("sentence_no","token_no","model_token","ngram_surp")) %>% 
   mutate(num=row_number())
 
-ngram_translator <- read_delim("ns_lower_trans.txt", delim="\t", col_names=c("Item","Word_In_Sentence_Num", "Word","token"), col_types=c(col_character(),col_integer(), col_character(),col_character())) %>% 
+ngram_translator <- read_delim(here(predictors,"ns_lower_trans.txt"), delim="\t", col_names=c("Item","Word_In_Sentence_Num", "Word","token"), col_types=c(col_character(),col_integer(), col_character(),col_character())) %>% 
   mutate(num=row_number()) %>% 
   left_join(ngram, by="num") %>% 
   mutate(ngram_surp=ifelse(model_token==token & ngram_surp>0, ngram_surp, NA)) %>% 
@@ -121,11 +120,11 @@ ngram_translator <- read_delim("ns_lower_trans.txt", delim="\t", col_names=c("It
 ```
 
 ```{r txl}
-txl <- read_delim("txl_out_all.txt", delim="\t", col_names=c("model_token","txl_surp")) %>% 
+txl <- read_delim(here(predictors,"txl_out_all.txt"), delim="\t", col_names=c("model_token","txl_surp")) %>% 
   filter(model_token!="<eos>") %>% 
   mutate(num=row_number())
 
-txl_translator <- read_delim("ns_tokens_moses_trans.txt", delim="\t", 
+txl_translator <- read_delim(here(predictors,"ns_tokens_moses_trans.txt"), delim="\t", 
                              col_names=c("Item","Word_In_Sentence_Num", "Word","token"), 
                              col_types=c(col_character(),col_integer(), col_character(),col_character())) %>% 
   mutate(num=row_number()) %>% 
@@ -141,7 +140,7 @@ txl_translator <- read_delim("ns_tokens_moses_trans.txt", delim="\t",
 
 ```{r freq}
 
-freq <- read_delim("ns_freq.txt", delim="\t",
+freq <- read_delim(here(predictors,"ns_freq.txt"), delim="\t",
                    col_names=c("Item","Word_In_Sentence_Num","Word","freq","length"), 
                    col_types=c(col_character(),col_integer(),col_character(),col_double(), col_integer())) %>% 
   mutate(freq=ifelse(freq>0, freq, NA)) %>% 
@@ -159,7 +158,7 @@ all <- txl_translator %>%
   left_join(gpt_translator, by=c("Story_Num", "Sentence_Num","Word_In_Sentence_Num", "Word", "Word_In_Story_Num")) %>% 
   left_join(freq, by=c("Story_Num", "Sentence_Num","Word_In_Sentence_Num", "Word", "Word_In_Story_Num")) %>% 
   ungroup() %>% 
-  write_rds("natural_stories_surprisals.rds")
+  write_rds(here(prep_dir,"natural_stories_surprisals.rds"))
 ```
 
 
