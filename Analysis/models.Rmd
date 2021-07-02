@@ -1,0 +1,522 @@
+---
+title: "Natural Stories model analyses"
+output: html_document
+---
+```{r, include=F}
+knitr::opts_chunk$set(echo = FALSE, warning=F)
+options(knitr.table.format = "html")
+library(tidyverse)
+library(readr)
+library(brms)
+library(lme4)
+library(rstan)
+library(tidybayes)
+library(knitr)
+library(mgcv)
+library(mgcViz)
+library(tidymv)
+library(rsample)
+library(cowplot)
+library(scales)
+library(here)
+theme_set(theme_bw())
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
+```
+
+```{r participants}
+
+data <- read_rds(here("Data/cleaned.rds"))
+
+data_filt <- data %>% filter(native %in% c("ENG", "English", "ENGLISH", "english")) #I peeked at what people put that semantically maps to english
+
+data_error_summ <- data_filt %>% 
+  mutate(correct.num=ifelse(correct=="yes", 1,0)) %>% 
+  group_by(subject) %>%
+  filter(type!="practice") %>% 
+  filter(rt<5000) %>% 
+  summarize(pct_correct=mean(correct.num)) %>% 
+  ungroup() %>% 
+  mutate(is.attentive=ifelse(pct_correct>.8, T,F)) %>% 
+  select(subject, is.attentive)
+
+data_low_error <- data_filt %>% 
+  left_join(data_error_summ, by="subject") %>% 
+  filter(is.attentive) %>% 
+  filter(type!="practice")
+
+  data_error_free <- data_low_error %>% 
+    mutate(word_num_mistake=ifelse(correct=="no", word_num,NA)) %>% 
+    group_by(sentence, subject) %>% fill(word_num_mistake) %>% ungroup() %>% 
+    mutate(after_mistake=word_num-word_num_mistake,
+           after_mistake=ifelse(is.na(after_mistake),0,after_mistake)) %>% 
+    filter(correct=="yes") %>% 
+    filter(!after_mistake %in% c(1,2))
+  
+data_no_first <- data_error_free %>% filter(word_num!=0)
+
+data_ready <- data_no_first %>% filter(rt>100 & rt<5000) %>% 
+  select(subject, word_num, word, rt, sentence, type)
+
+data_pre_error <- data_no_first %>% filter(rt>100 & rt<5000) %>% 
+  filter(after_mistake==0) %>% 
+  select(subject, word_num, word, rt, sentence, type)
+
+data_stories <- data_ready %>% select(type, subject) %>% 
+  unique() %>% 
+  group_by(type) %>% 
+  tally()
+```
+
+
+<!--# Overview
+
+`r data %>% select(subject) %>% unique() %>% nrow()` participants read naturalistic stories from the natural stories corpus. Each participant read 1 story. 
+
+We exclude
+
+- participants who do not report English as a native language (`r data_filt %>% select(subject) %>% unique() %>% nrow()` remaining)
+- participants who do not get 80% of the words correct (`r data_low_error %>% select(subject) %>% unique() %>% nrow()` remaining)
+- practice items (`r data_low_error %>% nrow()` words remaining)
+- words that were wrong or were within two after a mistake (`r data_error_free %>% nrow()` words remaining)
+- the first word of every sentence (didn't have a real distractor, RT is measured slightly differently) (`r data_no_first %>% nrow()` words remaining)
+- words with RTs <100 or >5000 (<100 we think is likely a recording error, or at least not reading the words at all, >5000 is likely getting distracted) (`r data_ready %>% nrow()` words remaining)
+
+Within the filtered data, each story was read between `r min(data_stories$n)` and `r max(data_stories$n)` times, for an average of `r mean(data_stories$n)`.
+
+We also do the analyses on only the words before mistakes (per sentence) (`r data_pre_error %>% nrow()` words)
+
+From the modelling side:
+(After attempts without doing this filtering) we only include words which are single token and known words in each of the models vocabularies. We also only include words with frequencies. This is roughly equivalent to excluding words with punctuation. 
+
+We use as predictors:
+
+- length in characters of stripped word
+- unigram frequency of word. Frequencies for words are calculated using word_tokenize on the gulordava train data and counting up instances. (This tends to tokenize off punctuation, but is capitalization sensitive). Frequencies are represented as log2 of the expected occurances in 1 billion words. 
+
+Surprisals are measured in bits.
+
+- ngram (5-gram KN smoothed)
+- GRNN
+- Transformer-XL
+
+For GAM models, we center length and frequency but not surprisal. We want surprisal interpretable, but we also will be plotting it (at least for the bootstrapping) at length and frequencies set to 0, so they need to be centered. (Not sure this last piece is actually true/matters). -->
+
+# Maze Prep
+```{r labels}
+labs <- read_rds(here("Prep_code/natural_stories_surprisals.rds")) %>% 
+  left_join(read_delim(here("Materials/natural_stories_sentences.tsv"), delim="\t")) %>% 
+  select(word_num=Word_In_Sentence_Num, word=Word, sentence=Sentence, everything())
+
+select_labs <- labs %>% 
+  mutate(across(ends_with("surp"),~ifelse(ngram_token_count==1 & txl_token_count==1 & grnn_token_count==1 & gpt_token_count==1 & word_num>0, .x, NA))) %>% 
+  select(-ends_with("token_count")) %>% 
+    mutate(txl_center=txl_surp-mean(txl_surp, na.rm=T),
+         ngram_center=ngram_surp-mean(ngram_surp, na.rm=T),
+         grnn_center=grnn_surp-mean(grnn_surp, na.rm=T),
+         freq_center=freq-mean(freq, na.rm=T),
+         length_center=length-mean(length, na.rm=T),
+         gpt_center=gpt_surp-mean(gpt_surp, na.rm=T)) %>% 
+  group_by(sentence,Story_Num,Sentence_Num) %>% 
+  mutate(across(txl_surp:gpt_center,.names="past_{.col}", lag),
+         across(txl_surp:gpt_center,.names="past2_{.col}", ~lag(.x,n=2)),
+         across(txl_surp:gpt_center,.names="past3_{.col}", ~lag(.x,n=3)))
+
+```
+
+```{r maze}
+
+
+labelled_pre_error <- data_pre_error %>% inner_join(select_labs, by=c("word_num", "word", "sentence")) %>%
+  filter(word_num>1) %>% 
+  mutate(Word_ID=as_factor(str_c(Story_Num, Word_In_Story_Num, sep="_")))%>% write_rds(here("Data/maze_pre_error.rds"))
+
+```
+
+```{r item-means}
+
+select_data <- read_rds(here("Data/maze_pre_error.rds")) %>%  select(-starts_with("past2"), -starts_with("past3")) %>% 
+  filter(across(everything(),~!is.na(.x))) 
+
+
+item_mean_data <- select_data %>% 
+  group_by(across(c(-subject, -rt))) %>% 
+  summarize(rt=mean(rt)) %>% 
+  ungroup()
+
+
+```
+
+
+
+# Maze GAMs
+
+```{r for gam}
+
+ngram_data <- labelled_pre_error %>% select(rt, surprisal=ngram_surp, prev_surp=past_ngram_surp, 
+                                            freq=freq_center, len=length_center,
+                                            prev_freq=past_freq_center, prev_len=past_length_center, subject
+                                            ) %>% mutate(model="5-gram") 
+grnn_data <- labelled_pre_error %>% select(rt, surprisal=grnn_surp, prev_surp=past_grnn_surp, 
+                                            freq=freq_center, len=length_center,
+                                            prev_freq=past_freq_center, prev_len=past_length_center, subject
+                                            )%>% mutate(model="GRNN")
+
+txl_data <- labelled_pre_error %>% select(rt, surprisal=txl_surp, prev_surp=past_txl_surp, 
+                                            freq=freq_center, len=length_center,
+                                            prev_freq=past_freq_center, prev_len=past_length_center,subject
+                                            ) %>% mutate(model="TXL")
+
+gpt_data <- labelled_pre_error %>% select(rt, surprisal=gpt_surp, prev_surp=past_gpt_surp, 
+                                            freq=freq_center, len=length_center,
+                                            prev_freq=past_freq_center, prev_len=past_length_center,subject
+                                            ) %>% mutate(model="GPT-2")
+
+ngram_mean_data <- item_mean_data %>% select(rt, surprisal=ngram_surp, prev_surp=past_ngram_surp, 
+                                            freq=freq_center, len=length_center,
+                                            prev_freq=past_freq_center, prev_len=past_length_center
+                                            ) %>% mutate(model="5-gram")
+
+grnn_mean_data <- item_mean_data %>% select(rt, surprisal=grnn_surp, prev_surp=past_grnn_surp, 
+                                            freq=freq_center, len=length_center,
+                                            prev_freq=past_freq_center, prev_len=past_length_center
+                                            )%>% mutate(model="GRNN")
+
+txl_mean_data <- item_mean_data %>% select(rt, surprisal=txl_surp, prev_surp=past_txl_surp, 
+                                            freq=freq_center, len=length_center,
+                                            prev_freq=past_freq_center, prev_len=past_length_center
+                                            ) %>% mutate(model="TXL")
+
+gpt_mean_data <- item_mean_data %>% select(rt, surprisal=gpt_surp, prev_surp=past_gpt_surp, 
+                                            freq=freq_center, len=length_center,
+                                            prev_freq=past_freq_center, prev_len=past_length_center
+                                            ) %>% mutate(model="GPT-2")
+
+all_data <- ngram_data %>% union(grnn_data) %>% union(txl_data) %>% union(gpt_data) %>% 
+  select(surprisal, prev_surp,model) %>% 
+  pivot_longer(cols=`surprisal`:`prev_surp`) %>% 
+  mutate(s=ifelse(name=="surprisal", "Current","Previous"))
+
+all_mean_data <- ngram_mean_data %>% union(grnn_mean_data) %>% union(txl_mean_data) %>% union(gpt_mean_data) %>% 
+  select(surprisal, prev_surp,model) %>% 
+  pivot_longer(cols=`surprisal`:`prev_surp`) %>% 
+  mutate(s=ifelse(name=="surprisal", "Current","Previous"))
+```
+
+```{r formulae, echo=T}
+#no hierarchical, has freq x len interaction
+formula_interact <- rt ~ s(surprisal, bs="cr", k=20)+
+                     ti(freq, bs="cr") + 
+                     ti(len, bs="cr")+
+                     ti(freq,len, bs="cr")+
+                     s(prev_surp, bs="cr", k=20)+
+                     ti(prev_freq, bs="cr")+
+                     ti(prev_len, bs="cr")+
+                     ti(prev_freq, prev_len, bs="cr")
+
+# no hierarchical, NO freq x len interaction
+formula_no_interact <- rt ~ s(surprisal, bs="cr", k=20)+
+                     ti(freq, bs="cr") + 
+                     ti(len, bs="cr")+
+                     s(prev_surp, bs="cr", k=20)+
+                     ti(prev_freq, bs="cr")+
+                     ti(prev_len, bs="cr")
+
+formula_heirarchy <- rt ~ s(surprisal, bs="cr", k=20)+
+                    s(surprisal, by=subject, bs="cr", k=20)+
+                     ti(freq, bs="cr") + 
+                     ti(len, bs="cr")+
+                     s(prev_surp, bs="cr", k=20)+
+                      s(prev_surp, by=subject, bs="cr", k=20)+
+                     ti(prev_freq, bs="cr")+
+                     ti(prev_len, bs="cr")
+
+
+```
+
+All of this is on by-item mean data. 
+
+```{r meaned data}
+gam_ngram_1 <- gam(formula_interact, data=ngram_mean_data, method="REML")
+gam_grnn_1 <- gam(formula_interact, data=grnn_mean_data, method="REML")
+gam_txl_1 <- gam(formula_interact, data=txl_mean_data, method="REML")
+gam_gpt_1 <- gam(formula_interact, data=gpt_mean_data, method="REML")
+
+gam_ngram_2 <- gam(formula_no_interact, data=ngram_mean_data, method="REML")
+gam_grnn_2 <- gam(formula_no_interact, data=grnn_mean_data, method="REML")
+gam_txl_2 <- gam(formula_no_interact, data=txl_mean_data, method="REML")
+gam_gpt_2 <- gam(formula_no_interact, data=gpt_mean_data, method="REML")
+
+```
+
+```{r anovas}
+
+anova(gam_ngram_1,gam_ngram_2)
+anova(gam_grnn_1,gam_grnn_2)
+anova(gam_txl_1,gam_txl_2)
+anova(gam_gpt_1,gam_gpt_2)
+```
+
+I don't know how to interpret the above. 
+
+I also don't know how to interpret the plots. 
+
+```{r plots}
+plot(gam_gpt_1)
+```
+
+By-factor GAMs fail to run overnight / crash the R session. 
+
+
+
+```{r plot-gam, eval=F}
+
+
+a <- get_gam_predictions(model=gam_ngram_1, series=surprisal, series_length=100) %>% select(surprisal, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="5-gram", s="Current")
+b <- get_gam_predictions(model=gam_ngram_1, series=prev_surp, series_length=100) %>% select(surprisal=prev_surp, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="5-gram", s="Previous")
+c <- get_gam_predictions(model=gam_grnn_1, series=surprisal, series_length=100) %>% select(surprisal, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="GRNN", s="Current")
+d <- get_gam_predictions(model=gam_grnn_1, series=prev_surp, series_length=100) %>% select(surprisal=prev_surp, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="GRNN", s="Previous")
+e <- get_gam_predictions(model=gam_txl_1, series=surprisal, series_length=100) %>% select(surprisal, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="TXL", s="Current")
+f <- get_gam_predictions(model=gam_txl_1, series=prev_surp, series_length=100) %>% select(surprisal=prev_surp, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="TXL", s="Previous")
+```
+
+```{r, eval=F}
+all <- a %>% union(b) %>% union(c) %>% union(d) %>% union(e) %>% union(f) %>% write_rds("gam_predictions.rds")
+
+gam1 <-  ggplot(all, aes(x=surprisal, y=rt, ymin=CI_lower, ymax=CI_upper))+
+  geom_line()+
+  geom_ribbon(alpha=.3)+
+   #geom_density(data=all_data, aes(x=value), fill="gray",)+
+  facet_grid(s~model)+
+  coord_cartesian(ylim=c(700,1300), xlim=c(0,28))+
+  labs(x="Surprisal (bits)", y="Reaction Time (ms)")+theme(axis.ticks.x=element_blank(), axis.title.x=element_blank(), axis.text.x=element_blank(), plot.margin=margin(t=0,r=0,b=0,l=0,unit="pt"))
+
+
+dens2 <-   ggplot(all_data, aes(x=value))+
+  geom_density(fill="gray",)+
+  facet_grid(.~model)+
+  labs(x="Surprisal (bits)", y="")+
+  theme(axis.text.y = element_blank(), strip.text=element_blank(), axis.ticks.y =element_blank(), axis.title.y=element_blank(), panel.grid=element_blank(), plot.margin = unit(c(0, 0, 0, 0), "cm"))
+
+bot <- plot_grid(NA, dens2, NA, nrow=1, rel_widths = c(.16, 1, .08))
+
+ plot_grid(gam1, bot, nrow=2, rel_heights = c(1, .3))
+
+ggsave("../Papers/gam.pdf", width=4, height=2.3, unit="in")
+
+#confirm that this really is just a prettied up version of what the usual output is
+#plot(gam_txl_1, seWithMean = TRUE, shift = coef(gam_txl_1)[1], select=1)
+
+```
+
+# SPR Prep
+```{r read_data, eval=F}
+d.raw.a <- here("Data/SPR/batch1_pro.csv") %>% 
+  read_csv() 
+
+d.raw.b <- here("Data/SPR/batch2_pro.csv") %>% 
+  read_csv()
+
+
+
+offset=230 # following note in repo, we have to correct alignment on item 3 b/c an empty token was displayed
+
+d.raw <- d.raw.a %>% union(d.raw.b) %>% 
+  mutate(zone=if_else(item == 3 & zone > offset, zone - 3, zone - 2))
+
+# spot check that this matches number wise with their processed words
+
+```
+
+```{r first-story}
+# to make things more comparable, only look at the first story each participant read
+
+first <- d.raw %>% select(WorkerId,correct,item) %>% unique() %>% 
+  group_by(WorkerId,correct) %>% 
+  mutate(num=row_number()) %>% 
+  filter(num==1) %>% 
+  select(-num)
+
+d.limited <- d.raw %>% inner_join(first, by=c("WorkerId","correct","item"))
+
+
+#d.limited%>% select(WorkerId,correct,item) %>% unique() %>% group_by(correct) %>% tally()  %>% summarize(pct=n/sum(n),correct=correct)
+
+d.good <- d.limited %>% filter(correct>4) %>% rename(rt=RT) %>% filter(rt>100 & rt<5000)
+```
+
+
+```{r surprisals, eval=F}
+
+tokenization <- here("Data/SPR/all_stories.tok.txt") %>% 
+  read_delim(delim="\t") %>% 
+  mutate(Word_In_Story_Num=zone,
+         Story_Num=item)
+
+#something is going on is story 2, sentence 4 His brother had blatantly peeked..." 
+#they have it as "peaked", not sure what was displayed, but we can inner join
+spr_labelled <- select_labs %>% inner_join(tokenization, by=c("word","Word_In_Story_Num","Story_Num")) %>% 
+  left_join(d.good, by=c("item","zone")) %>% 
+  rename(subject=WorkerId) %>% 
+  select(-WorkTimeInSeconds) %>% 
+  filter(word_num>1) %>% 
+  mutate(Word_ID=as_factor(str_c(Story_Num, Word_In_Story_Num, sep="_")))%>% write_rds(here("Data/clean_spr.rds"))
+```
+
+```{r spr item-means}
+
+select_spr <- read_rds(here("Data/clean_spr.rds")) %>% 
+  filter(across(everything(),~!is.na(.x))) %>% 
+  ungroup()
+
+
+item_mean_spr <- select_spr %>% 
+  group_by(across(c(-subject, -rt))) %>% 
+  summarize(rt=mean(rt)) %>% 
+  ungroup()
+
+
+```
+
+# SPR GAMs
+TODO
+
+# Maze LMs
+
+```{r for brms}
+
+ngram_data <- labelled_pre_error %>% select(rt, surprisal=ngram_center, prev_surp=past_ngram_center, 
+                                            freq=freq_center, len=length_center,
+                                            prev_freq=past_freq_center, prev_len=past_length_center, subject, Word_ID
+                                            ) %>% mutate(model="5-gram") 
+grnn_data <- labelled_pre_error %>% select(rt, surprisal=grnn_center, prev_surp=past_grnn_center, 
+                                            freq=freq_center, len=length_center,
+                                            prev_freq=past_freq_center, prev_len=past_length_center, subject, Word_ID
+                                            )%>% mutate(model="GRNN")
+
+txl_data <- labelled_pre_error %>% select(rt, surprisal=txl_center, prev_surp=past_txl_center, 
+                                            freq=freq_center, len=length_center,
+                                            prev_freq=past_freq_center, prev_len=past_length_center, subject, Word_ID
+                                            ) %>% mutate(model="TXL")
+
+gpt_data <- labelled_pre_error %>% select(rt, surprisal=gpt_center, prev_surp=past_gpt_center, 
+                                            freq=freq_center, len=length_center,
+                                            prev_freq=past_freq_center, prev_len=past_length_center, subject, Word_ID
+                                            ) %>% mutate(model="GPT-2")
+
+all_data <- ngram_data %>% union(grnn_data) %>% union(txl_data) %>% union(gpt_data) %>% 
+  write_rds("maze_pre_brms.rds")
+
+```
+
+
+```{r, eval=F}
+
+data=readRDS("maze_pre_brms.rds")
+ priors <- c(
+      set_prior("normal(1000, 1000)", class="Intercept"),
+      set_prior("normal(0, 500)", class="b"),
+      set_prior("normal(0, 500)", class="sd"),
+      set_prior("lkj(1)",       class="cor"))
+run_model <- function(model_spec,data,file_name){
+  d <- data %>% filter(model==model_spec)
+  m1 <- brm(rt ~ surprisal * len + freq * len +
+              prev_surp * prev_len + prev_freq * prev_len+
+              (surprisal * len + freq * len +
+              prev_surp * prev_len + prev_freq * prev_len|subject)+(1|Word_ID),
+            data=d,
+            file=file_name,
+            prior=priors,
+            control=list(adapt_delta=.95))
+}
+
+run_model("5-gram",data,"5-gram_maze")
+run_model("GRNN",data,"grnn_maze")
+run_model("TXL",data,"txl_maze")
+run_model("GPT-2",data,"gpt_maze")
+
+
+```
+
+# SPR LMs
+
+```{r spr brms}
+
+ngram_data <- select_spr %>% rename_with(~str_replace_all(.x, "ngram", "surp"))%>% 
+  select(rt, surp_center, freq_center, length_center,
+         past_surp_center, past_freq_center, past_length_center,
+         past2_surp_center, past2_freq_center, past2_length_center,
+         past3_surp_center, past3_freq_center, past3_length_center, subject, Word_ID) %>% mutate(model="5-gram") 
+
+grnn_data <- select_spr %>% rename_with(~str_replace_all(.x, "grnn", "surp"))%>% 
+  select(rt, surp_center, freq_center, length_center,
+         past_surp_center, past_freq_center, past_length_center,
+         past2_surp_center, past2_freq_center, past2_length_center,
+         past3_surp_center, past3_freq_center, past3_length_center, subject, Word_ID)%>% mutate(model="GRNN")
+
+txl_data <- select_spr %>% rename_with(~str_replace_all(.x, "txl", "surp"))%>% 
+  select(rt, surp_center, freq_center, length_center,
+         past_surp_center, past_freq_center, past_length_center,
+         past2_surp_center, past2_freq_center, past2_length_center,
+         past3_surp_center, past3_freq_center, past3_length_center, subject, Word_ID) %>% mutate(model="TXL")
+
+gpt_data <-select_spr %>% rename_with(~str_replace_all(.x, "txl", "surp"))%>% 
+  select(rt, surp_center, freq_center, length_center,
+         past_surp_center, past_freq_center, past_length_center,
+         past2_surp_center, past2_freq_center, past2_length_center,
+         past3_surp_center, past3_freq_center, past3_length_center, subject, Word_ID) %>% mutate(model="GPT-2")
+
+all_spr <- ngram_data %>% union(grnn_data) %>% union(txl_data) %>% union(gpt_data) %>% 
+  write_rds("spr_pre_brms.rds")
+```
+
+```{r spr lms, eval=F}
+
+run_lm <- function(data,modelspec){
+  d <- data %>% filter(model==modelspec)
+model_1 <- lmer(rt ~ surp_center * length_center + length_center * freq_center +
+                  past_surp_center * past_length_center + past_length_center * past_freq_center + 
+                 past2_surp_center * past2_length_center + past2_length_center * past2_freq_center + 
+                  past3_surp_center * past3_length_center + past3_length_center * past3_freq_center + 
+                  (1|subject)+(1|Word_ID), data=d)
+return(model_1)
+}
+
+m_ngram <- run_lm(all_spr,"5-gram")
+m_grnn <- run_lm(all_spr, "GRNN")
+m_txl <- run_lm(all_spr,"TXL")
+m_gpt <- run_lm(all_spr,"GPT-2")
+
+```
+
+```{r, eval=F}
+
+data=readRDS("spr_pre_brms.rds")
+ priors <- c(
+      set_prior("normal(300, 100)", class="Intercept"),
+      set_prior("normal(0, 5)", class="b"),
+      set_prior("normal(0, 5)", class="sd"),
+      set_prior("lkj(1)",       class="cor"))
+run_model <- function(model_spec,data,file_name){
+  d <- data %>% filter(model==model_spec)
+  m1 <- brm(rt ~ surp_center * length_center + length_center * freq_center +
+                  past_surp_center * past_length_center + past_length_center * past_freq_center + 
+                 past2_surp_center * past2_length_center + past2_length_center * past2_freq_center + 
+                  past3_surp_center * past3_length_center + past3_length_center * past3_freq_center + 
+              (surp_center * length_center + length_center * freq_center +
+                  past_surp_center * past_length_center + past_length_center * past_freq_center + 
+                 past2_surp_center * past2_length_center + past2_length_center * past2_freq_center + 
+                  past3_surp_center * past3_length_center + past3_length_center * past3_freq_center |subject)+(1|Word_ID),
+            data=d,
+            file=file_name,
+            prior=priors,
+            control=list(adapt_delta=.95))
+}
+
+run_model("5-gram",data,"5-gram_spr")
+run_model("GRNN",data,"grnn_spr")
+run_model("TXL",data,"txl_spr")
+run_model("GPT-2",data,"gpt_spr")
+
+
+```
