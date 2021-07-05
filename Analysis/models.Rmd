@@ -200,7 +200,7 @@ all_data <- ngram_data %>% union(grnn_data) %>% union(txl_data) %>% union(gpt_da
 all_mean_data <- ngram_mean_data %>% union(grnn_mean_data) %>% union(txl_mean_data) %>% union(gpt_mean_data) %>% 
   select(surprisal, prev_surp,model) %>% 
   pivot_longer(cols=`surprisal`:`prev_surp`) %>% 
-  mutate(s=ifelse(name=="surprisal", "Current","Previous"))
+  mutate(s=ifelse(name=="surprisal", "Current","Previous")) %>% write_rds(here("Analysis/models/meaned_maze.rds"))
 ```
 
 ```{r formulae, echo=T}
@@ -236,7 +236,7 @@ formula_heirarchy <- rt ~ s(surprisal, bs="cr", k=20)+
 
 All of this is on by-item mean data. 
 
-```{r meaned data}
+```{r meaned data, eval=F}
 gam_ngram_1 <- gam(formula_interact, data=ngram_mean_data, method="REML")
 gam_grnn_1 <- gam(formula_interact, data=grnn_mean_data, method="REML")
 gam_txl_1 <- gam(formula_interact, data=txl_mean_data, method="REML")
@@ -249,7 +249,7 @@ gam_gpt_2 <- gam(formula_no_interact, data=gpt_mean_data, method="REML")
 
 ```
 
-```{r anovas}
+```{r anovas, eval=F}
 
 anova(gam_ngram_1,gam_ngram_2)
 anova(gam_grnn_1,gam_grnn_2)
@@ -261,7 +261,7 @@ I don't know how to interpret the above.
 
 I also don't know how to interpret the plots. 
 
-```{r plots}
+```{r plots, eval=F}
 plot(gam_gpt_1)
 ```
 
@@ -278,31 +278,35 @@ c <- get_gam_predictions(model=gam_grnn_1, series=surprisal, series_length=100) 
 d <- get_gam_predictions(model=gam_grnn_1, series=prev_surp, series_length=100) %>% select(surprisal=prev_surp, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="GRNN", s="Previous")
 e <- get_gam_predictions(model=gam_txl_1, series=surprisal, series_length=100) %>% select(surprisal, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="TXL", s="Current")
 f <- get_gam_predictions(model=gam_txl_1, series=prev_surp, series_length=100) %>% select(surprisal=prev_surp, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="TXL", s="Previous")
+g <- get_gam_predictions(model=gam_gpt_1, series=surprisal, series_length=100) %>% select(surprisal, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="GPT-2", s="Current")
+h <- get_gam_predictions(model=gam_gpt_1, series=prev_surp, series_length=100) %>% select(surprisal=prev_surp, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="GPT-2", s="Previous")
+all <- a %>% union(b) %>% union(c) %>% union(d) %>% union(e) %>% union(f) %>% union(g) %>% union(h) %>% 
+  mutate(model=factor(model, levels=c("5-gram", "GRNN", "TXL","GPT-2"))) %>% 
+                        write_rds(here("Analysis/models/gam_predictions.rds"))
 ```
 
 ```{r, eval=F}
-all <- a %>% union(b) %>% union(c) %>% union(d) %>% union(e) %>% union(f) %>% write_rds("gam_predictions.rds")
 
-gam1 <-  ggplot(all, aes(x=surprisal, y=rt, ymin=CI_lower, ymax=CI_upper))+
+
+gam1 <- read_rds(here("Analysis/models/gam_predictions.rds")) %>%  ggplot( aes(x=surprisal, y=rt, ymin=CI_lower, ymax=CI_upper))+
   geom_line()+
   geom_ribbon(alpha=.3)+
-   #geom_density(data=all_data, aes(x=value), fill="gray",)+
+  #facet_grid(s~model, scales="free_y")+
   facet_grid(s~model)+
-  coord_cartesian(ylim=c(700,1300), xlim=c(0,28))+
+  coord_cartesian(xlim=c(0,28))+
   labs(x="Surprisal (bits)", y="Reaction Time (ms)")+theme(axis.ticks.x=element_blank(), axis.title.x=element_blank(), axis.text.x=element_blank(), plot.margin=margin(t=0,r=0,b=0,l=0,unit="pt"))
 
 
-dens2 <-   ggplot(all_data, aes(x=value))+
+dens2 <-   ggplot(all_mean_data, aes(x=value))+
   geom_density(fill="gray",)+
   facet_grid(.~model)+
   labs(x="Surprisal (bits)", y="")+
+    coord_cartesian(xlim=c(0,28))+
   theme(axis.text.y = element_blank(), strip.text=element_blank(), axis.ticks.y =element_blank(), axis.title.y=element_blank(), panel.grid=element_blank(), plot.margin = unit(c(0, 0, 0, 0), "cm"))
 
-bot <- plot_grid(NA, dens2, NA, nrow=1, rel_widths = c(.16, 1, .08))
+p2 = cowplot::align_plots(gam1, dens2, align = "v", axis="lr")
+plot_grid(p2[[1]], p2[[2]], nrow=2, rel_heights = c(1, .3))
 
- plot_grid(gam1, bot, nrow=2, rel_heights = c(1, .3))
-
-ggsave("../Papers/gam.pdf", width=4, height=2.3, unit="in")
 
 #confirm that this really is just a prettied up version of what the usual output is
 #plot(gam_txl_1, seWithMean = TRUE, shift = coef(gam_txl_1)[1], select=1)
@@ -328,7 +332,7 @@ d.raw <- d.raw.a %>% union(d.raw.b) %>%
 
 ```
 
-```{r first-story}
+```{r first-story, eval=F}
 # to make things more comparable, only look at the first story each participant read
 
 first <- d.raw %>% select(WorkerId,correct,item) %>% unique() %>% 
@@ -379,7 +383,124 @@ item_mean_spr <- select_spr %>%
 ```
 
 # SPR GAMs
-TODO
+
+```{r for spr gam, eval=F}
+
+ngram_mean_spr <- item_mean_spr %>% rename_with(~str_replace_all(.x, "ngram_", ""))%>%
+  select(rt, surp, freq_center, length_center,
+         past_surp, past_freq_center, past_length_center,
+         past2_surp, past2_freq_center, past2_length_center,
+         past3_surp, past3_freq_center, past3_length_center) %>% mutate(model="5-gram")
+
+grnn_mean_spr <- item_mean_spr %>% rename_with(~str_replace_all(.x, "grnn_", ""))%>%
+  select(rt, surp, freq_center, length_center,
+         past_surp, past_freq_center, past_length_center,
+         past2_surp, past2_freq_center, past2_length_center,
+         past3_surp, past3_freq_center, past3_length_center) %>% mutate(model="GRNN")
+
+txl_mean_spr <- item_mean_spr %>% rename_with(~str_replace_all(.x, "txl_", ""))%>%
+  select(rt, surp, freq_center, length_center,
+         past_surp, past_freq_center, past_length_center,
+         past2_surp, past2_freq_center, past2_length_center,
+         past3_surp, past3_freq_center, past3_length_center) %>% mutate(model="TXL")
+
+gpt_mean_spr<-item_mean_spr %>% rename_with(~str_replace_all(.x, "gpt_", ""))%>%
+  select(rt, surp, freq_center, length_center,
+         past_surp, past_freq_center, past_length_center,
+         past2_surp, past2_freq_center, past2_length_center,
+         past3_surp, past3_freq_center, past3_length_center) %>% mutate(model="GPT-2")
+
+all_mean_spr <- ngram_mean_spr %>% union(grnn_mean_spr) %>% union(txl_mean_spr) %>% union(gpt_mean_spr) %>% 
+  select(surp, past_surp, past2_surp, past3_surp,model) %>% 
+  pivot_longer(cols=`surp`:`past3_surp`) %>% 
+  mutate(s=ifelse(name=="surprisal", "Current","Previous")) %>% write_rds(here("Analysis/models/meaned_spr.rds"))
+```
+
+```{r formulae, echo=T}
+#no hierarchical, has freq x len interaction
+spr_formula_interact <- rt ~ s(surp, bs="cr", k=20)+
+                     ti(length_center, bs="cr")+
+                     ti(freq_center,length_center, bs="cr")+
+                     s(past_surp, bs="cr", k=20)+
+                     ti(past_freq_center, bs="cr")+
+                     ti(past_length_center, bs="cr")+
+                     ti(past_freq_center, past_length_center, bs="cr")+
+                     s(past2_surp, bs="cr", k=20)+
+                     ti(past2_freq_center, bs="cr")+
+                     ti(past2_length_center, bs="cr")+
+                     ti(past2_freq_center, past2_length_center, bs="cr")+
+                     s(past3_surp, bs="cr", k=20)+
+                     ti(past3_freq_center, bs="cr")+
+                     ti(past3_length_center, bs="cr")+
+                     ti(past3_freq_center, past3_length_center, bs="cr")
+
+
+
+```
+
+All of this is on by-item mean data. 
+
+```{r spr meaned data, eval=F}
+gam_ngram_1 <- gam(spr_formula_interact, data=ngram_mean_spr, method="REML")
+gam_grnn_1 <- gam(spr_formula_interact, data=grnn_mean_spr, method="REML")
+gam_txl_1 <- gam(spr_formula_interact, data=txl_mean_spr, method="REML")
+gam_gpt_1 <- gam(spr_formula_interact, data=gpt_mean_spr, method="REML")
+
+```
+
+
+```{r plot-gam-spr, eval=F}
+
+a <- get_gam_predictions(model=gam_ngram_1, series=surp, series_length=100) %>% select(surprisal=surp, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="5-gram", s="Current")
+b <- get_gam_predictions(model=gam_ngram_1, series=past_surp, series_length=100) %>% select(surprisal=past_surp, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="5-gram", s="Previous")
+c <- get_gam_predictions(model=gam_ngram_1, series=past2_surp, series_length=100) %>% select(surprisal=past2_surp, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="5-gram", s="2Previous")
+d <- get_gam_predictions(model=gam_ngram_1, series=past3_surp, series_length=100) %>% select(surprisal=past3_surp, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="5-gram", s="3Previous")
+
+e <- get_gam_predictions(model=gam_grnn_1, series=surp, series_length=100) %>% select(surprisal=surp, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="GRNN", s="Current")
+f <- get_gam_predictions(model=gam_grnn_1, series=past_surp, series_length=100) %>% select(surprisal=past_surp, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="GRNN", s="Previous")
+g <- get_gam_predictions(model=gam_grnn_1, series=past2_surp, series_length=100) %>% select(surprisal=past2_surp, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="GRNN", s="2Previous")
+h <- get_gam_predictions(model=gam_grnn_1, series=past3_surp, series_length=100) %>% select(surprisal=past3_surp, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="GRNN", s="3Previous")
+
+i <- get_gam_predictions(model=gam_txl_1, series=surp, series_length=100) %>% select(surprisal=surp, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="TXL", s="Current")
+j <- get_gam_predictions(model=gam_txl_1, series=past_surp, series_length=100) %>% select(surprisal=past_surp, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="TXL", s="Previous")
+k <- get_gam_predictions(model=gam_txl_1, series=past2_surp, series_length=100) %>% select(surprisal=past2_surp, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="TXL", s="2Previous")
+l <- get_gam_predictions(model=gam_txl_1, series=past3_surp, series_length=100) %>% select(surprisal=past3_surp, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="TXL", s="3Previous")
+
+m <- get_gam_predictions(model=gam_gpt_1, series=surp, series_length=100) %>% select(surprisal=surp, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="GPT-2", s="Current")
+n <- get_gam_predictions(model=gam_gpt_1, series=past_surp, series_length=100) %>% select(surprisal=past_surp, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="GPT-2", s="Previous")
+o <- get_gam_predictions(model=gam_gpt_1, series=past2_surp, series_length=100) %>% select(surprisal=past2_surp, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="GPT-2", s="2Previous")
+p <- get_gam_predictions(model=gam_gpt_1, series=past3_surp, series_length=100) %>% select(surprisal=past3_surp, rt, CI_upper, CI_lower) %>% unique() %>% mutate(model="GPT-2", s="3Previous")
+
+
+all <- a %>% union(b) %>% union(c) %>% union(d) %>% union(e) %>% union(f) %>% union(g) %>% union(h) %>% 
+   union(i) %>% union(j) %>% union(k) %>% union(l) %>% union(m) %>% union(n) %>% union(o) %>% union(p) %>% 
+  mutate(model=factor(model, levels=c("5-gram", "GRNN", "TXL","GPT-2")),
+         s=factor(s, levels=c("Current", "Previous", "2Previous", "3Previous"))) %>% 
+                        write_rds(here("Analysis/models/spr_gam_predictions.rds"))
+```
+
+```{r, eval=T}
+
+
+gam1 <- read_rds(here("Analysis/models/spr_gam_predictions.rds")) %>%  ggplot( aes(x=surprisal, y=rt, ymin=CI_lower, ymax=CI_upper))+
+  geom_line()+
+  geom_ribbon(alpha=.3)+
+  facet_grid(s~model)+
+  coord_cartesian(xlim=c(0,28))+
+  labs(x="Surprisal (bits)", y="Reaction Time (ms)")+theme(axis.ticks.x=element_blank(), axis.title.x=element_blank(), axis.text.x=element_blank(), plot.margin=margin(t=0,r=0,b=0,l=0,unit="pt"))
+
+
+dens2 <-   ggplot(all_mean_spr, aes(x=value))+
+  geom_density(fill="gray",)+
+  facet_grid(.~model)+
+  labs(x="Surprisal (bits)", y="")+
+    coord_cartesian(xlim=c(0,28))+
+  theme(axis.text.y = element_blank(), strip.text=element_blank(), axis.ticks.y =element_blank(), axis.title.y=element_blank(), panel.grid=element_blank(), plot.margin = unit(c(0, 0, 0, 0), "cm"))
+
+p2 = cowplot::align_plots(gam1, dens2, align = "v", axis="lr")
+plot_grid(p2[[1]], p2[[2]], nrow=2, rel_heights = c(1, .3))
+
+```
 
 # Maze LMs
 
@@ -405,13 +526,13 @@ gpt_data <- labelled_pre_error %>% select(rt, surprisal=gpt_center, prev_surp=pa
                                             ) %>% mutate(model="GPT-2")
 
 all_data <- ngram_data %>% union(grnn_data) %>% union(txl_data) %>% union(gpt_data) %>% 
-  write_rds("maze_pre_brms.rds")
+  write_rds(here("Analysis/models/maze_pre_brms.rds"))
 
 ```
 
 
-```{r, eval=F}
-
+```{r run brms, eval=F}
+# Note this was actually run on a cluster with a separate script that just had this
 data=readRDS("maze_pre_brms.rds")
  priors <- c(
       set_prior("normal(1000, 1000)", class="Intercept"),
@@ -435,6 +556,39 @@ run_model("GRNN",data,"grnn_maze")
 run_model("TXL",data,"txl_maze")
 run_model("GPT-2",data,"gpt_maze")
 
+
+```
+
+```{r summary}
+
+show_summary <- function(model){
+  intervals <- gather_draws(model, `b_.*`, regex=T) %>% mean_qi()
+  
+  stats <- gather_draws(model, `b_.*`, regex=T) %>% 
+    mutate(above_0=ifelse(.value>0, 1,0)) %>% 
+    group_by(.variable) %>% 
+    summarize(pct_above_0=mean(above_0)) %>% 
+    mutate(`P` = signif(2*pmin(pct_above_0,1-pct_above_0), digits=2)) %>% 
+    left_join(intervals, by=".variable") %>% 
+    mutate(lower=round(.lower, digits=1),
+           upper=round(.upper, digits=1),
+           E=round(.value, digits=1),
+           `Estimate`=str_c(E," [",lower,", ", upper,"]"),
+           Term=str_sub(.variable, 3, -1),
+           ) %>% 
+    select(Term, `Estimate`)
+  
+  stats
+}
+```
+
+```{r process-maze-models, eval=F}
+ngram <- read_rds(here("Analysis/models/5-gram_maze.rds")) %>% show_summary() %>% mutate(model="5-gram")
+txl <- read_rds(here("Analysis/models/txl_maze.rds")) %>% show_summary() %>% mutate(model="TXL")
+grnn <- read_rds(here("Analysis/models/grnn_maze.rds")) %>% show_summary() %>% mutate(model="GRNN")
+gpt <- read_rds(here("Analysis/models/gpt_maze.rds")) %>% show_summary() %>% mutate(model="GPT-2")
+
+summ <- ngram %>% union(txl) %>% union(grnn) %>% union(gpt) %>% write_rds(here("Analysis/models/brms_maze_summ.rds"))
 
 ```
 
@@ -467,26 +621,59 @@ gpt_data <-select_spr %>% rename_with(~str_replace_all(.x, "txl", "surp"))%>%
          past3_surp_center, past3_freq_center, past3_length_center, subject, Word_ID) %>% mutate(model="GPT-2")
 
 all_spr <- ngram_data %>% union(grnn_data) %>% union(txl_data) %>% union(gpt_data) %>% 
-  write_rds("spr_pre_brms.rds")
+  write_rds(here("Analysis/models/spr_pre_brms.rds"))
+
+ngram_mean_data <- item_mean_spr %>% rename_with(~str_replace_all(.x, "ngram", "surp"))%>% 
+  select(rt, surp_center, freq_center, length_center,
+         past_surp_center, past_freq_center, past_length_center,
+         past2_surp_center, past2_freq_center, past2_length_center,
+         past3_surp_center, past3_freq_center, past3_length_center, Word_ID) %>% mutate(model="5-gram") 
+
+grnn_mean_data <- item_mean_spr %>% rename_with(~str_replace_all(.x, "grnn", "surp"))%>% 
+  select(rt, surp_center, freq_center, length_center,
+         past_surp_center, past_freq_center, past_length_center,
+         past2_surp_center, past2_freq_center, past2_length_center,
+         past3_surp_center, past3_freq_center, past3_length_center, Word_ID)%>% mutate(model="GRNN")
+
+txl_mean_data <- item_mean_spr %>% rename_with(~str_replace_all(.x, "txl", "surp"))%>% 
+  select(rt, surp_center, freq_center, length_center,
+         past_surp_center, past_freq_center, past_length_center,
+         past2_surp_center, past2_freq_center, past2_length_center,
+         past3_surp_center, past3_freq_center, past3_length_center, Word_ID) %>% mutate(model="TXL")
+
+gpt_mean_data <-item_mean_spr %>% rename_with(~str_replace_all(.x, "txl", "surp"))%>% 
+  select(rt, surp_center, freq_center, length_center,
+         past_surp_center, past_freq_center, past_length_center,
+         past2_surp_center, past2_freq_center, past2_length_center,
+         past3_surp_center, past3_freq_center, past3_length_center, Word_ID) %>% mutate(model="GPT-2")
+
+all_mean_spr <- ngram_mean_data %>% union(grnn_mean_data) %>% union(txl_mean_data) %>% union(gpt_mean_data) 
+
 ```
 
-```{r spr lms, eval=F}
+```{r spr lms-mean, eval=T}
 
 run_lm <- function(data,modelspec){
   d <- data %>% filter(model==modelspec)
 model_1 <- lmer(rt ~ surp_center * length_center + length_center * freq_center +
                   past_surp_center * past_length_center + past_length_center * past_freq_center + 
                  past2_surp_center * past2_length_center + past2_length_center * past2_freq_center + 
-                  past3_surp_center * past3_length_center + past3_length_center * past3_freq_center + 
-                  (1|subject)+(1|Word_ID), data=d)
+                  past3_surp_center * past3_length_center + past3_length_center * past3_freq_center +(1|Word_ID), data=d)
 return(model_1)
 }
 
-m_ngram <- run_lm(all_spr,"5-gram")
-m_grnn <- run_lm(all_spr, "GRNN")
-m_txl <- run_lm(all_spr,"TXL")
-m_gpt <- run_lm(all_spr,"GPT-2")
+m_ngram <- run_lm(all_mean_spr,"5-gram")
+m_grnn <- run_lm(all_mean_spr, "GRNN")
+m_txl <- run_lm(all_mean_spr,"TXL")
+m_gpt <- run_lm(all_mean_spr,"GPT-2")
 
+```
+
+```{r lmsumm}
+summary(m_ngram)
+summary(m_grnn)
+summary(m_txl)
+summary(m_gpt)
 ```
 
 ```{r, eval=F}

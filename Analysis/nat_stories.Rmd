@@ -254,7 +254,7 @@ all_spr <- d.raw %>% group_by(correct) %>%
   mutate(source="SPR") %>% 
   select(source,correct,pct)
 
-first <- d.raw %>% 
+first_spr <- d.raw %>% 
   group_by(WorkerId,correct) %>% 
   mutate(num=row_number()) %>% 
   filter(num==1) %>% 
@@ -262,10 +262,10 @@ first <- d.raw %>%
   group_by(correct) %>% 
   tally() %>% 
   mutate(pct=n/sum(n)) %>% 
-  mutate(source="SPR 1st") %>% 
+  mutate(source="SPR 1st story") %>% 
   select(source,correct,pct)
 
-all <- data_filt %>% select(subject, num_correct) %>% 
+all_maze <- data_filt %>% select(subject, num_correct) %>% 
   unique() %>% 
   mutate(correct=num_correct) %>% 
    group_by(correct) %>% 
@@ -274,7 +274,18 @@ all <- data_filt %>% select(subject, num_correct) %>%
   mutate(source="all Maze") %>% 
   select(source,correct, pct)
 
-some <- data_filt %>% select(subject, num_correct) %>% 
+maze_bad <- data_filt %>% select(subject, num_correct) %>% 
+  unique() %>% 
+  left_join(data_error_summ, by=c("subject", "num_correct")) %>% 
+  filter(pct_correct<.8) %>% 
+  mutate(correct=num_correct) %>% 
+   group_by(correct) %>% 
+  tally() %>% 
+  mutate(pct=n/sum(n)) %>% 
+  mutate(source="<80% correct") %>% 
+  select(source,correct, pct)
+
+maze_good <- data_filt %>% select(subject, num_correct) %>% 
   unique() %>% 
   left_join(data_error_summ, by=c("subject", "num_correct")) %>% 
   filter(pct_correct>.8) %>% 
@@ -282,10 +293,10 @@ some <- data_filt %>% select(subject, num_correct) %>%
    group_by(correct) %>% 
   tally() %>% 
   mutate(pct=n/sum(n)) %>% 
-  mutate(source="Maze >80% correct") %>% 
+  mutate(source=">80% correct") %>% 
   select(source,correct, pct)
 
-to_plot <- all %>% union(some) %>% union(all_spr) %>% union(first)
+to_plot <- all_maze %>% union(maze_bad) %>% union(maze_good)  %>% union(all_spr) %>% union(first_spr) %>% write_rds(here("Analysis/comp.rds"))
 
 ggplot(to_plot, aes(x=correct, y=pct, fill=source))+geom_col(position="dodge")+facet_grid(.~source)+labs(title="Comprehension question accuracy", x="Number correct", y="Percent of participants")
 
