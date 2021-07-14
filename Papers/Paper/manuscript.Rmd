@@ -203,11 +203,12 @@ For generalized additive models, we centered but did not rescale the length and 
 
 For linear models, we centered all predictors. We used full mixed effects, including by-subject slopes and a per-word-token random intercept [@barrRandomEffectsStructure2013]. We used weak priors (normal(1000,1000) for intercept, normal(0,500) for beta and sd, and lkj(1) for correlations). Models were run in brm [@burknerAdvancedBayesianMultilevel2018]. 
 
-For model comparison, we fit models with only frequency and length as predictors, as well as models that also had one or more sources of surprisal. We centered all effects. We included a random intercept for word identity, but no further random effects so the models would fit in lme4 [@batesFittingLinearMixedeffects2015]. TODO!!!
+For model comparison, we took by-item averaged data to aid in fast model fitting.  We included frequency, length, and their interaction to all models. Then we fit models with either 1 or 2 sources of surprisal using lm and assessed the effect of adding the second surprisal source with an anova. We used predictors for the current and past word and centered all effects. 
 
 ## Self-paced reading comparison
 
-In addition to the texts, @futrellNaturalStoriesCorpus2020 released reading time data from a SPR study they ran. They recruited 181 participants, most of whom read 5 of the stories. After reading each story, each participant answered 6 binary-choice comprehension questions. As a comparison to our A-maze models, we run similar models on the SPR corpus on Natural Stories [@futrellNaturalStoriesCorpus2020]. For comparability, we analyse only the first story each participant read, and, in line with @futrellNaturalStoriesCorpus2020, exclude participants who got less than 5/6 of the comprehension questions correct. TODO model differences!!!
+In addition to the texts, @futrellNaturalStoriesCorpus2020 released reading time data from a SPR study they ran. They recruited 181 participants, most of whom read 5 of the stories. After reading each story, each participant answered 6 binary-choice comprehension questions. As a comparison to our A-maze models, we run similar models on the SPR corpus on Natural Stories [@futrellNaturalStoriesCorpus2020]. For comparability, we analyse only the first story each participant read, and, in line with @futrellNaturalStoriesCorpus2020, exclude participants who got less than 5/6 of the comprehension questions correct. To account for spill over effects known to exist in SPR, we analyse predictors at the current word as well as the past 3 words for all models. 
+TODO differences for linear model!
 
 
 # Results
@@ -299,29 +300,9 @@ data_anything_goes <- data_filt %>%
 
 We fitted generalized additive models to test whether the RTs from the Maze experiment showed a linear relationship with surprisal and whether the effect was limited the current word or had spilled over from the prior word. For these models, we only included data that occurred before any mistakes in the sentence; due to limits of model vocabulary, words with punctuation and some uncommon or proper nouns were excluded. 
 
-(ref:gam-cap) GAM predictions of reaction time (RT) as a function of either current word surprisal (top) or previous word surprisal (bottom). Density of data is shown along the x-axis. For each of the 4 language models used, there is a linear relationship between current word surprisal and RT (at least when there is enough data). There is no relationship between previous word surprisal and RT. TODO replace graph!
+(ref:gam-cap) GAM predictions of reaction time (RT) as a function of either current word surprisal (top) or previous word surprisal (bottom). Density of data is shown along the x-axis. For each of the 4 language models used, there is a linear relationship between current word surprisal and RT (at least when there is enough data). There is no relationship between previous word surprisal and RT. 
 
 ```{r gam, out.height="40%", fig.width=8, fig.height=3, fig.pos='t', fig.cap="(ref:gam-cap)"}
-labelled_pre_error <- read_rds(here("Data/maze_pre_error.rds"))
-
-ngram_data <- labelled_pre_error %>% select(rt, surprisal=ngram_surp, prev_surp=past_ngram_surp, 
-                                            freq=freq_center, len=length_center,
-                                            prev_freq=past_freq_center, prev_len=past_length_center, subject
-                                            ) %>% mutate(model="5-gram") 
-grnn_data <- labelled_pre_error %>% select(rt, surprisal=grnn_surp, prev_surp=past_grnn_surp, 
-                                            freq=freq_center, len=length_center,
-                                            prev_freq=past_freq_center, prev_len=past_length_center, subject
-                                            )%>% mutate(model="GRNN")
-
-txl_data <- labelled_pre_error %>% select(rt, surprisal=txl_surp, prev_surp=past_txl_surp, 
-                                            freq=freq_center, len=length_center,
-                                            prev_freq=past_freq_center, prev_len=past_length_center,subject
-                                            ) %>% mutate(model="TXL")
-
-all_data <- ngram_data %>% union(grnn_data) %>% union(txl_data) %>% 
-  select(surprisal, prev_surp,model) %>% 
-  pivot_longer(cols=`surprisal`:`prev_surp`) %>% 
-  mutate(s=ifelse(name=="surprisal", "Current","Previous"))
 
 gam1 <- read_rds(here("Analysis/models/gam_predictions.rds")) %>%  ggplot( aes(x=surprisal, y=rt, ymin=CI_lower, ymax=CI_upper))+
   geom_line()+
@@ -331,8 +312,9 @@ gam1 <- read_rds(here("Analysis/models/gam_predictions.rds")) %>%  ggplot( aes(x
   coord_cartesian(xlim=c(0,28))+
   labs(x="Surprisal (bits)", y="Reaction Time (ms)")+theme(axis.ticks.x=element_blank(), axis.title.x=element_blank(), axis.text.x=element_blank(), plot.margin=margin(t=0,r=0,b=0,l=0,unit="pt"))
 
+all_mean_data <-  read_rds(here("Analysis/models/meaned_maze.rds"))
 
-dens2 <-   ggplot(all_data, aes(x=value))+
+dens2 <-   ggplot(all_mean_data, aes(x=value))+
   geom_density(fill="gray",)+
   facet_grid(.~model)+
   labs(x="Surprisal (bits)", y="")+
@@ -341,8 +323,6 @@ dens2 <-   ggplot(all_data, aes(x=value))+
 
 p2 = cowplot::align_plots(gam1, dens2, align = "v", axis="lr")
 plot_grid(p2[[1]], p2[[2]], nrow=2, rel_heights = c(1, .3))
-
-
 
 
 ```
@@ -384,85 +364,13 @@ knitr::kable(summ, format="latex", position="t",caption="Predictions from fitted
 
 As we can see in Table \@ref(tab:pre-error), we find large effects of surprisal and length, but minimal effects of frequency. These effects are larger than what is usually reported in other methods CITE, but this could be due to the overall slowness of the method. The lack of frequency effects is somewhat surprising, but consistent with @shainLargescaleStudyEffects2019. Notably the coefficients for the lagged terms are small relative to the effects of surprisal and length of the current word.  
 
-As a last analysis, we checked which of our surprisal models had the best fit using a nested model comparison. 
-We found that all surprisal sources provide predictive value over none, but that the information provided by the Ngram model does not provide additional value to a model that already has GRNN in it. TXL and GRNN appear to contain some complementary predictive value. 
+As a last analysis, we checked which of our surprisal models had the best fit using a nested model comparison shown in Table \@ref(tab:maze-compare). We assess the benefits of adding each model's predictions as a second surprisal source to see which models pick up on information not contained in another model. In terms of log likelihoods, GPT-2 is better than GRNN is better than TXL is better than 5-gram. Model comparisons tell a similar story; GPT-2 provides a lot of additional predictive value over each other model, GRNN provides a lot over 5-gram and TXL and a little complemetary information over GPT-2. TXL provides a lot over 5-gram, and 5-gram provides little over any model. 
+```{r maze-compare}
 
-```{r,include=F, eval=F}
-d_lm <- labelled_pre_error %>% group_by(word, txl_center, ngram_center, grnn_center, freq_center, length_center,
-                                        past_c_txl, past_c_ngram, past_c_grnn, past_c_freq, past_c_length, Word_ID) %>% 
-  summarize(mean_rt=mean(rt))
+read_rds(here("Analysis/maze_model_compare.rds")) %>% knitr::kable(format="latex", position="t",caption="Results of model comparisons on Maze data. Each row shows the additional predictive value gained from adding that model to another model. F values and p values from anova tests are reported. We also report log likelihoods of models with only one surprisal source.")
 
-no_surp <- lmer(mean_rt ~ freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d_lm)
-
-ngram_only <- lmer(mean_rt ~ ngram_center + past_c_ngram + freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d_lm)
-
-grnn_only <- lmer(mean_rt ~ grnn_center + past_c_grnn + freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d_lm)
-
-txl_only <- lmer(mean_rt ~ txl_center + past_c_txl + freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d_lm)
-
-all_surp <- lmer(mean_rt ~ ngram_center + past_c_ngram + 
-                   grnn_center + past_c_grnn +
-                   txl_center + past_c_txl +
-                   freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d_lm)
-
-
-ngram_grnn <-  lmer(mean_rt ~ ngram_center + past_c_ngram + 
-                   grnn_center + past_c_grnn +
-                   freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d_lm)
-
-ngram_txl <-  lmer(mean_rt ~ ngram_center + past_c_ngram + 
-                   txl_center + past_c_txl +
-                   freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d_lm)
-
-grnn_txl <-  lmer(mean_rt ~ grnn_center + past_c_grnn +
-                   txl_center + past_c_txl +
-                   freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d_lm)
-
-no_lag <-  lmer(mean_rt ~ ngram_center +
-                   grnn_center +
-                   txl_center + 
-                   freq_center*length_center+(1|word), data=d_lm)
-
-no_surp_lag <-  lmer(mean_rt ~ ngram_center +  
-                   grnn_center + 
-                   txl_center +                    freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d_lm)
-
-  only_surp_lag <-  lmer(mean_rt ~ ngram_center + past_c_ngram + 
-                   grnn_center + past_c_grnn +
-                   txl_center + past_c_txl +
-                   freq_center*length_center+(1|word), data=d_lm)
 ```
 
-```{r, include=F, eval=F}
-anova(all_surp, txl_only)
-anova(all_surp, grnn_only)
-anova(all_surp, ngram_only)
-
-anova(txl_only, no_surp)
-anova(grnn_only, no_surp)
-anova(ngram_only, no_surp)
-
-anova(all_surp, ngram_grnn)
-anova(all_surp, ngram_txl)
-anova(all_surp, grnn_txl)
-
-anova(ngram_grnn, ngram_only)
-anova(ngram_grnn, grnn_only)
-anova(ngram_txl, ngram_only)
-anova(ngram_txl, txl_only)
-anova(grnn_txl, grnn_only)
-anova(grnn_txl, txl_only)
-
-anova(all_surp, no_lag)
-
-anova(all_surp, no_surp_lag)
-
-anova(no_surp_lag, no_lag) 
-
-anova(all_surp, only_surp_lag)
-
-anova(only_surp_lag, no_lag)
-```
 
 ## Comparison with SPR
 
@@ -471,7 +379,7 @@ anova(only_surp_lag, no_lag)
 
 
 
-(ref:spr-gam-cap) GAM predictions of reaction time (RT) for SPR data from @futrellNaturalStoriesCorpus2020 as a function of either current word surprisal (top) or previous word surprisal (bottom). Density of data is shown along the x-axis. TODO replace graph!
+(ref:spr-gam-cap) GAM predictions of reaction time (RT) for SPR data from @futrellNaturalStoriesCorpus2020 as a function of current word surprisal (top) or the surprisal of an earlier word, up to 3 words back. Density of data is shown along the x-axis.
 
 ```{r spr-gam, out.height="40%", fig.width=8, fig.height=4, fig.pos='t', fig.cap="(ref:spr-gam-cap)"}
 gam1 <- read_rds(here("Analysis/models/spr_gam_predictions.rds")) %>%  ggplot( aes(x=surprisal, y=rt, ymin=CI_lower, ymax=CI_upper))+
@@ -492,7 +400,7 @@ dens2 <-   ggplot(all_mean_spr, aes(x=value))+
   theme(axis.text.y = element_blank(), strip.text=element_blank(), axis.ticks.y =element_blank(), axis.title.y=element_blank(), panel.grid=element_blank(), plot.margin = unit(c(0, 0, 0, 0), "cm"))
 
 p2 = cowplot::align_plots(gam1, dens2, align = "v", axis="lr")
-plot_grid(p2[[1]], p2[[2]], nrow=2, rel_heights = c(1, .3))
+plot_grid(p2[[1]], p2[[2]], nrow=2, rel_heights = c(1, .2))
 
 ```
 
@@ -529,68 +437,14 @@ As a comparison, we ran the same types of models on the Self-Paced Reading data 
 
 Lastly, we are interested to know which of the models is better at predicting human behavior data, and whether they are complementary. I fit a series of models including the frequency and length predictors, and some number of past or present surprisal sources. This allows us to tell whether different models of surprisal are "picking up" on different things that affect reading time. 
 
-We ran nested model comparison on the SPR data as well, and found that all sources of surprisal have predictive value, but the GRNN model provides the most benefit. Adding other models to GRNN is marginally beneficial, but TXL and N-gram together are more predictive than either alone. 
-
-```{r, eval=F}
-
-no_surp <- lmer(mean_rt ~ freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d.byword)
-
-ngram_only <- lmer(mean_rt ~ ngram_center + past_c_ngram + freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d.byword)
-
-grnn_only <- lmer(mean_rt ~ grnn_center + past_c_grnn + freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d.byword)
-
-txl_only <- lmer(mean_rt ~ txl_center + past_c_txl + freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d.byword)
-
-all_surp <- lmer(mean_rt ~ ngram_center + past_c_ngram + 
-                   grnn_center + past_c_grnn +
-                   txl_center + past_c_txl +
-                   freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d.byword)
+Similarly to the model comparison for Maze, we also conduct a model comparison on the SPR data shown in Table \@ref(tab:spr-compare). In terms of log likelihoods, we find that GPT-2 is better than 5-gram is better than GRNN is better than TXL, although differences are small. Model comparisons show that GPT-2 and 5-gram models contain some value over each other model, which is less clear for TXL and GRNN. Overall, F-values here are much lower than for Maze. TODO how to interpret!
 
 
-ngram_grnn <-  lmer(mean_rt ~ ngram_center + past_c_ngram + 
-                   grnn_center + past_c_grnn +
-                   freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d.byword)
+```{r spr-compare}
 
-ngram_txl <-  lmer(mean_rt ~ ngram_center + past_c_ngram + 
-                   txl_center + past_c_txl +
-                   freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d.byword)
+read_rds(here("Analysis/spr_model_compare.rds")) %>% knitr::kable(format="latex", position="t",caption="Results of model comparisons on SPR data. Each row shows the additional predictive value gained from adding that model to another model. F values and p values from anova tests are reported. We also report log likelihoods of models with only one surprisal source.")
 
-grnn_txl <-  lmer(mean_rt ~ grnn_center + past_c_grnn +
-                   txl_center + past_c_txl +
-                   freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d.byword)
-
-no_lag <-  lmer(mean_rt ~ ngram_center +
-                   grnn_center +
-                   txl_center + 
-                   freq_center*length_center+(1|word), data=d.byword)
-
-no_surp_lag <-  lmer(mean_rt ~ ngram_center +  
-                   grnn_center + 
-                   txl_center +                    freq_center*length_center+past_c_freq*past_c_length+(1|word), data=d.byword)
-
-  only_surp_lag <-  lmer(mean_rt ~ ngram_center + past_c_ngram + 
-                   grnn_center + past_c_grnn +
-                   txl_center + past_c_txl +
-                   freq_center*length_center+(1|word), data=d.byword)
 ```
-
-```{r, eval=F}
-anova(txl_only, no_surp)
-anova(grnn_only, no_surp)
-anova(ngram_only, no_surp)
-
-anova(all_surp, ngram_grnn)
-anova(all_surp, ngram_txl)
-anova(all_surp, grnn_txl)
-
-anova(ngram_grnn, ngram_only)
-anova(ngram_grnn, grnn_only)
-anova(ngram_txl, ngram_only)
-anova(ngram_txl, txl_only)
-anova(grnn_txl, grnn_only)
-anova(grnn_txl, txl_only)
-```
-
 # Discussion
 
 We introduced a tweak to the paradigm for displaying Maze tasks that makes it useable for multi-sentence materials. In this error-correction Maze paradigm, participants read all the words because they can correct their mistakes and move on. We tested this method on the Natural Stories corpus, showing that, despite the oddness of the task, participants can read and understand a 1000 word story in this method. We additionally showed that the RTs generated in the Maze task show a linear relationship between the RT of a word and it's surprisal, but no relationship with the surprisal of the previous word. This provides additional evidence for the argument that the Maze task forces very incremental processing [@forsterMazeTaskMeasuring2009]. 
