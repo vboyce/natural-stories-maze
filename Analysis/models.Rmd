@@ -760,21 +760,21 @@ summary(m_gpt)
 #data=readRDS("spr_pre_brms.rds")
 data=read_rds(here("Analysis/models/spr_pre_brms.rds"))
  priors <- c(
+      set_prior("normal(350,50)", class="Intercept"),
       set_prior("normal(0, 5)", class="b"),
-      set_prior("exponential(.1)", class="sd", group="subject", coef="Intercept"),
-      set_prior("exponential(.1)", class="sd", group="Word_ID", coef="Intercept"),
-      set_prior("exponential(1)", class="sd"),
-      set_prior("lkj(2)",       class="cor"),
-      set_prior("exponential(.1)", class="sigma")
+      set_prior("exponential(.01)", class="sd", group="subject", coef="Intercept"),
+      set_prior("exponential(.01)", class="sd", group="Word_ID", coef="Intercept"),
+     # set_prior("exponential(1)", class="sd"),
+     # set_prior("lkj(2)",       class="cor"),
+      set_prior("exponential(.01)", class="sigma")
       )
 run_model <- function(model_spec,data,file_name){
-  d <- data %>% filter(model==model_spec) %>% 
-    mutate(center_rt=scale(rt, center=T, scale=F))
-  m1 <- brm(center_rt ~ surp_center * length_center + length_center * freq_center +
+  d <- data %>% filter(model==model_spec)
+  m1 <- brm(rt ~ surp_center * length_center + length_center * freq_center +
                   past_surp_center * past_length_center + past_length_center * past_freq_center + 
                  past2_surp_center * past2_length_center + past2_length_center * past2_freq_center + 
                   past3_surp_center * past3_length_center + past3_length_center * past3_freq_center + 
-              (surp_center + length_center + freq_center|subject)+(1|Word_ID),
+              (1|subject)+(1|Word_ID),
             data=d,
             file=file_name,
             prior=priors,
@@ -790,15 +790,44 @@ run_model("TXL",data,"txl_spr")
 ```
 
 
-```{r diagnose-unhappiness}
+```{r diagnose-unhappiness, eval=F}
 
-sad <- read_rds(here("Analysis/models/gpt_spr.rds"))
+sad <- read_rds(here("Analysis/models/txl_spr.rds"))
 
 summary(sad)
 
-d <- data %>% filter(model=="GPT-2") %>% select(-rt, -Word_ID, -model, -subject)
+```
+```{r summary-spr}
 
-cor(d) %>%as.tibble() %>%  mutate(across(where(is.numeric), ~round(.x,2))) %>% View()
+show_summary_spr <- function(model){
+  intervals <- gather_draws(model, `b_.*`, regex=T) %>% mean_qi()
+  
+  stats <- gather_draws(model, `b_.*`, regex=T) %>% 
+    mutate(above_0=ifelse(.value>0, 1,0)) %>% 
+    group_by(.variable) %>% 
+    summarize(pct_above_0=mean(above_0)) %>% 
+    mutate(`P` = signif(2*pmin(pct_above_0,1-pct_above_0), digits=2)) %>% 
+    left_join(intervals, by=".variable") %>% 
+    mutate(lower=round(.lower, digits=1),
+           upper=round(.upper, digits=1),
+           E=round(.value, digits=1),
+           `Estimate`=str_c(E," [",lower,", ", upper,"]"),
+           Term=str_sub(.variable, 3, -1),
+           ) %>% 
+    select(Term, `Estimate`)
+  
+  stats
+}
+```
+
+```{r process-spr-models, eval=F}
+ngram_spr <- read_rds(here("Analysis/models/5-gram_spr.rds")) %>% show_summary_spr() %>% mutate(model="5-gram")
+txl_spr <- read_rds(here("Analysis/models/txl_spr.rds")) %>% show_summary_spr() %>% mutate(model="TXL")
+grnn_spr <- read_rds(here("Analysis/models/grnn_spr.rds")) %>% show_summary_spr() %>% mutate(model="GRNN")
+gpt_spr <- read_rds(here("Analysis/models/gpt_spr.rds")) %>% show_summary_spr() %>% mutate(model="GPT-2")
+
+summ_spr <- ngram_spr %>% union(txl_spr) %>% union(grnn_spr) %>% union(gpt_spr) %>% write_rds(here("Analysis/models/brms_spr_summ.rds"))
+
 ```
 
 Really struggling with the intercept for population & subject level -- maybe sd was intercept needs to be a lot bigger? 
