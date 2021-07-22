@@ -1,6 +1,8 @@
 ---
 title: "Natural Stories model analyses"
-output: html_document
+output: 
+  html_document:
+    toc: true
 ---
 
 # Prep
@@ -789,6 +791,40 @@ run_model("TXL",data,"txl_spr")
 
 ```
 
+
+```{r, eval=F}
+
+#data=readRDS("spr_pre_brms.rds")
+data=read_rds(here("Analysis/models/spr_pre_brms.rds"))
+
+run_model_lmer <- function(model_spec,data){
+  d <- data %>% filter(model==model_spec)
+  m1 <- lmer(rt ~ surp_center * length_center + length_center * freq_center +
+                  past_surp_center * past_length_center + past_length_center * past_freq_center + 
+                 past2_surp_center * past2_length_center + past2_length_center * past2_freq_center + 
+                  past3_surp_center * past3_length_center + past3_length_center * past3_freq_center + 
+              (surp_center + length_center +  freq_center +
+                  past_surp_center + past_length_center + past_freq_center ||subject)+(1|Word_ID),
+            data=d) 
+  m1
+}
+
+run_model_lmer("GRNN",data) %>% write_rds(here("Analysis/models/grnn_spr_lmer.rds"))
+run_model_lmer("5-gram",data) %>% write_rds(here("Analysis/models/5-gram_spr_lmer.rds"))
+run_model_lmer("TXL",data) %>% write_rds(here("Analysis/models/txl_spr_lmer.rds"))
+run_model_lmer("GPT-2",data) %>% write_rds(here("Analysis/models/gpt_spr_lmer.rds"))
+
+```
+## Summaries of LMER 
+These have some heirarchical effects
+```{r}
+read_rds(here("Analysis/models/grnn_spr_lmer.rds")) %>% summary()
+read_rds(here("Analysis/models/5-gram_spr_lmer.rds")) %>% summary()
+read_rds(here("Analysis/models/txl_spr_lmer.rds")) %>% summary()
+read_rds(here("Analysis/models/gpt_spr_lmer.rds")) %>% summary()
+
+
+```
 
 ```{r diagnose-unhappiness, eval=F}
 
