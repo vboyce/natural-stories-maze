@@ -215,7 +215,7 @@ For model comparison, we took by-item averaged data to aid in fast model fitting
 ## Self-paced reading comparison
 
 In addition to the texts, @futrellNaturalStoriesCorpus2020 released reading time data from a SPR study they ran. They recruited 181 participants, most of whom read 5 of the stories. After reading each story, each participant answered 6 binary-choice comprehension questions. As a comparison to our A-maze models, we run similar models on the SPR corpus on Natural Stories [@futrellNaturalStoriesCorpus2020]. For comparability, we analyse only the first story each participant read, and, in line with @futrellNaturalStoriesCorpus2020, exclude participants who got less than 5/6 of the comprehension questions correct. To account for spill over effects known to exist in SPR, we analyse predictors at the current word as well as the past 3 words for all models. 
-For linear models, we centered all predictors. We were unable to fit the full mixed effects model, so we used the best model that reasonably converged which had a by-subject random intercept and a per-word-token random intercept. We used regularizing priors(normal(350,50) for intercept, normal(0,5) for beta, exponential(.01) for sd and sigma). Models were run in brm [@burknerAdvancedBayesianMultilevel2018]. 
+For linear models, we centered all predictors. We were unable to fit the full mixed effects model. The best model we could fit had by-subject random intercept, uncorrelated by-subject random slopes for surprisal, length and frequency, and  a per-word-token random intercept, fit with lme4, as this structure did not fit reliably in brms.
 
 # Results
 
@@ -413,10 +413,10 @@ plot_grid(p2[[1]], p2[[2]], nrow=2, rel_heights = c(1, .2))
 
 ```{r spr-table}
 
-summ_spr <- read_rds(here("Analysis/models/brms_spr_summ.rds")) %>% 
+summ_spr <- read_rds(here("Analysis/models/lmer_spr_summ.rds")) %>% 
   pivot_wider(names_from="model", values_from=c(`Estimate`)) %>% 
   mutate(Term=factor(Term, 
-                        levels=c("Intercept", 
+                        levels=c("(Intercept)", 
                                  "surp_center",
                                  "length_center",
                                  "freq_center",
@@ -445,7 +445,7 @@ summ_spr <- read_rds(here("Analysis/models/brms_spr_summ.rds")) %>%
                 "2Past Surprisal", "2Past Length", "2Past Freq", "2Past Surp x Length", "2Past Freq x Length",
                 "3Past Surprisal", "3Past Length", "3Past Freq", "3Past Surp x Length", "3Past Freq x Length")) 
 
-knitr::kable(summ_spr, format="latex", position="ht",caption="Predictions from fitted Bayesian regression models for SPR data. All terms were centered, but not rescaled. Units are in ms. Surprisal is per bit, length per character, and frequency per $log_2$ occurance per billion words.")
+knitr::kable(summ_spr, format="latex", position="ht",caption="Predictions from fitted regression models for SPR data. All terms were centered, but not rescaled. Units are in ms. Surprisal is per bit, length per character, and frequency per $log_2$ occurance per billion words. Uncertainty interval is +/- 1.97 standard error.")
 
 ```
 

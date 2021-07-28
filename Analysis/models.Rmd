@@ -817,52 +817,33 @@ run_model_lmer("GPT-2",data) %>% write_rds(here("Analysis/models/gpt_spr_lmer.rd
 ```
 ## Summaries of LMER 
 These have some heirarchical effects
-```{r}
-read_rds(here("Analysis/models/grnn_spr_lmer.rds")) %>% summary()
-read_rds(here("Analysis/models/5-gram_spr_lmer.rds")) %>% summary()
-read_rds(here("Analysis/models/txl_spr_lmer.rds")) %>% summary()
-read_rds(here("Analysis/models/gpt_spr_lmer.rds")) %>% summary()
 
 
-```
-
-```{r diagnose-unhappiness, eval=F}
-
-sad <- read_rds(here("Analysis/models/txl_spr.rds"))
-
-summary(sad)
-
-```
 ```{r summary-spr}
 
 show_summary_spr <- function(model){
-  intervals <- gather_draws(model, `b_.*`, regex=T) %>% mean_qi()
-  
-  stats <- gather_draws(model, `b_.*`, regex=T) %>% 
-    mutate(above_0=ifelse(.value>0, 1,0)) %>% 
-    group_by(.variable) %>% 
-    summarize(pct_above_0=mean(above_0)) %>% 
-    mutate(`P` = signif(2*pmin(pct_above_0,1-pct_above_0), digits=2)) %>% 
-    left_join(intervals, by=".variable") %>% 
-    mutate(lower=round(.lower, digits=1),
-           upper=round(.upper, digits=1),
-           E=round(.value, digits=1),
-           `Estimate`=str_c(E," [",lower,", ", upper,"]"),
-           Term=str_sub(.variable, 3, -1),
+
+  stats <- summary(model)[["coefficients"]] %>% 
+    as_tibble(rownames="Term") %>% 
+    mutate(width=1.97*`Std. Error`,
+           lower=round(Estimate-width,1),
+           upper=round(Estimate+width,1),
+           E=round(Estimate, digits=1),
+           `Estimate`=str_c(E," [",lower,", ", upper,"]")
            ) %>% 
-    select(Term, `Estimate`)
+    select(Term, Estimate)
   
   stats
 }
 ```
 
 ```{r process-spr-models, eval=F}
-ngram_spr <- read_rds(here("Analysis/models/5-gram_spr.rds")) %>% show_summary_spr() %>% mutate(model="5-gram")
-txl_spr <- read_rds(here("Analysis/models/txl_spr.rds")) %>% show_summary_spr() %>% mutate(model="TXL")
-grnn_spr <- read_rds(here("Analysis/models/grnn_spr.rds")) %>% show_summary_spr() %>% mutate(model="GRNN")
-gpt_spr <- read_rds(here("Analysis/models/gpt_spr.rds")) %>% show_summary_spr() %>% mutate(model="GPT-2")
+ngram_spr <- read_rds(here("Analysis/models/5-gram_spr_lmer.rds")) %>% show_summary_spr() %>% mutate(model="5-gram")
+txl_spr <- read_rds(here("Analysis/models/txl_spr_lmer.rds")) %>% show_summary_spr() %>% mutate(model="TXL")
+grnn_spr <- read_rds(here("Analysis/models/grnn_spr_lmer.rds")) %>% show_summary_spr() %>% mutate(model="GRNN")
+gpt_spr <- read_rds(here("Analysis/models/gpt_spr_lmer.rds")) %>% show_summary_spr() %>% mutate(model="GPT-2")
 
-summ_spr <- ngram_spr %>% union(txl_spr) %>% union(grnn_spr) %>% union(gpt_spr) %>% write_rds(here("Analysis/models/brms_spr_summ.rds"))
+summ_spr <- ngram_spr %>% union(txl_spr) %>% union(grnn_spr) %>% union(gpt_spr) %>% write_rds(here("Analysis/models/lmer_spr_summ.rds"))
 
 ```
 
