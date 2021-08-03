@@ -66,7 +66,7 @@ data_ready <- data_no_first %>% filter(rt>100 & rt<5000) %>%
 
 data_pre_error <- data_no_first %>% filter(rt>100 & rt<5000) %>% 
   filter(after_mistake==0) %>% 
-  select(subject, word_num, word, rt, sentence, type)
+  select(subject, word_num, word, rt, sentence, type) %>% write_rds(here("Data/maze_pre_error.rds"))
 
 data_stories <- data_ready %>% select(type, subject) %>% 
   unique() %>% 
@@ -461,10 +461,16 @@ log_like <- function(m1){
 }
 
 
+r_squared <- function(m1){
+    lm1 <- lm(str_c(no_surp,m1), data=item_mean_data) %>% summary()
+    lm1$r.squared %>% round(2) %>% as.character()
+}
+
 tibble(Model=c("5-gram","GRNN", "TXL", "GPT-2"), model_str=c(ngram,grnn,txl,gpt),`over 5-gram`=ngram,
              `over GRNN`=grnn,`over TXL`=txl,`over GPT-2`=gpt) %>% 
    mutate(across(`over 5-gram`:`over GPT-2`, ~map2_chr(.x, model_str,do_comparison)),
-          `Log Lik`=map_chr(model_str, log_like)) %>% 
+          `Log Lik`=map_chr(model_str, log_like),
+          r_squared=map_chr(model_str, r_squared)) %>% 
    select(-model_str) %>% write_rds(here("Analysis/maze_model_compare.rds")) %>%  knitr::kable()
 
 ```
@@ -503,7 +509,9 @@ d.limited <- d.raw %>% inner_join(first, by=c("WorkerId","correct","item"))
 
 #d.limited%>% select(WorkerId,correct,item) %>% unique() %>% group_by(correct) %>% tally()  %>% summarize(pct=n/sum(n),correct=correct)
 
-d.good <- d.limited %>% filter(correct>4) %>% rename(rt=RT) %>% filter(rt>100 & rt<5000)
+d.good <- d.limited %>% filter(correct>4) %>% rename(rt=RT) %>% filter(rt>100 & rt<5000) %>% write_rds(here("Data/SPR/first.rds"))
+
+
 ```
 
 
@@ -887,18 +895,179 @@ do_comparison <- function(m1, m2){
   fval <- anova(lm1,lm2)$F[2] %>% round() %>%  as.character
   pval <- anova(lm1,lm2)$`Pr(>F)`[2] %>% pvalue(add_p=T) %>% as.character()
   return(str_c(fval," (",pval,")"))
+  #return(a)
 }
 
+#do_comparison(ngram, grnn)
 log_like <- function(m1){
     lm(str_c(no_surp,m1), data=item_mean_spr) %>% logLik() %>% round() %>% as.character()
 
+}
+
+r_squared <- function(m1){
+    lm1 <- lm(str_c(no_surp,m1), data=item_mean_spr) %>% summary()
+    lm1$r.squared %>% round(2) %>% as.character()
 }
 
 
 tibble(Model=c("5-gram","GRNN", "TXL", "GPT-2"), model_str=c(ngram,grnn,txl,gpt),`over 5-gram`=ngram,
              `over GRNN`=grnn,`over TXL`=txl,`over GPT-2`=gpt) %>% 
    mutate(across(`over 5-gram`:`over GPT-2`, ~map2_chr(.x, model_str,do_comparison)),
-          `Log Lik`=map_chr(model_str, log_like)) %>% 
+          `Log Lik`=map_chr(model_str, log_like),
+          `r_squared`=map_chr(model_str, r_squared)) %>% 
    select(-model_str)%>% write_rds(here("Analysis/spr_model_compare.rds")) %>% kable() 
 
+```
+
+# R-squared
+
+```{r}
+spr <- read_rds(here("Analysis/spr_model_compare.rds"))
+
+maze <- read_rds(here("Analysis/maze_model_compare.rds"))
+```
+
+# Maze and SPR scatter
+
+```{r}
+tokenization <- here("Data/SPR/all_stories.tok.txt") %>% 
+  read_delim(delim="\t") %>% 
+  mutate(Word_In_Story_Num=zone,
+         Story_Num=item)
+
+labs <- read_rds(here("Prep_code/natural_stories_surprisals.rds")) %>% 
+  left_join(read_delim(here("Materials/natural_stories_sentences.tsv"), delim="\t")) %>% 
+  select(word_num=Word_In_Sentence_Num, word=Word, sentence=Sentence, everything())
+
+spr <- read_rds(here("Data/SPR/first.rds")) %>% left_join(tokenization) %>% left_join(labs) %>% select(WorkerId,rt,Story_Num,Sentence_Num, word_num)
+
+maze <- read_rds(here("Data/maze_pre_error.rds")) %>% left_join(labs) %>% select(subject, rt, Story_Num, Sentence_Num, word_num)
+```
+
+Abnormally low and high times were excluded, then for each word, an average was taken across subjects. For sentence level, these averages were then summed across the sentence. (Because of A-maze sentence discontinuation and general outlier handling, summing the average is better than averaging the sum.)
+
+Word level correlation between maze and spr
+```{r}
+
+summ_spr <- spr %>% group_by(Story_Num, Sentence_Num, word_num) %>% summarize(spr=mean(rt))
+
+summ <- maze %>% group_by(Story_Num, Sentence_Num, word_num) %>% summarize(maze=mean(rt)) %>% left_join(summ_spr)
+
+ggplot(summ, aes(x=maze, y=spr))+
+  geom_point(alpha=.02)+
+  coord_cartesian(xlim=c(0,1500),ylim=c(0,600))+
+  labs(title="Word level correlation in ms",subtitle="Axes trimmed")
+
+cor(summ$spr,summ$maze, use="complete.obs")
+
+```
+
+sentence level correlation between maze and spr
+
+Note that a lot of this is driven purely by sentence length, which isn't interesting. 
+```{r}
+sentence <- summ %>% group_by(Story_Num, Sentence_Num) %>% 
+  summarize(maze=sum(maze)/1000,
+            spr=sum(spr)/1000)
+
+ggplot(sentence, aes(x=maze, y=spr))+geom_point(alpha=.1)+
+  labs(title="Sentence level correlation in s")
+
+cor(sentence$spr,sentence$maze, use="complete.obs")
+```
+
+Averaging across words at the sentence level removes the sentence-length effect.
+
+```{r}
+sentence_avg <- summ %>% group_by(Story_Num, Sentence_Num) %>% 
+  summarize(maze=mean(maze),
+            spr=mean(spr))
+ggplot(sentence_avg, aes(x=maze, y=spr))+geom_point(alpha=.1)+
+    coord_cartesian(xlim=c(0,1500),ylim=c(0,600))+
+  labs(title="Sentence level correlation in ms")
+
+cor(sentence_avg$spr,sentence_avg$maze, use="complete.obs")
+
+```
+
+As a baseline, we can do all the same things on split-halfs of each data set. We split the subjects in half. (Note that this means that each half has the same # of subjects, but may not have the same #s of each story)
+
+Within spr correlations are higher than spr-maze. 
+
+```{r spr-split-half}
+set.seed(42)
+spr_subs <- spr$WorkerId %>% unique()
+length(spr_subs)
+#180 participants
+
+spr1 <- sample(spr_subs, 90)
+
+spr_split <- spr %>% 
+  mutate(half=ifelse(WorkerId %in% spr1, "spr1","spr2")) %>% 
+  group_by(half,Story_Num, Sentence_Num, word_num) %>% summarize(spr=mean(rt)) %>% 
+  pivot_wider(names_from=half, values_from=spr)
+  
+ggplot(spr_split, aes(x=spr1, y=spr2))+
+  geom_point(alpha=.02)+
+  coord_cartesian(xlim=c(0,600),ylim=c(0,600))+
+  labs(title="Word level correlation in ms",subtitle="Axes trimmed")
+
+cor(spr_split$spr1,spr_split$spr2, use="complete.obs")
+spr_sentence <- spr_split %>% group_by(Story_Num, Sentence_Num) %>% 
+  summarize(spr1=sum(spr1)/1000,
+            spr2=sum(spr2)/1000)
+
+ggplot(spr_sentence, aes(x=spr1, y=spr2))+geom_point(alpha=.1)+
+  labs(title="Sentence level correlation in s")
+
+cor(spr_sentence$spr1,spr_sentence$spr2, use="complete.obs")
+
+spr_sentence_avg <- spr_split%>% group_by(Story_Num, Sentence_Num) %>% 
+  summarize(spr1=mean(spr1),
+            spr2=mean(spr2))
+ggplot(spr_sentence_avg, aes(x=spr1, y=spr2))+geom_point(alpha=.1)+
+    coord_cartesian(xlim=c(0,600),ylim=c(0,600))+
+  labs(title="Sentence level correlation in ms")
+
+cor(spr_sentence_avg$spr1,spr_sentence_avg$spr2, use="complete.obs")
+```
+
+Same things for maze. Note that with fewer subjects, and given only pre-error data, there's a lot more chance of emptiness. I think the weak sentence average correlation is from places where some sentences didn't go as long in one of the halves (b/c low data). 
+
+```{r maze-split-half}
+set.seed(42)
+maze_subs <- maze$subject %>% unique()
+length(maze_subs)
+#180 participants
+
+maze1 <- sample(maze_subs, 31)
+
+maze_split <- maze %>% 
+  mutate(half=ifelse(subject %in% maze1, "maze1","maze2")) %>% 
+  group_by(half,Story_Num, Sentence_Num, word_num) %>% summarize(maze=mean(rt)) %>% 
+  pivot_wider(names_from=half, values_from=maze)
+  
+ggplot(maze_split, aes(x=maze1, y=maze2))+
+  geom_point(alpha=.02)+
+  coord_cartesian(xlim=c(0,1500),ylim=c(0,1500))+
+  labs(title="Word level correlation in ms",subtitle="Axes trimmed")
+
+cor(maze_split$maze1,maze_split$maze2, use="complete.obs")
+maze_sentence <- maze_split %>% group_by(Story_Num, Sentence_Num) %>% 
+  summarize(maze1=sum(maze1)/1000,
+            maze2=sum(maze2)/1000)
+
+ggplot(maze_sentence, aes(x=maze1, y=maze2))+geom_point(alpha=.1)+
+  labs(title="Sentence level correlation in s")
+
+cor(maze_sentence$maze1,maze_sentence$maze2, use="complete.obs")
+
+maze_sentence_avg <- maze_split%>% group_by(Story_Num, Sentence_Num) %>% 
+  summarize(maze1=mean(maze1),
+            maze2=mean(maze2))
+ggplot(maze_sentence_avg, aes(x=maze1, y=maze2))+geom_point(alpha=.1)+
+    coord_cartesian(xlim=c(0,1500),ylim=c(0,1500))+
+  labs(title="Sentence level correlation in ms")
+
+cor(maze_sentence_avg$maze1,maze_sentence_avg$maze2, use="complete.obs")
 ```
