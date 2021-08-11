@@ -30,7 +30,9 @@ rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 ```
 
-```{r participants}
+# Maze Prep
+
+```{r maze-participants}
 
 data <- read_rds(here("Data/cleaned.rds"))
 
@@ -74,41 +76,6 @@ data_stories <- data_ready %>% select(type, subject) %>%
   tally()
 ```
 
-
-<!--# Overview
-
-`r data %>% select(subject) %>% unique() %>% nrow()` participants read naturalistic stories from the natural stories corpus. Each participant read 1 story. 
-
-We exclude
-
-- participants who do not report English as a native language (`r data_filt %>% select(subject) %>% unique() %>% nrow()` remaining)
-- participants who do not get 80% of the words correct (`r data_low_error %>% select(subject) %>% unique() %>% nrow()` remaining)
-- practice items (`r data_low_error %>% nrow()` words remaining)
-- words that were wrong or were within two after a mistake (`r data_error_free %>% nrow()` words remaining)
-- the first word of every sentence (didn't have a real distractor, RT is measured slightly differently) (`r data_no_first %>% nrow()` words remaining)
-- words with RTs <100 or >5000 (<100 we think is likely a recording error, or at least not reading the words at all, >5000 is likely getting distracted) (`r data_ready %>% nrow()` words remaining)
-
-Within the filtered data, each story was read between `r min(data_stories$n)` and `r max(data_stories$n)` times, for an average of `r mean(data_stories$n)`.
-
-We also do the analyses on only the words before mistakes (per sentence) (`r data_pre_error %>% nrow()` words)
-
-From the modelling side:
-(After attempts without doing this filtering) we only include words which are single token and known words in each of the models vocabularies. We also only include words with frequencies. This is roughly equivalent to excluding words with punctuation. 
-
-We use as predictors:
-
-- length in characters of stripped word
-- unigram frequency of word. Frequencies for words are calculated using word_tokenize on the gulordava train data and counting up instances. (This tends to tokenize off punctuation, but is capitalization sensitive). Frequencies are represented as log2 of the expected occurances in 1 billion words. 
-
-Surprisals are measured in bits.
-
-- ngram (5-gram KN smoothed)
-- GRNN
-- Transformer-XL
-
-For GAM models, we center length and frequency but not surprisal. We want surprisal interpretable, but we also will be plotting it (at least for the bootstrapping) at length and frequencies set to 0, so they need to be centered. (Not sure this last piece is actually true/matters). -->
-
-# Maze Prep
 ```{r labels}
 labs <- read_rds(here("Prep_code/natural_stories_surprisals.rds")) %>% 
   left_join(read_delim(here("Materials/natural_stories_sentences.tsv"), delim="\t")) %>% 
@@ -130,7 +97,7 @@ select_labs <- labs %>%
 
 ```
 
-```{r maze}
+```{r}
 
 
 labelled_pre_error <- data_pre_error %>% inner_join(select_labs, by=c("word_num", "word", "sentence")) %>%
@@ -139,7 +106,7 @@ labelled_pre_error <- data_pre_error %>% inner_join(select_labs, by=c("word_num"
 
 ```
 
-```{r item-means}
+```{r maze-item-means}
 
 select_data <- read_rds(here("Data/maze_pre_error.rds")) %>%  select(-starts_with("past2"), -starts_with("past3")) %>% 
   filter(across(everything(),~!is.na(.x))) 
@@ -157,28 +124,8 @@ item_mean_data <- select_data %>%
 
 # Maze GAMs
 
-```{r for gam}
-
-
-ngram_data <- select_data %>% select(rt, surprisal=ngram_surp, prev_surp=past_ngram_surp, 
-                                            freq=freq_center, len=length_center,
-                                            prev_freq=past_freq_center, prev_len=past_length_center, subject
-                                            ) %>% mutate(model="5-gram") 
-grnn_data <- select_data %>% select(rt, surprisal=grnn_surp, prev_surp=past_grnn_surp, 
-                                            freq=freq_center, len=length_center,
-                                            prev_freq=past_freq_center, prev_len=past_length_center, subject
-                                            )%>% mutate(model="GRNN")
-
-txl_data <- select_data %>% select(rt, surprisal=txl_surp, prev_surp=past_txl_surp, 
-                                            freq=freq_center, len=length_center,
-                                            prev_freq=past_freq_center, prev_len=past_length_center,subject
-                                            ) %>% mutate(model="TXL")
-
-gpt_data <- select_data %>% select(rt, surprisal=gpt_surp, prev_surp=past_gpt_surp, 
-                                            freq=freq_center, len=length_center,
-                                            prev_freq=past_freq_center, prev_len=past_length_center,subject
-                                            ) %>% mutate(model="GPT-2")
-
+```{r maze-prep-gam}
+#on meaned data
 ngram_mean_data <- item_mean_data %>% select(rt, surprisal=ngram_surp, prev_surp=past_ngram_surp, 
                                             freq=freq_center, len=length_center,
                                             prev_freq=past_freq_center, prev_len=past_length_center
@@ -199,18 +146,13 @@ gpt_mean_data <- item_mean_data %>% select(rt, surprisal=gpt_surp, prev_surp=pas
                                             prev_freq=past_freq_center, prev_len=past_length_center
                                             ) %>% mutate(model="GPT-2")
 
-all_data <- ngram_data %>% union(grnn_data) %>% union(txl_data) %>% union(gpt_data) %>% 
-  select(surprisal, prev_surp,model) %>% 
-  pivot_longer(cols=`surprisal`:`prev_surp`) %>% 
-  mutate(s=ifelse(name=="surprisal", "Current","Previous"))
-
 all_mean_data <- ngram_mean_data %>% union(grnn_mean_data) %>% union(txl_mean_data) %>% union(gpt_mean_data) %>% 
   select(surprisal, prev_surp,model) %>% 
   pivot_longer(cols=`surprisal`:`prev_surp`) %>% 
   mutate(s=ifelse(name=="surprisal", "Current","Previous")) %>% write_rds(here("Analysis/models/meaned_maze.rds"))
 ```
 
-```{r formulae, echo=T}
+```{r maze-formulae, echo=T}
 #no hierarchical, has freq x len interaction
 formula_interact <- rt ~ s(surprisal, bs="cr", k=20)+
                      ti(freq, bs="cr") + 
@@ -228,16 +170,6 @@ formula_no_interact <- rt ~ s(surprisal, bs="cr", k=20)+
                      s(prev_surp, bs="cr", k=20)+
                      ti(prev_freq, bs="cr")+
                      ti(prev_len, bs="cr")
-
-formula_heirarchy <- rt ~ s(surprisal, bs="cr", k=20)+
-                    s(surprisal, by=subject, bs="cr", k=20)+
-                     ti(freq, bs="cr") + 
-                     ti(len, bs="cr")+
-                     s(prev_surp, bs="cr", k=20)+
-                      s(prev_surp, by=subject, bs="cr", k=20)+
-                     ti(prev_freq, bs="cr")+
-                     ti(prev_len, bs="cr")
-
 
 ```
 
@@ -264,23 +196,27 @@ anova(gam_txl_1,gam_txl_2, test="Chisq")
 anova(gam_gpt_1,gam_gpt_2, test="Chisq")
 ```
 
+## Plots
 
 ```{r plots, eval=T}
-plot(gam_gpt_1, select=4)
-plot(gam_grnn_1, select=4)
-
-plot(gam_txl_1, select=4)
-plot(gam_ngram_1, select=4)
+message("GPT")
+plot(gam_gpt_1)
+message("GRNN")
+plot(gam_grnn_1)
+message("TXL")
+plot(gam_txl_1)
+message("NGRAM")
+plot(gam_ngram_1)
 
 ```
 
-It looks like the effect is ~ 0 for most of the space where there's actually data, and it only goes off the rails in the region where there isn't data. 
+For the length: frequency interaction, it looks like the effect is ~ 0 for most of the space where there's actually data, and it only goes off the rails in the region where there isn't data. 
 
-Below is all words with centered frequency < -6 and centered_length > 4. Most of these are I think are recognizable as words. 
+<!--Below is all words with centered frequency < -6 and centered_length > 4. Most of these are I think are recognizable as words. -->
 ```{r}
-select_data %>% select(word,  freq_center, length_center, sentence) %>% unique() %>% 
-  arrange(freq_center) %>% 
-  filter(freq_center< -6 & length_center > 4) %>% knitr::kable()
+# select_data %>% select(word,  freq_center, length_center, sentence) %>% unique() %>% 
+#   arrange(freq_center) %>% 
+#   filter(freq_center< -6 & length_center > 4) %>% knitr::kable()
 ```
 
 
@@ -420,6 +356,9 @@ summ <- ngram %>% union(txl) %>% union(grnn) %>% union(gpt) %>% write_rds(here("
 
 ```
 
+
+
+
 # Maze Model comparison
 
 I'm not sure if this is what we want, but these are the P-values from anova's comparison the value of adding one set of surprisal predictors to a model that already has another. (So smaller values mean that the column  has a lot of predictive utility beyond the row label). 
@@ -475,6 +414,52 @@ tibble(Model=c("5-gram","GRNN", "TXL", "GPT-2"), model_str=c(ngram,grnn,txl,gpt)
 
 ```
 
+# Maze LM with freq**2 effects
+
+Based on GAM viz, we try models with freq**2 effects on item mean data. 
+
+(Tried this with orthagonal polynomials, but I get ridiculous predictions where both the effects for 1st and 2nd order are huge with huge std error, so probably cancelling out?). 
+
+Instead, square and then center raw frequency. This also finds the effects, and seems a little absurd, since it's finding big effects, in opposite directions for squared and not squared. 
+
+```{r}
+select_data <- read_rds(here("Data/maze_pre_error.rds")) %>%  select(-starts_with("past2"), -starts_with("past3")) %>% 
+  filter(across(everything(),~!is.na(.x))) 
+
+
+item_mean_data <- select_data %>% 
+  group_by(across(c(-subject, -rt))) %>% 
+  summarize(rt=mean(rt)) %>% 
+  ungroup() %>% 
+  mutate(freq_sq_raw=freq**2,
+         past_freq_sq_raw=past_freq**2,
+         freq_sq=freq_sq_raw-mean(freq_sq_raw, na.rm=T),
+         past_freq_sq=past_freq_sq_raw - mean(past_freq_sq_raw, na.rm=T))
+         
+
+no_surp_sq <- "rt ~  freq_sq+ freq_center*length_center + past_freq_sq + past_freq_center*past_length_center"
+no_surp_poly <- "rt ~ poly(freq_center,2) + length_center+ freq_center:length_center + poly(past_freq_center,2)+past_length_center + past_freq_center:past_length_center"
+ngram <- "+ ngram_center + past_ngram_center + ngram_center:length_center +   
+  past_ngram_center:past_length_center"
+grnn <- "+ grnn_center + past_grnn_center+ grnn_center:length_center +   
+  past_grnn_center:past_length_center"
+txl <- "+ txl_center + past_txl_center + txl_center:length_center +   
+  past_txl_center:past_length_center"
+gpt <- "+ gpt_center + past_gpt_center + gpt_center:length_center +   
+  past_gpt_center:past_length_center"
+
+
+lm(str_c(no_surp_sq,ngram), data=item_mean_data) %>% summary()
+
+lm(str_c(no_surp_sq,grnn), data=item_mean_data) %>% summary()
+lm(str_c(no_surp_sq,txl), data=item_mean_data) %>% summary()
+lm(str_c(no_surp_sq,gpt), data=item_mean_data) %>% summary()
+
+lm(str_c(no_surp_poly,ngram), data=item_mean_data) %>% summary()
+lm(str_c(no_surp_poly,grnn), data=item_mean_data) %>% summary()
+lm(str_c(no_surp_poly,txl), data=item_mean_data) %>% summary()
+lm(str_c(no_surp_poly,gpt), data=item_mean_data) %>% summary()
+```
 
 # SPR Prep
 ```{r read_data, eval=F}
@@ -498,13 +483,13 @@ d.raw <- d.raw.a %>% union(d.raw.b) %>%
 ```{r first-story, eval=F}
 # to make things more comparable, only look at the first story each participant read
 
-first <- d.raw %>% select(WorkerId,correct,item) %>% unique() %>% 
-  group_by(WorkerId,correct) %>% 
+first <- d.raw %>% select(WorkerId,item) %>% unique() %>% 
+  group_by(WorkerId) %>% 
   mutate(num=row_number()) %>% 
   filter(num==1) %>% 
   select(-num)
 
-d.limited <- d.raw %>% inner_join(first, by=c("WorkerId","correct","item"))
+d.limited <- d.raw %>% inner_join(first, by=c("WorkerId","item"))
 
 
 #d.limited%>% select(WorkerId,correct,item) %>% unique() %>% group_by(correct) %>% tally()  %>% summarize(pct=n/sum(n),correct=correct)
@@ -549,7 +534,7 @@ item_mean_spr <- select_spr %>%
 
 # SPR GAMs
 
-```{r for spr gam, eval=F}
+```{r for spr gam, eval=T}
 
 ngram_mean_spr <- item_mean_spr %>% rename_with(~str_replace_all(.x, "ngram_", ""))%>%
   select(rt, surp, freq_center, length_center,
@@ -585,6 +570,7 @@ all_mean_spr <- ngram_mean_spr %>% union(grnn_mean_spr) %>% union(txl_mean_spr) 
 #no hierarchical, has freq x len interaction
 spr_formula_interact <- rt ~ s(surp, bs="cr", k=20)+
                      ti(length_center, bs="cr")+
+                     ti(freq_center,bs="cr")+
                      ti(freq_center,length_center, bs="cr")+
                      s(past_surp, bs="cr", k=20)+
                      ti(past_freq_center, bs="cr")+
@@ -605,7 +591,7 @@ spr_formula_interact <- rt ~ s(surp, bs="cr", k=20)+
 
 All of this is on by-item mean data. 
 
-```{r spr meaned data, eval=F}
+```{r spr meaned data, cache=T, eval=T}
 gam_ngram_1 <- gam(spr_formula_interact, data=ngram_mean_spr, method="REML")
 gam_grnn_1 <- gam(spr_formula_interact, data=grnn_mean_spr, method="REML")
 gam_txl_1 <- gam(spr_formula_interact, data=txl_mean_spr, method="REML")
@@ -613,6 +599,16 @@ gam_gpt_1 <- gam(spr_formula_interact, data=gpt_mean_spr, method="REML")
 
 ```
 
+```{r spr-gam-plot}
+message("GPT")
+plot(gam_gpt_1)
+message("GRNN")
+plot(gam_grnn_1)
+message("TXL")
+plot(gam_txl_1)
+message("NGRAM")
+plot(gam_ngram_1)
+```
 
 ```{r plot-gam-spr, eval=F}
 
@@ -671,7 +667,7 @@ plot_grid(p2[[1]], p2[[2]], nrow=2, rel_heights = c(1, .3))
 
 # SPR LMs
 
-```{r spr brms, eval=F}
+```{r, eval=F}
 
 select_spr <- read_rds(here("Data/clean_spr.rds")) %>% 
   filter(across(everything(),~!is.na(.x))) %>% 
@@ -765,40 +761,6 @@ summary(m_gpt)
 ```
 
 
-```{r, eval=F}
-
-#data=readRDS("spr_pre_brms.rds")
-data=read_rds(here("Analysis/models/spr_pre_brms.rds"))
- priors <- c(
-      set_prior("normal(350,50)", class="Intercept"),
-      set_prior("normal(0, 5)", class="b"),
-      set_prior("exponential(.01)", class="sd", group="subject", coef="Intercept"),
-      set_prior("exponential(.01)", class="sd", group="Word_ID", coef="Intercept"),
-     # set_prior("exponential(1)", class="sd"),
-     # set_prior("lkj(2)",       class="cor"),
-      set_prior("exponential(.01)", class="sigma")
-      )
-run_model <- function(model_spec,data,file_name){
-  d <- data %>% filter(model==model_spec)
-  m1 <- brm(rt ~ surp_center * length_center + length_center * freq_center +
-                  past_surp_center * past_length_center + past_length_center * past_freq_center + 
-                 past2_surp_center * past2_length_center + past2_length_center * past2_freq_center + 
-                  past3_surp_center * past3_length_center + past3_length_center * past3_freq_center + 
-              (1|subject)+(1|Word_ID),
-            data=d,
-            file=file_name,
-            prior=priors,
-            control=list(adapt_delta=.95))
-}
-
-#run_model("5-gram",data,"5-gram_spr")
-#run_model("GRNN",data,"grnn_spr")
-run_model("TXL",data,"txl_spr")
-#run_model("GPT-2",data,"gpt_spr")
-
-
-```
-
 
 ```{r, eval=F}
 
@@ -824,7 +786,7 @@ run_model_lmer("GPT-2",data) %>% write_rds(here("Analysis/models/gpt_spr_lmer.rd
 
 ```
 ## Summaries of LMER 
-These have some heirarchical effects
+These have some hierarchical effects
 
 
 ```{r summary-spr}
@@ -855,7 +817,6 @@ summ_spr <- ngram_spr %>% union(txl_spr) %>% union(grnn_spr) %>% union(gpt_spr) 
 
 ```
 
-Really struggling with the intercept for population & subject level -- maybe sd was intercept needs to be a lot bigger? 
 
 # SPR Model comparison
 
@@ -906,7 +867,7 @@ log_like <- function(m1){
 
 r_squared <- function(m1){
     lm1 <- lm(str_c(no_surp,m1), data=item_mean_spr) %>% summary()
-    lm1$r.squared %>% round(2) %>% as.character()
+    lm1$r.squared %>% round(3) %>% as.character()
 }
 
 
@@ -918,13 +879,36 @@ tibble(Model=c("5-gram","GRNN", "TXL", "GPT-2"), model_str=c(ngram,grnn,txl,gpt)
    select(-model_str)%>% write_rds(here("Analysis/spr_model_compare.rds")) %>% kable() 
 
 ```
-
-# R-squared
+# SPR LM with freq**2 effects
 
 ```{r}
-spr <- read_rds(here("Analysis/spr_model_compare.rds"))
+select_spr <- read_rds(here("Data/clean_spr.rds")) %>% 
+  filter(across(everything(),~!is.na(.x))) %>% 
+  ungroup()
 
-maze <- read_rds(here("Analysis/maze_model_compare.rds"))
+
+item_mean_spr <- select_spr %>% 
+  group_by(across(c(-subject, -rt))) %>% 
+  summarize(rt=mean(rt)) %>% 
+  ungroup()
+
+
+
+no_surp_poly <- "rt ~ poly(freq_center,2) + length_center+ freq_center:length_center + poly(past_freq_center,2)+past_length_center + past_freq_center:past_length_center+
+poly(past2_freq_center,2)+past2_length_center + past2_freq_center:past2_length_center+
+poly(past3_freq_center,2)+past3_length_center + past3_freq_center:past3_length_center"
+ngram <- "+ ngram_center + past_ngram_center + past2_ngram_center + past3_ngram_center+
+ngram_center:length_center + past_ngram_center:past_length_center+ past2_ngram_center:past2_length_center+past3_ngram_center:past3_length_center"
+grnn <- "+ grnn_center + past_grnn_center +past2_grnn_center +past3_grnn_center +grnn_center:length_center + past_grnn_center:past_length_center+ past2_grnn_center:past2_length_center+past3_grnn_center:past3_length_center"
+txl <- "+ txl_center + past_txl_center +past2_txl_center + past3_txl_center +
+txl_center:length_center + past_txl_center:past_length_center+ past2_txl_center:past2_length_center+past3_txl_center:past3_length_center"
+gpt <- "+ gpt_center + past_gpt_center + past2_gpt_center + + past3_gpt_center+
+gpt_center:length_center + past_gpt_center:past_length_center+ past2_gpt_center:past2_length_center+past3_gpt_center:past3_length_center"
+
+lm(str_c(no_surp_poly,ngram), data=item_mean_spr) %>% summary()
+lm(str_c(no_surp_poly,grnn), data=item_mean_spr) %>% summary()
+lm(str_c(no_surp_poly,txl), data=item_mean_spr) %>% summary()
+lm(str_c(no_surp_poly,gpt), data=item_mean_spr) %>% summary()
 ```
 
 # Maze and SPR scatter
@@ -946,64 +930,23 @@ maze <- read_rds(here("Data/maze_pre_error.rds")) %>% left_join(labs) %>% select
 
 Abnormally low and high times were excluded, then for each word, an average was taken across subjects. For sentence level, these averages were then summed across the sentence. (Because of A-maze sentence discontinuation and general outlier handling, summing the average is better than averaging the sum.)
 
-Word level correlation between maze and spr
-```{r}
+We want to compare w/i Maze, w/i SPR and between Maze and SPR. Maze is the smaller dataset (63 subjects), so we split half for each story. 
 
-summ_spr <- spr %>% group_by(Story_Num, Sentence_Num, word_num) %>% summarize(spr=mean(rt))
+For SPR, we subsample the 165 subjects down to 63 (to match the number of subjects in Maze), and again split half for each story. 
 
-summ <- maze %>% group_by(Story_Num, Sentence_Num, word_num) %>% summarize(maze=mean(rt)) %>% left_join(summ_spr)
+For Maze-SPR comparison, we compare each of the Maze half-SPR half and then average the correlations across these 4 pairs. 
 
-ggplot(summ, aes(x=maze, y=spr))+
-  geom_point(alpha=.02)+
-  coord_cartesian(xlim=c(0,1500),ylim=c(0,600))+
-  labs(title="Word level correlation in ms",subtitle="Axes trimmed")
-
-cor(summ$spr,summ$maze, use="complete.obs")
-
-```
-
-sentence level correlation between maze and spr
-
-Note that a lot of this is driven purely by sentence length, which isn't interesting. 
-```{r}
-sentence <- summ %>% group_by(Story_Num, Sentence_Num) %>% 
-  summarize(maze=sum(maze)/1000,
-            spr=sum(spr)/1000)
-
-ggplot(sentence, aes(x=maze, y=spr))+geom_point(alpha=.1)+
-  labs(title="Sentence level correlation in s")
-
-cor(sentence$spr,sentence$maze, use="complete.obs")
-```
-
-Averaging across words at the sentence level removes the sentence-length effect.
-
-```{r}
-sentence_avg <- summ %>% group_by(Story_Num, Sentence_Num) %>% 
-  summarize(maze=mean(maze),
-            spr=mean(spr))
-ggplot(sentence_avg, aes(x=maze, y=spr))+geom_point(alpha=.1)+
-    coord_cartesian(xlim=c(0,1500),ylim=c(0,600))+
-  labs(title="Sentence level correlation in ms")
-
-cor(sentence_avg$spr,sentence_avg$maze, use="complete.obs")
-
-```
-
-As a baseline, we can do all the same things on split-halfs of each data set. We split the subjects in half. (Note that this means that each half has the same # of subjects, but may not have the same #s of each story)
-
-Within spr correlations are higher than spr-maze. 
+### SPR-SPR
 
 ```{r spr-split-half}
 set.seed(42)
-spr_subs <- spr$WorkerId %>% unique()
-length(spr_subs)
+spr_subs <- spr %>% filter(!is.na(Story_Num)) %>% select(WorkerId, Story_Num) %>% unique() %>% sample_n(63) %>%  group_by(Story_Num) %>%
+  mutate(half=ifelse(row_number() <= .5*n(),"spr1", "spr2"))
 #180 participants
 
-spr1 <- sample(spr_subs, 90)
 
-spr_split <- spr %>% 
-  mutate(half=ifelse(WorkerId %in% spr1, "spr1","spr2")) %>% 
+spr_split <- spr %>%
+  inner_join(spr_subs) %>% 
   group_by(half,Story_Num, Sentence_Num, word_num) %>% summarize(spr=mean(rt)) %>% 
   pivot_wider(names_from=half, values_from=spr)
   
@@ -1031,19 +974,15 @@ ggplot(spr_sentence_avg, aes(x=spr1, y=spr2))+geom_point(alpha=.1)+
 
 cor(spr_sentence_avg$spr1,spr_sentence_avg$spr2, use="complete.obs")
 ```
-
-Same things for maze. Note that with fewer subjects, and given only pre-error data, there's a lot more chance of emptiness. I think the weak sentence average correlation is from places where some sentences didn't go as long in one of the halves (b/c low data). 
+### Maze-Maze
 
 ```{r maze-split-half}
 set.seed(42)
-maze_subs <- maze$subject %>% unique()
-length(maze_subs)
-#180 participants
-
-maze1 <- sample(maze_subs, 31)
+maze_subs <- maze %>% select(subject, Story_Num) %>% unique() %>% sample_n(63)%>% group_by(Story_Num) %>%
+  mutate(half=ifelse(row_number() <= .5*n(),"maze1", "maze2"))
 
 maze_split <- maze %>% 
-  mutate(half=ifelse(subject %in% maze1, "maze1","maze2")) %>% 
+  left_join(maze_subs) %>% 
   group_by(half,Story_Num, Sentence_Num, word_num) %>% summarize(maze=mean(rt)) %>% 
   pivot_wider(names_from=half, values_from=maze)
   
@@ -1070,4 +1009,64 @@ ggplot(maze_sentence_avg, aes(x=maze1, y=maze2))+geom_point(alpha=.1)+
   labs(title="Sentence level correlation in ms")
 
 cor(maze_sentence_avg$maze1,maze_sentence_avg$maze2, use="complete.obs")
+```
+
+### Maze-SPR
+For maze-spr comparisons we take the 4 pairs (maze1 with spr1; maze1 with spr2, etc) We overplot all the combinations (not sure this is right), and take the average of the 4 correlations. 
+
+```{r maze-spr}
+summ_spr <- spr %>% inner_join(spr_subs)%>% group_by(Story_Num, Sentence_Num, word_num,half) %>% summarize(spr=mean(rt, na.rm=T)) %>% rename(spr_half=half) %>% filter(!is.na(spr))
+  
+summ <- maze %>% inner_join(maze_subs) %>% group_by(Story_Num, Sentence_Num, word_num, half) %>% summarize(maze=mean(rt, na.rm=T)) %>% rename(maze_half=half) %>% filter(!is.na(maze))%>% inner_join(summ_spr)
+
+summ11 <- summ %>% filter(maze_half=="maze1" & spr_half=="spr1")
+summ12 <- summ %>% filter(maze_half=="maze1" & spr_half=="spr2")
+summ21 <- summ %>% filter(maze_half=="maze2" & spr_half=="spr1")
+summ22 <- summ %>% filter(maze_half=="maze2" & spr_half=="spr2")
+
+ggplot(summ, aes(x=maze, y=spr))+
+  geom_point(alpha=.02)+
+  coord_cartesian(xlim=c(0,1500),ylim=c(0,600))+
+  labs(title="Word level correlation in ms",subtitle="Axes trimmed")
+
+mean(c(cor(summ11$spr,summ11$maze, use="complete.obs"),
+  cor(summ12$spr,summ12$maze, use="complete.obs"),
+  cor(summ21$spr,summ21$maze, use="complete.obs"),
+  cor(summ22$spr,summ22$maze, use="complete.obs")))
+
+
+sentence <- summ %>% group_by(Story_Num, Sentence_Num, maze_half, spr_half) %>% 
+  summarize(maze=sum(maze)/1000,
+            spr=sum(spr)/1000)
+
+sentence11 <- sentence %>% filter(maze_half=="maze1" & spr_half=="spr1")
+sentence12 <- sentence %>% filter(maze_half=="maze1" & spr_half=="spr2")
+sentence21 <- sentence %>% filter(maze_half=="maze2" & spr_half=="spr1")
+sentence22 <- sentence %>% filter(maze_half=="maze2" & spr_half=="spr2")
+
+ggplot(sentence, aes(x=maze, y=spr))+geom_point(alpha=.1)+
+  labs(title="Sentence level correlation in s")
+
+ mean(c(cor(sentence11$spr,sentence11$maze, use="complete.obs"),
+  cor(sentence12$spr,sentence12$maze, use="complete.obs"),
+  cor(sentence21$spr,sentence21$maze, use="complete.obs"),
+  cor(sentence22$spr,sentence22$maze, use="complete.obs")))
+
+sentence_avg <- summ %>% group_by(Story_Num, Sentence_Num, maze_half, spr_half) %>% 
+  summarize(maze=mean(maze),
+            spr=mean(spr))
+
+sentence_avg11 <- sentence_avg %>% filter(maze_half=="maze1" & spr_half=="spr1")
+sentence_avg12 <- sentence_avg %>% filter(maze_half=="maze1" & spr_half=="spr2")
+sentence_avg21 <- sentence_avg %>% filter(maze_half=="maze2" & spr_half=="spr1")
+sentence_avg22 <- sentence_avg %>% filter(maze_half=="maze2" & spr_half=="spr2")
+
+ggplot(sentence_avg, aes(x=maze, y=spr))+geom_point(alpha=.1)+
+    coord_cartesian(xlim=c(0,1500),ylim=c(0,600))+
+  labs(title="Sentence level correlation in ms")
+
+  mean(c(cor(sentence_avg11$spr,sentence_avg11$maze, use="complete.obs"),
+  cor(sentence_avg12$spr,sentence_avg12$maze, use="complete.obs"),
+  cor(sentence_avg21$spr,sentence_avg21$maze, use="complete.obs"),
+  cor(sentence_avg22$spr,sentence_avg22$maze, use="complete.obs")))
 ```

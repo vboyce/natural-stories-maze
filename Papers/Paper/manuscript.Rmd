@@ -202,6 +202,8 @@ package_list <- c("tidyverse","brms","rstan","papaja",
 
 We conducted data processing and analyses using `r cite_r("r-references.bib", withhold=F, pkgs=package_list)`.
 
+As described in the Results section, we base all models only on data from participants who choose correctly on at least 80% of the words in the Maze task. 
+
 ```{r}
 surps <- read_rds(here("Prep_code/natural_stories_surprisals.rds")) 
 
@@ -247,6 +249,9 @@ For model comparison, we took by-item averaged data to aid in fast model fitting
 In addition to the texts, @futrellNaturalStoriesCorpus2020 released reading time data from a SPR study they ran in 2011. They recruited 181 participants from Amazon Mechanical Turk, most of whom read 5 of the stories. After reading each story, each participant answered 6 binary-choice comprehension questions. As a comparison to our A-maze models, we run similar models on the SPR corpus on Natural Stories [@futrellNaturalStoriesCorpus2020]. For comparability, we analyse only the first story each participant read, and, in line with @futrellNaturalStoriesCorpus2020, exclude participants who got less than 5/6 of the comprehension questions correct. To account for spill over effects known to exist in SPR, we analyse predictors at the current word as well as the past 3 words for all models. 
 For linear models, we centered all predictors. We were unable to fit the full mixed effects model. The best model we could fit had by-subject random intercept, uncorrelated by-subject random slopes for surprisal, length and frequency, and  a per-word-token random intercept, fit with lme4, as this structure did not fit reliably in brms.
 
+## SPR-Maze correlation
+We additionally compare how correlated the Maze and SPR results are to each other, in comparison to within-Maze and within-SPR correlations. For Maze, within each story, we randomly split subjects into two halves. Within each half, we calculate a per-word average for each word and then a per-sentence average RT across word averages. We calculate a within-Maze correlation between these two halves. To avoid differences due to dataset size, we downsample the SPR data choosing a number of participants equal to the number we have for Maze. We then use the same procedure on this subset as for Maze to get a within-SPR correlation. For between Maze-SPR correlation, we take the average correlation across each of the 4 pairs of Maze half and SPR half. 
+
 # Results
 
 ## Reading stories in the Maze task 
@@ -279,11 +284,11 @@ error_plot+comp_plot+plot_annotation(tag_levels="A")
 
 ```
 
-Many participants completed the Maze task with a high degree of accuracy and also answers the comprehension questions correctly. 
+Many participants completed the Maze task with a high degree of accuracy and also answered the comprehension questions correctly. 
 
 Participant accuracy reflects both how well participants can navigate the task and what quality the auto-generated distractors are. We calculated the per-word error rate for each participant and graphed it against their average reaction time. (To avoid biasing the average if a participant took a pause before returning to the task, RTs greater than 5 seconds were excluded.) As seen in Figure \@ref(fig:errors)A, one cluster of participants (marked in green) make relatively few errors, with some reaching 99% accuracy. This confirms that the distractors were generally appropriate and shows that some participants maintained focus on the task for the whole story. These careful participants took around 1 second for each word selection, which is much slower than other paradigms. Another cluster of participants (in red) sped through the task, seemingly clicking randomly. This bimodal distribution is likely due to the mix of workers on Mechanical Turk, as we did not use qualification cutoffs. 
 
-Another check is whether participants comprehended the story. We counted how many of the binary-choice comprehension questions each participant got right (out of 6). As seen in Figure \@ref(fig:errors)B, most participants were were accurate on the task also did well on comprehension questions, while participants who were at chance on the Maze task were also at chance on the comprehension questions. Participants usually answered quickly (within 10 seconds), so we do not believe they were looking up the answers on the internet. We can't rule out that some participants may have been able to guess the answers without understanding the story. Nonetheless, this provides preliminary evidence that people can understand and remember details of stories they read during the Maze task. The comprehension question performance of accurate Maze participants is broadly similar to the performance of SPR participants from @futrellNaturalStoriesCorpus2020 on the first story read. Overall, `r comp_tally %>% filter(source=="all Maze") %>% pull(good)`% of Maze participants got 5 or 6 questions right (`r comp_tally %>% filter(source=="<80% correct") %>% pull(good)`% of low-accuracy participants and `r comp_tally %>% filter(source==">80% correct") %>% pull(good)`% of high-accuracy participants) compared to `r comp_tally %>% filter(source=="SPR") %>% pull(good)`% of all SPR reads and `r comp_tally %>% filter(source=="SPR 1st story") %>% pull(good)`% of 1st SPR reads. Note that these differences cannot be directly attributed to methods, as the participant populations differed. While both studies were conducted on Mturk, the quality of Mturk data has decreased from 2011 when the SPR was collected to 2020 when the A-maze was collected. 
+Another check is whether participants comprehended the story. We counted how many of the binary-choice comprehension questions each participant got right (out of 6). As seen in Figure \@ref(fig:errors)B, most participants who were accurate on the task also did well on comprehension questions, while participants who were at chance on the Maze task were also at chance on the comprehension questions. Participants usually answered quickly (within 10 seconds), so we do not believe they were looking up the answers on the internet. We can't rule out that some participants may have been able to guess the answers without understanding the story. Nonetheless, this provides preliminary evidence that people can understand and remember details of stories they read during the Maze task. The comprehension question performance of accurate Maze participants is broadly similar to the performance of SPR participants from @futrellNaturalStoriesCorpus2020 on the first story read. Overall, `r comp_tally %>% filter(source=="all Maze") %>% pull(good)`% of Maze participants got 5 or 6 questions right (`r comp_tally %>% filter(source=="<80% correct") %>% pull(good)`% of low-accuracy participants and `r comp_tally %>% filter(source==">80% correct") %>% pull(good)`% of high-accuracy participants) compared to `r comp_tally %>% filter(source=="SPR") %>% pull(good)`% of all SPR reads and `r comp_tally %>% filter(source=="SPR 1st story") %>% pull(good)`% of 1st SPR reads. Note that these differences cannot be directly attributed to methods, as the participant populations differed. While both studies were conducted on Mturk, the quality of Mturk data has decreased from 2011 when the SPR was collected to 2020 when the A-maze was collected. 
 
 We use task performance as our exclusion metric because it is more fine-grained and only analyze data from participants with at least 80% accuracy (in the gap between high-performers and low-performers). For the SPR comparison, we follow @futrellNaturalStoriesCorpus2020's criteria and exclude participants who got less than 5 of the questions correct. 
 
@@ -393,7 +398,7 @@ summ <- read_rds(here("Analysis/models/brms_maze_summ.rds")) %>% pivot_wider(nam
                   "Surp x Length", "Freq x Length", "Past Surprisal",
                   "Past Length", "Past Freq", "Past Surp x Length", "Past Freq x Length")) 
 
-knitr::kable(summ, format="latex", position="ht",caption="Predictions from fitted Bayesian regression models. All terms were centered, but not rescaled. Units are in ms. Surprisal is per bit, length per character, and frequency per $log_2$ occurance per billion words.")
+knitr::kable(summ, format="latex", position="ht",caption="Predictions from fitted Bayesian regression models. All terms were centered, but not rescaled. Units are in ms. Surprisal is per bit, length per character, and frequency per $log_2$ occurance per billion words. Interval is 2.5th quantile to 97.5th quantile of model draws.")
 ```
 
 
@@ -497,6 +502,99 @@ As an overall measure of fit to data, we calculate multiple R-squared for the si
 read_rds(here("Analysis/spr_model_compare.rds")) %>% knitr::kable(format="latex", position="ht",caption="Results of model comparisons on SPR data. Each row shows the additional predictive value gained from adding that model to another model. F values and p values from anova tests are reported. We also report log likelihoods of models with only one surprisal source.")
 
 ```
+
+
+```{r}
+tokenization <- here("Data/SPR/all_stories.tok.txt") %>% 
+  read_delim(delim="\t") %>% 
+  mutate(Word_In_Story_Num=zone,
+         Story_Num=item)
+
+labs <- read_rds(here("Prep_code/natural_stories_surprisals.rds")) %>% 
+  left_join(read_delim(here("Materials/natural_stories_sentences.tsv"), delim="\t")) %>% 
+  select(word_num=Word_In_Sentence_Num, word=Word, sentence=Sentence, everything())
+
+spr <- read_rds(here("Data/SPR/first.rds")) %>% left_join(tokenization) %>% left_join(labs) %>% select(WorkerId,rt,Story_Num,Sentence_Num, word_num)
+
+maze <- read_rds(here("Data/maze_pre_error.rds")) %>% left_join(labs) %>% select(subject, rt, Story_Num, Sentence_Num, word_num)
+```
+
+```{r spr-split-half}
+set.seed(42)
+spr_subs <- spr %>% filter(!is.na(Story_Num)) %>% select(WorkerId, Story_Num) %>% unique() %>% sample_n(63) %>%  group_by(Story_Num) %>%
+  mutate(half=ifelse(row_number() <= .5*n(),"spr1", "spr2"))
+#180 participants
+
+
+spr_split <- spr %>%
+  inner_join(spr_subs) %>% 
+  group_by(half,Story_Num, Sentence_Num, word_num) %>% summarize(spr=mean(rt)) %>% 
+  pivot_wider(names_from=half, values_from=spr)
+  
+spr_sentence_avg <- spr_split%>% group_by(Story_Num, Sentence_Num) %>% 
+  summarize(spr1=mean(spr1),
+            spr2=mean(spr2))
+
+spr_spr <- cor(spr_sentence_avg$spr1,spr_sentence_avg$spr2, use="complete.obs")
+```
+
+```{r maze-split-half}
+set.seed(42)
+maze_subs <- maze %>% select(subject, Story_Num) %>% unique() %>% sample_n(63)%>% group_by(Story_Num) %>%
+  mutate(half=ifelse(row_number() <= .5*n(),"maze1", "maze2"))
+
+maze_split <- maze %>% 
+  left_join(maze_subs) %>% 
+  group_by(half,Story_Num, Sentence_Num, word_num) %>% summarize(maze=mean(rt)) %>% 
+  pivot_wider(names_from=half, values_from=maze)
+  
+maze_sentence_avg <- maze_split%>% group_by(Story_Num, Sentence_Num) %>% 
+  summarize(maze1=mean(maze1),
+            maze2=mean(maze2))
+
+maze_maze <- cor(maze_sentence_avg$maze1,maze_sentence_avg$maze2, use="complete.obs")
+```
+
+```{r maze-spr}
+summ_spr <- spr %>% inner_join(spr_subs)%>% group_by(Story_Num, Sentence_Num, word_num,half) %>% summarize(spr=mean(rt, na.rm=T)) %>% rename(spr_half=half) %>% filter(!is.na(spr))
+  
+summ <- maze %>% inner_join(maze_subs) %>% group_by(Story_Num, Sentence_Num, word_num, half) %>% summarize(maze=mean(rt, na.rm=T)) %>% rename(maze_half=half) %>% filter(!is.na(maze))%>% inner_join(summ_spr)
+
+sentence_avg <- summ %>% group_by(Story_Num, Sentence_Num, maze_half, spr_half) %>% 
+  summarize(maze=mean(maze),
+            spr=mean(spr))
+
+sentence_avg11 <- sentence_avg %>% filter(maze_half=="maze1" & spr_half=="spr1")
+sentence_avg12 <- sentence_avg %>% filter(maze_half=="maze1" & spr_half=="spr2")
+sentence_avg21 <- sentence_avg %>% filter(maze_half=="maze2" & spr_half=="spr1")
+sentence_avg22 <- sentence_avg %>% filter(maze_half=="maze2" & spr_half=="spr2")
+
+spr_maze <-   mean(c(cor(sentence_avg11$spr,sentence_avg11$maze, use="complete.obs"),
+  cor(sentence_avg12$spr,sentence_avg12$maze, use="complete.obs"),
+  cor(sentence_avg21$spr,sentence_avg21$maze, use="complete.obs"),
+  cor(sentence_avg22$spr,sentence_avg22$maze, use="complete.obs")))
+```
+
+(ref:scatter) Correlation between SPR and Maze data. RTs were averaged across participants per word and then averaged together within each sentence. RTs in ms. 
+
+```{r scatter, out.height="20%", fig.width=6, fig.height=2, fig.pos="ht", fig.cap="(ref:scatter)"}
+spr_collapse <- spr %>% 
+  group_by(Story_Num, Sentence_Num,word_num) %>% 
+  summarize(spr=mean(rt, na.rm=T)) %>% 
+  group_by(Story_Num, Sentence_Num) %>%
+  summarize(spr=mean(spr))
+
+both <- maze %>% 
+  group_by(Story_Num, Sentence_Num, word_num) %>% 
+  summarize(maze=mean(rt, na.rm=T)) %>% 
+  group_by(Story_Num, Sentence_Num) %>% 
+  summarize(maze=mean(maze)) %>% 
+  inner_join(spr_collapse)
+ggplot(both, aes(x=maze, y=spr))+geom_point(alpha=.5, size=1)+labs(x="A-Maze", y="SPR")+coord_fixed(ratio=1)
+```
+
+An additional comparison between SPR and Maze is how correlated their reading times are; that is, do the methods pick up on the same effects. If so, we would expect that the sentences that take longer to read in one method also take longer in the other. We calculate the average RT at the sentence level (see Methods for details). The correlation between Maze and SPR is `r round(spr_maze,2)`, compared to `r round(spr_spr,2)` within SPR and `r round(maze_maze,2)` within Maze. See Figure \@ref(fig:scatter) for a visual comparison of overall Maze versus SPR RTs. 
+
 # Discussion
 
 We introduced a tweak to the paradigm for displaying Maze tasks that makes it useable for multi-sentence materials. In this error-correction Maze paradigm, participants read all the words because they can correct their mistakes and move on. We tested this method on the Natural Stories corpus, showing that, despite the oddness of the task, participants can read and understand a 1000 word story in this method. We additionally showed that the RTs generated in the Maze task show a linear relationship between the RT of a word and it's surprisal, but no relationship with the surprisal of the previous word. This provides additional evidence for the argument that the Maze task forces very incremental processing [@forsterMazeTaskMeasuring2009]. 
