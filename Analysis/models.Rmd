@@ -198,6 +198,112 @@ anova(gam_gpt_1,gam_gpt_2, test="Chisq")
 
 ## Plots
 
+```{r bootstrap code}
+require(OpenImageR)
+gam_boot <- function(dat,formula,data_frames_for_prediction,N=100,method="REML",...) {
+  models <- lapply(1:N,function(seed) {
+    set.seed(seed)
+    #dat[[weights_name]] <- tabulate(sample(1:nrow(dat),floor(nrow(dat)/5),replace=TRUE),nbins=nrow(dat))
+    dat$mgcv_weights <- tabulate(sample(1:nrow(dat),nrow(dat),replace=TRUE),nbins=nrow(dat))
+    #print(head(dat$mgcv_weights))
+    #print(head(dat[[weights_name]]))
+    #m <- gam(formula,data=dat,weights=dat[[weights_name]],...)
+    m <- gam(formula,data=dat,weights=mgcv_weights,method=method,...)
+    #print(m$deviance)
+    return(m)
+  })
+  results <- lapply(names(data_frames_for_prediction),function(term) {
+    predictions <-sapply(models,function(m)
+      predict(m,newdata=data_frames_for_prediction[[term]],type="terms",terms=term))
+    #print(dim(predictions))
+    return(predictions)
+  })
+  #print(length(results))
+  names(results) <- names(data_frames_for_prediction)
+  return(results)
+}
+
+summarize_gam_boot_results <- function(gam_boot_results,data_frames_for_prediction,term_names,model_name,point_estimation_function=mean,quantiles=c(0.025,0.975)) {
+  result <- lapply(1:length(data_frames_for_prediction),function(i) {
+    #print(term_names[[i]])
+    res <- tibble(x=data_frames_for_prediction[[i]][[term_names[[i]]]],
+                  rt=apply(gam_boot_results[[i]],1,point_estimation_function),
+                  CI_lower=apply(gam_boot_results[[i]],1,function(x) quantile(x,0.1)),
+                  CI_upper=apply(gam_boot_results[[i]],1,function(x) quantile(x,0.9)),
+                  model=model_name,
+                  term=term_names[[i]])
+    names(res)[names(res)=="x"] <- term_names[[i]]
+    return(res)
+  })
+  return(result)
+}
+
+dat_for_surprisal_prediction <- expand_grid(surprisal=seq(0,25,by=0.01),freq=0,len=0,prev_surp=0,prev_freq=0,prev_len=0)
+dat_for_freq_prediction <- expand_grid(surprisal=0,freq=seq(-9.5,7,by=0.01),len=0,prev_surp=0,prev_freq=0,prev_len=0)
+dat_for_length_prediction <- expand_grid(surprisal=0,freq=0,len=seq(-3.4,10.6,by=0.01),prev_surp=0,prev_freq=0,prev_len=0)
+dat_for_prev_surp_prediction <- expand_grid(surprisal=0,freq=0,len=0,prev_surp=seq(0,25,by=0.01),prev_freq=0,prev_len=0)
+dat_for_prev_freq_prediction <- expand_grid(surprisal=0,freq=0,len=0,prev_surp=0,prev_freq=seq(-9.5,7,by=0.01),prev_len=0)
+dat_for_prev_len_prediction <- expand_grid(surprisal=0,freq=0,len=0,prev_surp=0,prev_freq=0,prev_len=seq(-3.4,10.6,by=0.01))
+#predict(m,newdata=dat_for_surprisal_prediction,type="terms",terms='s(surprisal)')
+#predict(m,newdata=dat_for_freq_prediction,type="terms",terms='ti(freq)')
+term_names <- c("surprisal","freq","len","prev_surp","prev_freq","prev_len")
+dats_for_prediction <- list(
+  's(surprisal)'=dat_for_surprisal_prediction,
+  'ti(freq)'=dat_for_freq_prediction,
+  'ti(len)'=dat_for_length_prediction,
+  's(prev_surp)'=dat_for_prev_surp_prediction,
+  'ti(prev_freq)'=dat_for_prev_freq_prediction,
+  'ti(prev_len)'=dat_for_prev_len_prediction)
+N_replicates <- 101
+res_ngram <- gam_boot(ngram_mean_data,formula_no_interact,dats_for_prediction,N=N_replicates)
+bootstrapped_gam_predictions_ngram <- summarize_gam_boot_results(res_ngram,dats_for_prediction,term_names,"5-gram")
+res_grnn <- gam_boot(grnn_mean_data,formula_no_interact,dats_for_prediction,N=N_replicates)
+bootstrapped_gam_predictions_grnn <- summarize_gam_boot_results(res_grnn,dats_for_prediction,term_names,"GRNN")
+res_txl <- gam_boot(txl_mean_data,formula_no_interact,dats_for_prediction,N=N_replicates)
+bootstrapped_gam_predictions_txl <- summarize_gam_boot_results(res_txl,dats_for_prediction,term_names,"Transformer-XL")
+res_gpt <- gam_boot(gpt_mean_data,formula_no_interact,dats_for_prediction,N=N_replicates)
+bootstrapped_gam_predictions_gpt <- summarize_gam_boot_results(res_gpt,dats_for_prediction,term_names,"GPT-2")
+all_bootstrapped_predictions <- list(ngram=bootstrapped_gam_predictions_ngram,
+                                     grnn=bootstrapped_gam_predictions_grnn,
+                                     txl=bootstrapped_gam_predictions_txl,
+                                     gpt=bootstrapped_gam_predictions_gpt)
+all_surprisal_predictions <- rbind(bootstrapped_gam_predictions_ngram[[1]],
+                                   rename(bootstrapped_gam_predictions_ngram[[4]],surprisal=prev_surp),
+                                   bootstrapped_gam_predictions_grnn[[1]],
+                                   rename(bootstrapped_gam_predictions_grnn[[4]],surprisal=prev_surp),
+                                   bootstrapped_gam_predictions_txl[[1]],
+                                   rename(bootstrapped_gam_predictions_txl[[4]],surprisal=prev_surp),
+                                   bootstrapped_gam_predictions_gpt[[1]],
+                                   rename(bootstrapped_gam_predictions_gpt[[4]],surprisal=prev_surp)
+                                   ) %>%
+  mutate(s=ifelse(term=="surprisal","Current","Previous")) %>%
+  select(-term)
+
+write_rds(all_surprisal_predictions,"bootstrapped_GAM_surprisal_predictions.rds")
+```
+
+```{r example bootstrap results}
+# as an example, plot effect for surprisal
+summaries <- bootstrapped_gam_predictions_grnn
+ggplot(summaries[[1]],aes(x=surprisal,y=rt)) + geom_line() +
+  #geom_rug(aes(x=grnn_mean_data$surprisal),sides='b') +
+  geom_line(aes(x=summaries[[1]]$surprisal,y=summaries[[1]]$CI_lower),linetype="dashed") +
+  geom_line(aes(x=summaries[[1]]$surprisal,y=summaries[[1]]$CI_upper),linetype="dashed") +
+  ylim(c(-200,600)) +
+  xlab("surprisal") +
+  ylab("RT contribution") +
+  theme(aspect.ratio=1)
+ggsave("/tmp/bootstrap.pdf")
+```
+
+```{r example non-bootstrap results}
+m_no_bootstrap <- gam(formula_no_interact,data=grnn_mean_data)
+plot(m_no_bootstrap,select=1,ylim=c(-200,600))
+pdf("/tmp/no_bootstrap.pdf")
+plot(m_no_bootstrap,select=1,ylim=c(-200,600))
+dev.off()
+```
+
 ```{r plots, eval=T}
 message("GPT")
 plot(gam_gpt_1)
@@ -241,7 +347,9 @@ all <- a %>% union(b) %>% union(c) %>% union(d) %>% union(e) %>% union(f) %>% un
 ```{r, eval=T}
 
 
-gam1 <- read_rds(here("Analysis/models/gam_predictions.rds")) %>%  ggplot( aes(x=surprisal, y=rt, ymin=CI_lower, ymax=CI_upper))+
+#gam1 <- read_rds(here("Analysis/models/gam_predictions.rds")) %>%  
+gam1 <- read_rds(here("Analysis/bootstrapped_GAM_surprisal_predictions.rds")) %>%  
+  ggplot( aes(x=surprisal, y=rt, ymin=CI_lower, ymax=CI_upper))+
   geom_line()+
   geom_ribbon(alpha=.3)+
   #facet_grid(s~model, scales="free_y")+
