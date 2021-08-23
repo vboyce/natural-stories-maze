@@ -198,7 +198,7 @@ anova(gam_gpt_1,gam_gpt_2, test="Chisq")
 
 ## Plots
 
-```{r bootstrap code}
+```{r maze bootstrap code}
 require(OpenImageR)
 gam_boot <- function(dat,formula,data_frames_for_prediction,N=100,method="REML",...) {
   models <- lapply(1:N,function(seed) {
@@ -225,13 +225,14 @@ gam_boot <- function(dat,formula,data_frames_for_prediction,N=100,method="REML",
 
 summarize_gam_boot_results <- function(gam_boot_results,data_frames_for_prediction,term_names,model_name,point_estimation_function=mean,quantiles=c(0.025,0.975)) {
   result <- lapply(1:length(data_frames_for_prediction),function(i) {
-    #print(term_names[[i]])
+    #print(cat(i,"\t",term_names[[i]]))
     res <- tibble(x=data_frames_for_prediction[[i]][[term_names[[i]]]],
                   rt=apply(gam_boot_results[[i]],1,point_estimation_function),
-                  CI_lower=apply(gam_boot_results[[i]],1,function(x) quantile(x,0.1)),
-                  CI_upper=apply(gam_boot_results[[i]],1,function(x) quantile(x,0.9)),
+                  CI_lower=apply(gam_boot_results[[i]],1,function(x) quantile(x,quantiles[1])),
+                  CI_upper=apply(gam_boot_results[[i]],1,function(x) quantile(x,quantiles[2])),
                   model=model_name,
-                  term=term_names[[i]])
+                  term=term_names[[i]]
+                  )
     names(res)[names(res)=="x"] <- term_names[[i]]
     return(res)
   })
@@ -279,6 +280,7 @@ all_surprisal_predictions <- rbind(bootstrapped_gam_predictions_ngram[[1]],
   mutate(s=ifelse(term=="surprisal","Current","Previous")) %>%
   select(-term)
 
+write_rds(all_bootstrapped_predictions,"bootstrapped_GAM_predictions.rds")
 write_rds(all_surprisal_predictions,"bootstrapped_GAM_surprisal_predictions.rds")
 ```
 
@@ -707,6 +709,81 @@ gam_gpt_1 <- gam(spr_formula_interact, data=gpt_mean_spr, method="REML")
 
 ```
 
+```{r spr bootstrapping}
+surprisal_range <- seq(0,25,by=0.01)
+freq_range <- seq(-9.5,7,by=0.01)
+len_range <- seq(-3.4,10.6,by=0.01)
+surprisal_terms <- c("surp","past_surp","past2_surp","past3_surp")
+freq_terms <- c("freq_center","past_freq_center","past2_freq_center","past3_freq_center")
+len_terms <- c("length_center","past_length_center","past2_length_center","past3_length_center")
+
+dat_for_surp_prediction <- expand_grid(surp=seq(0,25,by=0.01),freq_center=0,length_center=0,past_surp=0,past_freq_center=0,past_length_center=0,past2_surp=0,past2_freq_center=0,past2_length_center=0,past3_surp=0,past3_freq_center=0,past3_length_center=0)
+dat_for_freq_prediction <- expand_grid(surp=0,freq_center=seq(-9.5,7,by=0.01),length_center=0,past_surp=0,past_freq_center=0,past_length_center=0,past2_surp=0,past2_freq_center=0,past2_length_center=0,past3_surp=0,past3_freq_center=0,past3_length_center=0)
+dat_for_length_prediction <- expand_grid(surp=0,freq_center=0,length_center=seq(-3.4,10.6,by=0.01),past_surp=0,past_freq_center=0,past_length_center=0,past2_surp=0,past2_freq_center=0,past2_length_center=0,past3_surp=0,past3_freq_center=0,past3_length_center=0)
+dat_for_past_surp_prediction <- expand_grid(surp=0,freq_center=0,length_center=0,past_surp=seq(0,25,by=0.01),past_freq_center=0,past_length_center=0,past2_surp=0,past2_freq_center=0,past2_length_center=0,past3_surp=0,past3_freq_center=0,past3_length_center=0)
+dat_for_past_freq_prediction <- expand_grid(surp=0,freq_center=0,length_center=0,past_surp=0,past_freq_center=seq(-9.5,7,by=0.01),past_length_center=0,past2_surp=0,past2_freq_center=0,past2_length_center=0,past3_surp=0,past3_freq_center=0,past3_length_center=0)
+dat_for_past_len_prediction <- expand_grid(surp=0,freq_center=0,length_center=0,past_surp=0,past_freq_center=0,past_length_center=seq(-3.4,10.6,by=0.01),past2_surp=0,past2_freq_center=0,past2_length_center=0,past3_surp=0,past3_freq_center=0,past3_length_center=0)
+dat_for_past2_surp_prediction <- expand_grid(surp=0,freq_center=0,length_center=0,past_surp=0,past_freq_center=0,past_length_center=0,past2_surp=seq(0,25,by=0.01),past2_freq_center=0,past2_length_center=0,past3_surp=0,past3_freq_center=0,past3_length_center=0)
+dat_for_past2_freq_prediction <- expand_grid(surp=0,freq_center=0,length_center=0,past_surp=0,past_freq_center=0,past_length_center=0,past2_surp=0,past2_freq_center=seq(-9.5,7,by=0.01),past2_length_center=0,past3_surp=0,past3_freq_center=0,past3_length_center=0)
+dat_for_past2_len_prediction <- expand_grid(surp=0,freq_center=0,length_center=0,past_surp=0,past_freq_center=0,past_length_center=0,past2_surp=0,past2_freq_center=0,past2_length_center=seq(-3.4,10.6,by=0.01),past3_surp=0,past3_freq_center=0,past3_length_center=0)
+dat_for_past3_surp_prediction <- expand_grid(surp=0,freq_center=0,length_center=0,past_surp=0,past_freq_center=0,past_length_center=0,past2_surp=0,past2_freq_center=0,past2_length_center=0,past3_surp=seq(0,25,by=0.01),past3_freq_center=0,past3_length_center=0)
+dat_for_past3_freq_prediction <- expand_grid(surp=0,freq_center=0,length_center=0,past_surp=0,past_freq_center=0,past_length_center=0,past2_surp=0,past2_freq_center=0,past2_length_center=0,past3_surp=0,past3_freq_center=seq(-9.5,7,by=0.01),past3_length_center=0)
+dat_for_past3_len_prediction <- expand_grid(surp=0,freq_center=0,length_center=0,past_surp=0,past_freq_center=0,past_length_center=0,past2_surp=0,past2_freq_center=0,past2_length_center=0,past3_surp=0,past3_freq_center=0,past3_length_center=seq(-3.4,10.6,by=0.01))
+
+term_names <- c("surp","freq_center","length_center","past_surp","past_freq_center","past_length_center","past2_surp","past2_freq_center","past2_length_center","past3_surp","past3_freq_center","past3_length_center")
+dats_for_prediction <- list(
+  's(surp)'=dat_for_surp_prediction,
+  'ti(freq_center)'=dat_for_freq_prediction,
+  'ti(length_center)'=dat_for_length_prediction,
+  's(past_surp)'=dat_for_past_surp_prediction,
+  'ti(past_freq_center)'=dat_for_past_freq_prediction,
+  'ti(past_length_center)'=dat_for_past_len_prediction,
+  's(past2_surp)'=dat_for_past2_surp_prediction,
+  'ti(past2_freq_center)'=dat_for_past2_freq_prediction,
+  'ti(past2_length_center)'=dat_for_past2_len_prediction,
+  's(past3_surp)'=dat_for_past3_surp_prediction,
+  'ti(past3_freq_center)'=dat_for_past3_freq_prediction,
+  'ti(past3_length_center)'=dat_for_past3_len_prediction)
+
+N_replicates <- 101
+res_ngram_spr <- gam_boot(ngram_mean_spr,spr_formula_interact,dats_for_prediction,N=N_replicates)
+bootstrapped_gam_predictions_ngram_spr <- summarize_gam_boot_results(res_ngram_spr,dats_for_prediction,term_names,"5-gram")
+res_grnn_spr <- gam_boot(grnn_mean_spr,spr_formula_interact,dats_for_prediction,N=N_replicates)
+bootstrapped_gam_predictions_grnn_spr <- summarize_gam_boot_results(res_grnn_spr,dats_for_prediction,term_names,"GRNN")
+res_txl_spr <- gam_boot(txl_mean_spr,spr_formula_interact,dats_for_prediction,N=N_replicates)
+bootstrapped_gam_predictions_txl_spr <- summarize_gam_boot_results(res_txl_spr,dats_for_prediction,term_names,"Transformer-XL")
+res_gpt_spr <- gam_boot(gpt_mean_spr,spr_formula_interact,dats_for_prediction,N=N_replicates)
+bootstrapped_gam_predictions_gpt_spr <- summarize_gam_boot_results(res_gpt_spr,dats_for_prediction,term_names,"GPT-2")
+all_bootstrapped_predictions_spr <- list(ngram=bootstrapped_gam_predictions_ngram_spr,
+                                     grnn=bootstrapped_gam_predictions_grnn_spr,
+                                     txl=bootstrapped_gam_predictions_txl_spr,
+                                     gpt=bootstrapped_gam_predictions_gpt_spr)
+write_rds(all_bootstrapped_predictions_spr,"bootstrapped_spr_GAM_predictions.rds")
+
+term_conversions <- c("surp"="Current","past_surp"="Previous","past2_surp"="2Previous","past3_surp"="3Previous")
+all_surprisal_predictions_spr <- rbind(rename(bootstrapped_gam_predictions_ngram_spr[[1]],surprisal=surp),
+                                   rename(bootstrapped_gam_predictions_ngram_spr[[4]],surprisal=past_surp),
+                                   rename(bootstrapped_gam_predictions_ngram_spr[[7]],surprisal=past2_surp),
+                                   rename(bootstrapped_gam_predictions_ngram_spr[[10]],surprisal=past3_surp),
+                                   rename(bootstrapped_gam_predictions_grnn_spr[[1]],surprisal=surp),
+                                   rename(bootstrapped_gam_predictions_grnn_spr[[4]],surprisal=past_surp),
+                                   rename(bootstrapped_gam_predictions_grnn_spr[[7]],surprisal=past2_surp),
+                                   rename(bootstrapped_gam_predictions_grnn_spr[[10]],surprisal=past3_surp),
+                                   rename(bootstrapped_gam_predictions_txl_spr[[1]],surprisal=surp),
+                                   rename(bootstrapped_gam_predictions_txl_spr[[4]],surprisal=past_surp),
+                                   rename(bootstrapped_gam_predictions_txl_spr[[7]],surprisal=past2_surp),
+                                   rename(bootstrapped_gam_predictions_txl_spr[[10]],surprisal=past3_surp),
+                                   rename(bootstrapped_gam_predictions_gpt_spr[[1]],surprisal=surp),
+                                   rename(bootstrapped_gam_predictions_gpt_spr[[4]],surprisal=past_surp),
+                                   rename(bootstrapped_gam_predictions_gpt_spr[[7]],surprisal=past2_surp),
+                                   rename(bootstrapped_gam_predictions_gpt_spr[[10]],surprisal=past3_surp)
+                                   ) %>%
+  mutate(s=factor(term_conversions[term],levels=term_conversions)) %>%
+  select(-term)
+write_rds(all_surprisal_predictions_spr,"bootstrapped_spr_GAM_surprisal_predictions.rds")
+
+```
+
 ```{r spr-gam-plot}
 message("GPT")
 plot(gam_gpt_1)
@@ -752,7 +829,9 @@ all <- a %>% union(b) %>% union(c) %>% union(d) %>% union(e) %>% union(f) %>% un
 all_mean_spr <-  read_rds(here("Analysis/models/meaned_spr.rds"))
 
 
-gam1 <- read_rds(here("Analysis/models/spr_gam_predictions.rds")) %>%  ggplot( aes(x=surprisal, y=rt, ymin=CI_lower, ymax=CI_upper))+
+#gam1 <- read_rds(here("Analysis/models/spr_gam_predictions.rds")) %>%  
+gam1 <- read_rds(here("Analysis/bootstrapped_spr_GAM_surprisal_predictions.rds")) %>%  
+  ggplot( aes(x=surprisal, y=rt, ymin=CI_lower, ymax=CI_upper))+
   geom_line()+
   geom_ribbon(alpha=.3)+
   facet_grid(s~model)+
