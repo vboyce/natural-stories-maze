@@ -41,8 +41,7 @@ authornote: |
   TODO
   
 abstract: |
-   TODO needs work
-   A-maze is a new method for measuring incremental sentence processing that can localize slowdowns related to syntactic ambiguities. We adapt A-maze for use on longer passages and test it on the Natural Stories corpus. We find that people can comprehend these longer text passages during the Maze task. Moreover, the  task yields useable reaction time data with word predictability effects that are linear in the surprisal of the current word, with little spillover effect from the surprisal of the previous word. This expands the types of effects that can be studied with A-maze, showing it to be a a versatile alternative to eye-tracking and self-paced reading.We find support for the localization of reading time effects during the Maze task, as well as extending the range of materials Maze is suitable for.  How long it takes to read a word in a sentence is reflective of how hard it is to identify and integrate the word in the surrounding context. Techniques that slow down the reading process and localize the processing time for each word are useful to understanding the time course of language processing.
+   Behavioral measures of word-by-word reading time provide experimental evidence to test theories of language processing. A-maze is a recent method for measuring incremental sentence processing that can localize slowdowns related to syntactic ambiguities in individual sentences. We adapted A-maze for use on longer passages and tested it on the Natural Stories corpus. Participants were able to comprehend these longer text passages that they read via the Maze task.  Moreover, the Maze task yielded useable reaction time data with word predictability effects that are linear in the surprisal of the current word, the same pattern found with other tasks. Crucially, Maze reaction times show a tight relationship with properties of the current word, but little spillover of effects from previous words. This superior localization is an advantage of Maze compared with other methods. Overall, we expand the scope of experimental materials, and thus theoretical questions, that can be coupled with the Maze task. 
 
 keywords: TODO
 wordcount: TODO
@@ -261,11 +260,11 @@ We exclude the first word of every sentence because it had an x-x-x distractor, 
 We excluded outlier RTs that were <100 or >5000 ms (<100 is likely a recording error, >5000 is likely the participant getting distracted). We exclude words where mistakes occurred or which occurred after a mistake in the same sentence. We only analysed words where we had values for all predictors, which means that if the previous word was unknown to a model, this word will be excluded because we're missing values for a lagged predictor. 
 
 ### Model specification
-For generalized additive models, we centered but did not rescale the length and frequency predictors, but left surprisal uncentered for interpretability. We used smooths for the surprisal terms and tensor effects for the frequency by length effects and interactions. To minimize the effect of repeated measures on confidence about inferred curve shapes, we collapse the reading times across subjects by modelling the mean RT for each word. TODO edit for bootstrapping
+For generalized additive models, we centered but did not rescale the length and frequency predictors, but left surprisal uncentered for interpretability. We used smooths for the surprisal terms and tensor effects for the frequency by length effects and interactions. To account for by-subject variation, we do bootstrapping ... TODO specs for bootstrapping
 
 For linear models, we centered all predictors. We used full mixed effects, including by-subject slopes and a per-word-token random intercept [@barrRandomEffectsStructure2013]. We used weak priors (normal(1000,1000) for intercept, normal(0,500) for beta and sd, and lkj(1) for correlations). Models were run in brm [@burknerAdvancedBayesianMultilevel2018]. 
 
-For model comparison, we took by-item averaged data to aid in fast model fitting.  We included frequency, length, and their interaction to all models. Then we fit models with either 1 or 2 sources of surprisal using lm and assessed the effect of adding the second surprisal source with an anova. We used predictors for the current and past word and centered all effects. TODO cite LM
+For model comparison, we took by-item averaged data to aid in fast model fitting.  We included frequency, length, and their interaction to all models. Then we fit models with either 1 or 2 sources of surprisal using lm [@batesFittingLinearMixedeffects2015] and assessed the effect of adding the second surprisal source with an anova. We used predictors for the current and past word and centered all effects. 
 
 ## Self-paced reading comparison
 
@@ -375,17 +374,17 @@ data_anything_goes <- data_filt %>%
 
 To assess the shape of the RT-surprisal relationship, we fit generalized additive models (GAMs). For these models, we only included data that occurred before any mistakes in the sentence; due to limits of model vocabulary, words with punctuation and some uncommon or proper nouns were excluded. We use surprisals generated by 4 different language models for robustness. (See Methods for details on language models, exclusions, and model fit.)
 
-(ref:gam-cap) GAM predictions of Maze reaction time (RT) as a function of either current word surprisal (top) or previous word surprisal (bottom). Density of data is shown along the x-axis. For each of the 4 language models used, there is a linear relationship between current word surprisal and RT (at least when there is enough data). The relationship between previous word surprisal and RT is much flatter. 
+(ref:gam-cap) GAM results for the effect on Maze reaction time (RT) from either current word surprisal (top) or previous word surprisal (bottom). Density of data is shown along the x-axis. For each of the 4 language models used, there is a linear relationship between current word surprisal and RT (at least when there is enough data). The relationship between previous word surprisal and RT is much flatter. TODO these are bootstrapped 95% CI? 
 
 ```{r gam, out.height="40%", fig.width=8, fig.height=3, fig.pos="ht", fig.cap="(ref:gam-cap)"}
 
-gam1 <- read_rds(here("Analysis/models/gam_predictions.rds")) %>%  ggplot( aes(x=surprisal, y=rt, ymin=CI_lower, ymax=CI_upper))+
+gam1 <- read_rds(here("Analysis/bootstrapped_GAM_surprisal_predictions.rds")) %>%  ggplot( aes(x=surprisal, y=rt, ymin=CI_lower, ymax=CI_upper))+
   geom_line()+
   geom_ribbon(alpha=.3)+
   #facet_grid(s~model, scales="free_y")+
   facet_grid(s~model)+
   coord_cartesian(xlim=c(0,28))+
-  labs(x="Surprisal (bits)", y="Reaction Time (ms)")+theme(axis.ticks.x=element_blank(), axis.title.x=element_blank(), axis.text.x=element_blank(), plot.margin=margin(t=0,r=0,b=0,l=0,unit="pt"))
+  labs(x="Surprisal (bits)", y="Effect on Reaction Time (ms)")+theme(axis.ticks.x=element_blank(), axis.title.x=element_blank(), axis.text.x=element_blank(), plot.margin=margin(t=0,r=0,b=0,l=0,unit="pt"))
 
 all_mean_data <-  read_rds(here("Analysis/models/meaned_maze.rds"))
 
@@ -402,22 +401,19 @@ plot_grid(p2[[1]], p2[[2]], nrow=2, rel_heights = c(1, .3))
 
 ```
 
-The GAMs predicted relationship between current and previous word surprisals are shown in Figure \@ref(fig:gam); this is the main effect of either current or previous surprisal for an average length and frequency word, if the other surprisal value is 0 (TODO Not sure this is the correct interpretation! -- https://rdrr.io/cran/tidymv/man/get_gam_predictions.html is the function used for prediction). Note that for each of the models, high-surprisal words are rare, with much of the data for words between 0 and 15 bits of surprisal. All of the models show a roughly linear relationship between current word surprisal and RT, especially in the region with more data. All of the models show a flatter relationship between previous word surprisal and RT. This is a sign of localization as the previous word's surprisal is not affecting RT much. 
+The relationships between current and previous word surprisals and RT are shown in Figure \@ref(fig:gam); this is the main effect of either current or previous surprisal. Note that for each of the models, high-surprisal words are rare, with much of the data for words between 0 and 15 bits of surprisal. All of the models show a roughly linear relationship between current word surprisal and RT, especially in the region with more data. All of the models show a flatter relationship between previous word surprisal and RT. This is a sign of localization as the previous word's surprisal is not affecting RT much. 
 
 TODO comment on freq, length effects / non-linearities!
 
-
-
-
-(ref:spr-gam-cap) GAM predictions of reaction time (RT) for SPR data from @futrellNaturalStoriesCorpus2020 as a function of current word surprisal (top) or the surprisal of an earlier word, up to 3 words back. Density of data is shown along the x-axis.
+(ref:spr-gam-cap) GAM results for the effect on SPR RT data [@futrellNaturalStoriesCorpus2020] as a function of current word surprisal (top) or the surprisal of an earlier word, up to 3 words back. Density of data is shown along the x-axis. TODO these are bootstrapped 95% CI? 
 
 ```{r spr-gam, out.height="40%", fig.width=8, fig.height=4, fig.pos="ht", fig.cap="(ref:spr-gam-cap)"}
-gam1 <- read_rds(here("Analysis/models/spr_gam_predictions.rds")) %>%  ggplot( aes(x=surprisal, y=rt, ymin=CI_lower, ymax=CI_upper))+
+gam1 <- read_rds(here("Analysis/bootstrapped_spr_GAM_surprisal_predictions.rds")) %>%  ggplot( aes(x=surprisal, y=rt, ymin=CI_lower, ymax=CI_upper))+
   geom_line()+
   geom_ribbon(alpha=.3)+
   facet_grid(s~model)+
   coord_cartesian(xlim=c(0,28))+
-  labs(x="Surprisal (bits)", y="Reaction Time (ms)")+theme(axis.ticks.x=element_blank(), axis.title.x=element_blank(), axis.text.x=element_blank(), plot.margin=margin(t=0,r=0,b=0,l=0,unit="pt"))
+  labs(x="Surprisal (bits)", y="Effect on Reaction Time (ms)")+theme(axis.ticks.x=element_blank(), axis.title.x=element_blank(), axis.text.x=element_blank(), plot.margin=margin(t=0,r=0,b=0,l=0,unit="pt"))
 
  all_mean_spr <-  read_rds(here("Analysis/models/meaned_spr.rds"))
 
@@ -434,7 +430,7 @@ plot_grid(p2[[1]], p2[[2]], nrow=2, rel_heights = c(1, .2))
 
 ```
 
-As a comparison, we also ran GAMs on the Self-Paced Reading data collected by @futrellNaturalStoriesCorpus2020. Previous work such as @smithEffectWordPredictability2013 has found positive relationships between RT and the surprisal of earlier words for SPR, so we include predictors from the 3 prior words.  The predicted relationship between surprisals and RT is shown in Figure \@ref(fig:spr-gam); note that the y-axis range is muuch narrower than for Maze. Both current and previous word surprisals have a roughly linear positive relationship to RT. The surprisal of the word two back also has an influence in some models. 
+As a comparison, we also ran GAMs on the Self-Paced Reading data collected by @futrellNaturalStoriesCorpus2020. Previous work such as @smithEffectWordPredictability2013 has found positive relationships between RT and the surprisal of earlier words for SPR, so we include predictors from the 3 prior words.  The  relationship between surprisals and RT is shown in Figure \@ref(fig:spr-gam); note that the y-axis range is much narrower than for Maze. Both current and previous word surprisals have a roughly linear positive relationship to RT. The surprisal of the word two back also has an influence in some models. 
 
 Comparing the Maze and SPR smooths, we see that both show a linear relationship, but Maze has much larger and more localized effects of surprisal.
 

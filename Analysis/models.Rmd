@@ -196,9 +196,8 @@ anova(gam_txl_1,gam_txl_2, test="Chisq")
 anova(gam_gpt_1,gam_gpt_2, test="Chisq")
 ```
 
-## Plots
 
-```{r maze bootstrap code}
+```{r maze bootstrap code, eval=F}
 require(OpenImageR)
 gam_boot <- function(dat,formula,data_frames_for_prediction,N=100,method="REML",...) {
   models <- lapply(1:N,function(seed) {
@@ -284,7 +283,7 @@ write_rds(all_bootstrapped_predictions,"bootstrapped_GAM_predictions.rds")
 write_rds(all_surprisal_predictions,"bootstrapped_GAM_surprisal_predictions.rds")
 ```
 
-```{r example bootstrap results}
+```{r example bootstrap results,eval=F}
 # as an example, plot effect for surprisal
 summaries <- bootstrapped_gam_predictions_grnn
 ggplot(summaries[[1]],aes(x=surprisal,y=rt)) + geom_line() +
@@ -298,7 +297,7 @@ ggplot(summaries[[1]],aes(x=surprisal,y=rt)) + geom_line() +
 ggsave("/tmp/bootstrap.pdf")
 ```
 
-```{r example non-bootstrap results}
+```{r example non-bootstrap results, eval=F}
 m_no_bootstrap <- gam(formula_no_interact,data=grnn_mean_data)
 plot(m_no_bootstrap,select=1,ylim=c(-200,600))
 pdf("/tmp/no_bootstrap.pdf")
@@ -306,7 +305,7 @@ plot(m_no_bootstrap,select=1,ylim=c(-200,600))
 dev.off()
 ```
 
-```{r plots, eval=T}
+```{r plots, eval=F}
 message("GPT")
 plot(gam_gpt_1)
 message("GRNN")
@@ -709,7 +708,7 @@ gam_gpt_1 <- gam(spr_formula_interact, data=gpt_mean_spr, method="REML")
 
 ```
 
-```{r spr bootstrapping}
+```{r spr bootstrapping, eval=F}
 surprisal_range <- seq(0,25,by=0.01)
 freq_range <- seq(-9.5,7,by=0.01)
 len_range <- seq(-3.4,10.6,by=0.01)
