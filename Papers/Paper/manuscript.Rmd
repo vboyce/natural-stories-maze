@@ -295,24 +295,16 @@ not_gpt <- not_other %>% filter(gpt_token_count==1)
 
 ### Predictors 
 
-<<<<<<< HEAD
-### Model specification
-To infer the shape of the relationship between our predictor variables and RTs, we fitted generalized additive models (GAMs) using `R`'s `mgcv` package to predict the mean RT (after exclusions) for each word, averaging across participants from whom we we obtained an unexcluded RT for that word. We centered but did not rescale the length and frequency predictors, and left surprisal uncentered for interpretability. We used smooth terms (`mgcv`'s `s()`) for surprisal and tensor product terms (`mgcv`'s `ti()`) for frequency-by-length effects and interactions. We use restricted maximum likelihood (REML) smoothing for parameter estimation. To more fully account for the uncertainty in the smoothing parameter estimates, we fitted 101 bootstrap replicates of each GAM model; in Figures \@ref(fig:gam) and \@ref(fig:spr-gam), the best-fit lines derive from the mean estimated effect size across the bootstrap replicates, and the shaded areas indicate a 95\% bootstrap confidence interval on this effect size (the boundaries are the 2.5\% and 97.5\% quantiles of the bootstrapped replicates).
-
-
-To account for by-subject variation, we do bootstrapping ... TODO specs for bootstrapping
-=======
 We created a set of predictor variables of frequency, word length, and surprisals from 4 language models.  For length, we used the length in characters excluding end punctuation. For unigram frequency, we tokenized the training data from @gulordava18 and tallied up instances. We then rescaled the word counts to get the log2 frequency of occurrences per 1 billion words, so higher values indicate higher log frequencies. We got per-word surprisals for each of 4 different language models, covering a range of common architectures: a Kneser-Ney smoothed 5-gram, GRNN [@gulordava18], Transformer-XL [@daiTransformerXLAttentiveLanguage2019], and GPT-2 [@radfordLanguageModelsAre], using lm-zoo [@gauthierSyntaxGymOnlinePlatform2020].  For all of these predictors, we used both the predictor at the current word as well as lagged predictors from the previous word.
 
 ### Exclusions
->>>>>>> 53364ad... lots of paper editing
 
 We excluded the first word of every sentence because it had an x-x-x distractor, leaving `r nrow(not_first)` words. We excluded words for which we didn't have surprisal or frequency information, leaving `r nrow(not_na)` words. We additionally excluded words that any model treated as being composed of multiple tokens (primarily words with punctuation),  leaving `r nrow(not_gpt)` words[^1]. We excluded outlier RTs that were <100 or >5000 ms (<100 is likely a recording error, >5000 is likely the participant getting distracted). We exclude RTs from words where mistakes occurred or which occurred after a mistake in the same sentence. We only analyzed words where we had values for all predictors, which meant that if the previous word was unknown to a model, the word was excluded because of missing values for a lagged predictor.
 
 [^1]:Surprisals should be additive, but summing the surprisals for multi-token words gave some unreasonable responses. For instance, in one story the word king!\' has a surprisal of 64 under GRNN (context: The other birds gave out one by one and when the eagle saw this he thought, \'What is the use of flying any higher? This victory is in the bag and I am king!\'). While GPT-2 using byte-pair encoding that can split up words into multiple parts, excluding words it split up only excluded 30 words that were not already excluded by other models.
 
 ### Model specification
-For generalized additive models, we centered but did not rescale the length and frequency predictors, but left surprisal uncentered for interpretability. We used smooths for the surprisal terms and tensor effects for the frequency by length effects and interactions. To account for by-subject variation, we did bootstrapping.
+To infer the shape of the relationship between our predictor variables and RTs, we fitted generalized additive models (GAMs) using `R`'s `mgcv` package to predict the mean RT (after exclusions) for each word, averaging across participants from whom we we obtained an unexcluded RT for that word. We centered but did not rescale the length and frequency predictors, and left surprisal uncentered for interpretability. We used smooth terms (`mgcv`'s `s()`) for surprisal and tensor product terms (`mgcv`'s `ti()`) for frequency-by-length effects and interactions. We use restricted maximum likelihood (REML) smoothing for parameter estimation. To more fully account for the uncertainty in the smoothing parameter estimates, we fitted 101 bootstrap replicates of each GAM model; in Figures \@ref(fig:gam) and \@ref(fig:spr-gam), the best-fit lines derive from the mean estimated effect size across the bootstrap replicates, and the shaded areas indicate a 95\% bootstrap confidence interval on this effect size (the boundaries are the 2.5\% and 97.5\% quantiles of the bootstrapped replicates).
 
 For linear models, we centered all predictors. We modeled the main effects of surprisal, length, and frequency as well as surprisal x length and frequency x length interactions.  For the A-maze data, we used maximal mixed effects, including by-subject slopes and a per-word-token random intercept [@barrRandomEffectsStructure2013]. We used weak priors (normal(1000,1000) for intercept, normal(0,500) for beta and sd, and lkj(1) for correlations) and ran models with brm [@burknerAdvancedBayesianMultilevel2018]. 
 
@@ -516,7 +508,7 @@ data_anything_goes <- data_filt %>%
 
 To assess the shape of the RT-surprisal relationship, we fit generalized additive models (GAMs). For these models, we only included data that occurred before any mistakes in the sentence; due to limits of model vocabulary, words with punctuation and some uncommon or proper nouns were excluded. We used surprisals generated by 4 different language models for robustness. (See Methods for details on language models, exclusions, and model fit.)
 
-(ref:gam-cap) GAM results for the effect of current word surprisal (top) or previous word surprisal (bottom) on Maze reaction time (RT). Density of data is shown along the x-axis. For each of the 4 language models used, there is a linear relationship between current word surprisal and RT. The relationship between previous word surprisal and RT is much flatter. 
+(ref:gam-cap) GAM results for the effect of current word surprisal (top) or previous word surprisal (bottom) on Maze reaction time (RT). Density of data is shown along the x-axis. The best-fit lines is from the mean estimated effect size across the bootstrap replicates, and the shaded areas indicate a 95\% bootstrap confidence interval on this effect size. For each of the 4 language models used, there is a linear relationship between current word surprisal and RT. The relationship between previous word surprisal and RT is much flatter. 
 
 ```{r gam, out.height="40%", fig.width=8, fig.height=3, fig.pos="ht", fig.cap="(ref:gam-cap)"}
 
@@ -545,7 +537,7 @@ plot_grid(p2[[1]], p2[[2]], nrow=2, rel_heights = c(1, .3))
 
 The main effects of current and previous word surprisals on RT are shown in Figure \@ref(fig:gam). Note that for each of the models, high-surprisal words are rare, with much of the data from words with between 0 and 15 bits of surprisal. All 4 models show a roughly linear relationship between current word surprisal and RT, especially in the region with more data. 
 
-(ref:spr-gam-cap) GAM results for the effect of current word surprisal (top) or the surprisal of an earlier word, up to 3 words back on SPR RT data [@futrellNaturalStoriesCorpus2020]. Density of data is shown along the x-axis. 
+(ref:spr-gam-cap) GAM results for the effect of current word surprisal (top) or the surprisal of an earlier word, up to 3 words back on SPR RT data [@futrellNaturalStoriesCorpus2020]. Density of data is shown along the x-axis. The best-fit lines is from the mean estimated effect size across the bootstrap replicates, and the shaded areas indicate a 95\% bootstrap confidence interval on this effect size.
 
 ```{r spr-gam, out.height="40%", fig.width=8, fig.height=4, fig.pos="ht", fig.cap="(ref:spr-gam-cap)"}
 gam1 <- read_rds(here("Analysis/bootstrapped_spr_GAM_surprisal_predictions.rds")) %>%  ggplot( aes(x=surprisal, y=rt, ymin=CI_lower, ymax=CI_upper))+
