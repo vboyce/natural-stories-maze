@@ -171,6 +171,27 @@ formula_no_interact <- rt ~ s(surprisal, bs="cr", k=20)+
                      ti(prev_freq, bs="cr")+
                      ti(prev_len, bs="cr")
 
+
+formula3_interact <- rt ~ ti(surprisal, bs="cr", k=20)+
+                     ti(freq, bs="cr") + 
+                     ti(len, bs="cr")+
+                     ti(freq,len, bs="cr")+
+                     ti(surprisal,len, bs="cr")+
+                     ti(surprisal,freq, bs="cr")+
+                     ti(prev_surp, bs="cr", k=20)+
+                     ti(prev_freq, bs="cr")+
+                     ti(prev_len, bs="cr")+
+                     ti(prev_freq, prev_len, bs="cr") +
+                     ti(prev_surp, prev_len, bs="cr") +
+                     ti(prev_surp, prev_freq, bs="cr")
+
+formula2_interact <- rt ~ 
+                     ti(freq,len, bs="cr")+
+                     ti(surprisal,len, bs="cr")+
+                     ti(surprisal,freq, bs="cr")+
+                     ti(prev_freq, prev_len, bs="cr") +
+                     ti(prev_surp, prev_len, bs="cr") +
+                     ti(prev_surp, prev_freq, bs="cr")
 ```
 
 All of this is on by-item mean data. 
@@ -180,11 +201,16 @@ gam_ngram_1 <- gam(formula_interact, data=ngram_mean_data, method="REML")
 gam_grnn_1 <- gam(formula_interact, data=grnn_mean_data, method="REML")
 gam_txl_1 <- gam(formula_interact, data=txl_mean_data, method="REML")
 gam_gpt_1 <- gam(formula_interact, data=gpt_mean_data, method="REML")
+gam_gpt_1a <- gam(formula_interact, data=filter(gpt_mean_data,len<9), method="REML")
+gam_gpt_2 <- gam(formula2_interact, data=gpt_mean_data, method="REML")
+gam_gpt_3 <- gam(formula3_interact, data=gpt_mean_data, method="REML")
+print(plot(getViz(gam_gpt_1x)))
+print(plot(getViz(gam_gpt_3)))
 
 gam_ngram_2 <- gam(formula_no_interact, data=ngram_mean_data, method="REML")
 gam_grnn_2 <- gam(formula_no_interact, data=grnn_mean_data, method="REML")
 gam_txl_2 <- gam(formula_no_interact, data=txl_mean_data, method="REML")
-gam_gpt_2 <- gam(formula_no_interact, data=gpt_mean_data, method="REML")
+gam_gpt_no_interact <- gam(formula_no_interact, data=gpt_mean_data, method="REML")
 
 ```
 
@@ -281,10 +307,24 @@ all_surprisal_predictions <- rbind(bootstrapped_gam_predictions_ngram[[1]],
 
 write_rds(all_bootstrapped_predictions,"bootstrapped_GAM_predictions.rds")
 write_rds(all_surprisal_predictions,"bootstrapped_GAM_surprisal_predictions.rds")
+
+
+dats_for_predictionX <- list(
+  'ti(surprisal)'=dat_for_surprisal_prediction,
+  'ti(freq)'=dat_for_freq_prediction,
+  'ti(len)'=dat_for_length_prediction,
+  'ti(prev_surp)'=dat_for_prev_surp_prediction,
+  'ti(prev_freq)'=dat_for_prev_freq_prediction,
+  'ti(prev_len)'=dat_for_prev_len_prediction)
+system.time(res_gptX <- gam_boot(gpt_mean_data,formula2_interact,dats_for_predictionX,N=N_replicates))
+bootstrapped_gam_predictions_gptX <- summarize_gam_boot_results(res_gpt,dats_for_predictionX,term_names,"GPT-2")
+write_rds(res_gptX,"res_gptX.rds")
+write_rds(bootstrapped_gam_predictions_gptX,"bootstrapped_gam_predictions_gptX.rds")
 ```
 
 ```{r example bootstrap results,eval=F}
 # as an example, plot effect for surprisal
+summaries <- bootstrapped_gam_predictions_gptX
 summaries <- bootstrapped_gam_predictions_grnn
 ggplot(summaries[[1]],aes(x=surprisal,y=rt)) + geom_line() +
   #geom_rug(aes(x=grnn_mean_data$surprisal),sides='b') +
