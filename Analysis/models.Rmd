@@ -11,6 +11,7 @@ output:
 knitr::opts_chunk$set(echo = FALSE, warning=F, message=F)
 options(knitr.table.format = "html")
 knitr::opts_chunk$set(dev = "png", dev.args = list(type = "cairo-png"))
+library(plyr)
 library(tidyverse)
 library(readr)
 library(brms)
@@ -24,6 +25,7 @@ library(tidymv)
 library(rsample)
 library(cowplot)
 library(scales)
+library(ggstance)
 library(here)
 theme_set(theme_bw())
 rstan_options(auto_write = TRUE)
@@ -505,7 +507,114 @@ summ <- ngram %>% union(txl) %>% union(grnn) %>% union(gpt) %>% write_rds(here("
 
 ```
 
+# Messing around with graphs
+```{r play}
 
+show_range<- function(model){
+  intervals <- gather_draws(model, `b_.*`, regex=T) %>% mean_qi()
+  
+  stats <- gather_draws(model, `b_.*`, regex=T) %>% 
+    mutate(above_0=ifelse(.value>0, 1,0)) %>% 
+    group_by(.variable) %>% 
+    summarize(pct_above_0=mean(above_0)) %>% 
+    left_join(intervals, by=".variable") 
+  
+  stats
+}
+ngram <- read_rds(here("Analysis/models/5-gram_maze.rds")) %>% show_range() %>% mutate(model="5-gram")
+txl <- read_rds(here("Analysis/models/txl_maze.rds")) %>% show_range() %>% mutate(model="TXL")
+grnn <- read_rds(here("Analysis/models/grnn_maze.rds")) %>% show_range() %>% mutate(model="GRNN")
+gpt <- read_rds(here("Analysis/models/gpt_maze.rds")) %>% show_range() %>% mutate(model="GPT-2")
+
+test <- ngram %>% union(txl) %>% union(grnn) %>% union(gpt) %>% write_rds(here("Analysis/models/brms_maze_summ_plot.rds"))
+
+show_range_spr <- function(model){
+
+  stats <- summary(model)[["coefficients"]] %>% 
+    as_tibble(rownames="Term") %>% 
+    mutate(width=1.97*`Std. Error`,
+           lower=Estimate-width,1,
+           upper=Estimate+width,1,
+           E=Estimate)
+  
+  stats
+}
+ngram_spr <- read_rds(here("Analysis/models/5-gram_spr_lmer.rds")) %>% show_range_spr() %>% mutate(model="5-gram")
+txl_spr <- read_rds(here("Analysis/models/txl_spr_lmer.rds")) %>% show_range_spr() %>% mutate(model="TXL")
+grnn_spr <- read_rds(here("Analysis/models/grnn_spr_lmer.rds")) %>% show_range_spr() %>% mutate(model="GRNN")
+gpt_spr <- read_rds(here("Analysis/models/gpt_spr_lmer.rds")) %>% show_range_spr() %>% mutate(model="GPT-2")
+
+range_spr <- ngram_spr %>% union(txl_spr) %>% union(grnn_spr) %>% union(gpt_spr) %>% write_rds(here("Analysis/models/lmer_spr_summ_plot.rds"))
+```
+
+```{r}
+
+test_plot_maze <- read_rds(here("Analysis/models/brms_maze_summ_plot.rds")) %>%  mutate(term=str_sub(.variable, 3, -1)) %>% 
+   mutate(term=as.factor(term),
+          type="Maze",
+          Upper=.upper,
+          Lower=.lower,
+          Estimate=.value,
+          time=ifelse(str_detect(term, "prev"),"Previous","Current"),
+          term2=mapvalues(term, from=c("Intercept", 
+                                 "surprisal",
+                                 "len",
+                                 "freq",
+                                 "surprisal:len",
+                                 "len:freq",
+                                 "prev_surp",
+                                 "prev_len",
+                                 "prev_freq",
+                                 "prev_surp:prev_len",
+                                 "prev_len:prev_freq"), to=c("Intercept", "Surprisal", "Length", "Frequency",
+                  "Surp x Length", "Freq x Length", "Surprisal",
+                  "Length", "Frequency", "Surp x Length", "Freq x Length")),
+          Term=fct_relevel(term2,"Intercept", "Surprisal", "Length", "Frequency", "Surp x Length", "Freq x Length" )) %>% 
+  filter(Term!="Intercept") %>% select(model, Term, type, Upper, Lower, Estimate,time)
+
+test_plot_spr <- read_rds(here("Analysis/models/lmer_spr_summ_plot.rds")) %>% mutate(term=as.factor(Term),
+          type="SPR",
+          Upper=upper,
+          Lower=lower,
+          time=case_when(
+            str_detect(term, "past2")~"2Previous",
+            str_detect(term, "past3")~"3Previous",
+            str_detect(term, "past")~"Previous",
+            T ~ "Current"),
+          term2=mapvalues(term, from=c("(Intercept)", 
+                                 "surp_center",
+                                 "length_center",
+                                 "freq_center",
+                                 "surp_center:length_center",
+                                 "length_center:freq_center",
+                                 "past_surp_center",
+                                 "past_length_center",
+                                 "past_freq_center",
+                                 "past_surp_center:past_length_center",
+                                 "past_length_center:past_freq_center",
+                                 "past2_surp_center",
+                                 "past2_length_center",
+                                 "past2_freq_center",
+                                 "past2_surp_center:past2_length_center",
+                                 "past2_length_center:past2_freq_center",
+                                 "past3_surp_center",
+                                 "past3_length_center",
+                                 "past3_freq_center",
+                                 "past3_surp_center:past3_length_center",
+                                 "past3_length_center:past3_freq_center"
+                                 ), to=c("Intercept", "Surprisal", "Length", "Frequency","Surp x Length", "Freq x Length",
+                "Surprisal", "Length", "Frequency", "Surp x Length", "Freq x Length",
+                "Surprisal", "Length", "Frequency", "Surp x Length", "Freq x Length",
+                "Surprisal", "Length", "Frequency", "Surp x Length", "Freq x Length")),
+          Term=fct_relevel(term2,"Intercept", "Surprisal", "Length", "Frequency", "Surp x Length", "Freq x Length" )) %>% 
+  filter(Term!="Intercept") %>% select(model, Term, type, Upper, Lower, Estimate, time)
+
+test_plot <- test_plot_maze %>% union(test_plot_spr) %>% write_rds(here("Analysis/models/maze_spr_for_graph.rds"))
+
+
+test_plot %>% filter(time %in% c("Current", "Previous")) %>% ggplot(aes(y=Term, x=Estimate, group=model, color=model, shape=model))+
+  ggstance::geom_pointrangeh(aes(xmin = Lower, xmax = Upper), position=position_dodge(width=.6))+facet_grid(type~time)+geom_vline(xintercept=0)+scale_color_brewer(palette="Dark2")+theme(legend.position = "bottom")+labs(x="Coefficient estimate", y="Term", color="Model")
+```
 
 
 # Maze Model comparison
