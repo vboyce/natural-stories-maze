@@ -206,13 +206,16 @@ gam_gpt_1 <- gam(formula_interact, data=gpt_mean_data, method="REML")
 gam_gpt_1a <- gam(formula_interact, data=filter(gpt_mean_data,len<9), method="REML")
 gam_gpt_2 <- gam(formula2_interact, data=gpt_mean_data, method="REML")
 gam_gpt_3 <- gam(formula3_interact, data=gpt_mean_data, method="REML")
-print(plot(getViz(gam_gpt_1x)))
-print(plot(getViz(gam_gpt_3)))
 
 gam_ngram_2 <- gam(formula_no_interact, data=ngram_mean_data, method="REML")
 gam_grnn_2 <- gam(formula_no_interact, data=grnn_mean_data, method="REML")
 gam_txl_2 <- gam(formula_no_interact, data=txl_mean_data, method="REML")
 gam_gpt_no_interact <- gam(formula_no_interact, data=gpt_mean_data, method="REML")
+
+#print(plot(getViz(gam_gpt_1a)))
+print(plot(getViz(gam_gpt_no_interact)))
+print(plot(getViz(gam_gpt_2)))
+summary(gam_gpt_3)
 
 ```
 
