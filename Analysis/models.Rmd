@@ -155,6 +155,28 @@ all_mean_data <- ngram_mean_data %>% union(grnn_mean_data) %>% union(txl_mean_da
 ```
 
 ```{r maze-formulae, echo=T}
+
+#no hierarchical, has freq x len interaction
+formula_no_interact_linear_surprisal <- rt ~ surprisal +
+                     ti(freq, bs="cr") + 
+                     ti(len, bs="cr")+
+                     ti(freq,len, bs="cr")+
+                     prev_surp +
+                     ti(prev_freq, bs="cr")+
+                     ti(prev_len, bs="cr")+
+                     ti(prev_freq, prev_len, bs="cr")
+
+# no hierarchical, NO freq x len interaction
+formula_no_interact_plus_linear_surprisal <- rt ~ surprisal +
+                     s(surprisal, bs="cr", k=20)+
+                     ti(freq, bs="cr") + 
+                     ti(len, bs="cr")+
+                     prev_surp +
+                     s(prev_surp, bs="cr", k=20)+
+                     ti(prev_freq, bs="cr")+
+                     ti(prev_len, bs="cr")
+
+
 #no hierarchical, has freq x len interaction
 formula_interact <- rt ~ s(surprisal, bs="cr", k=20)+
                      ti(freq, bs="cr") + 
@@ -207,16 +229,33 @@ gam_gpt_1a <- gam(formula_interact, data=filter(gpt_mean_data,len<9), method="RE
 gam_gpt_2 <- gam(formula2_interact, data=gpt_mean_data, method="REML")
 gam_gpt_3 <- gam(formula3_interact, data=gpt_mean_data, method="REML")
 
+gam_gpt_3_hf <- gam(formula3_interact, data=subset(gpt_mean_data,freq > 2), method="REML")
+gam_gpt_3_lf <- gam(formula3_interact, data=subset(gpt_mean_data,freq <= 2), method="REML")
+
+gam_gpt_2_hf <- gam(formula2_interact, data=subset(gpt_mean_data,freq > 2), method="REML")
+gam_gpt_2_lf <- gam(formula2_interact, data=subset(gpt_mean_data,freq <= 2), method="REML")
+
+
 gam_ngram_2 <- gam(formula_no_interact, data=ngram_mean_data, method="REML")
 gam_grnn_2 <- gam(formula_no_interact, data=grnn_mean_data, method="REML")
 gam_txl_2 <- gam(formula_no_interact, data=txl_mean_data, method="REML")
 gam_gpt_no_interact <- gam(formula_no_interact, data=gpt_mean_data, method="REML")
+gam_gpt_no_interact_plus_linear_surprisal <- gam(formula_no_interact_plus_linear_surprisal, data=gpt_mean_data, method="REML")
 
 #print(plot(getViz(gam_gpt_1a)))
 print(plot(getViz(gam_gpt_no_interact)))
 print(plot(getViz(gam_gpt_2)))
 summary(gam_gpt_3)
 
+summary(getViz(gam_gpt_3_hf))
+print(plot(getViz(gam_gpt_3_hf)))
+print(plot(getViz(gam_gpt_2_hf)))
+
+
+summary(getViz(gam_gpt_3_lf))
+print(plot(getViz(gam_gpt_3_lf)))
+
+summary(gam_gpt_no_interact_plus_linear_surprisal)
 ```
 
 ```{r anovas, eval=T}
