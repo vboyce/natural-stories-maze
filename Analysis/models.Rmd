@@ -225,15 +225,15 @@ gam_ngram_1 <- gam(formula_interact, data=ngram_mean_data, method="REML")
 gam_grnn_1 <- gam(formula_interact, data=grnn_mean_data, method="REML")
 gam_txl_1 <- gam(formula_interact, data=txl_mean_data, method="REML")
 gam_gpt_1 <- gam(formula_interact, data=gpt_mean_data, method="REML")
-gam_gpt_1a <- gam(formula_interact, data=filter(gpt_mean_data,len<9), method="REML")
+#gam_gpt_1a <- gam(formula_interact, data=filter(gpt_mean_data,len<9), method="REML")
 gam_gpt_2 <- gam(formula2_interact, data=gpt_mean_data, method="REML")
 gam_gpt_3 <- gam(formula3_interact, data=gpt_mean_data, method="REML")
 
-gam_gpt_3_hf <- gam(formula3_interact, data=subset(gpt_mean_data,freq > 2), method="REML")
-gam_gpt_3_lf <- gam(formula3_interact, data=subset(gpt_mean_data,freq <= 2), method="REML")
+#gam_gpt_3_hf <- gam(formula3_interact, data=subset(gpt_mean_data,freq > 2), method="REML")
+#gam_gpt_3_lf <- gam(formula3_interact, data=subset(gpt_mean_data,freq <= 2), method="REML")
 
-gam_gpt_2_hf <- gam(formula2_interact, data=subset(gpt_mean_data,freq > 2), method="REML")
-gam_gpt_2_lf <- gam(formula2_interact, data=subset(gpt_mean_data,freq <= 2), method="REML")
+#gam_gpt_2_hf <- gam(formula2_interact, data=subset(gpt_mean_data,freq > 2), method="REML")
+#gam_gpt_2_lf <- gam(formula2_interact, data=subset(gpt_mean_data,freq <= 2), method="REML")
 
 
 gam_ngram_2 <- gam(formula_no_interact, data=ngram_mean_data, method="REML")
@@ -256,6 +256,118 @@ summary(getViz(gam_gpt_3_lf))
 print(plot(getViz(gam_gpt_3_lf)))
 
 summary(gam_gpt_no_interact_plus_linear_surprisal)
+```
+## Extract linearity comparisons
+
+```{r}
+make_gam_linear_summary <- function(data){
+  model <- gam(formula_no_interact_plus_linear_surprisal, data=data, method="REML")
+  summ <- summary(model)
+  stable <- summ$s.table %>% as_tibble(rownames="Term") %>% rename(pvalue=`p-value`) %>% select(Term, pvalue)
+  ptable <- summ$p.table %>% as_tibble(rownames="Term") %>% rename(pvalue=`Pr(>|t|)`) %>% select(Term, pvalue)
+  return(union(stable,ptable))
+}
+
+gpt_linear <- make_gam_linear_summary(gpt_mean_data) %>% mutate(model="GPT-2")
+ngram_linear <- make_gam_linear_summary(ngram_mean_data) %>% mutate(model="5-gram")
+txl_linear <-  make_gam_linear_summary(txl_mean_data) %>% mutate(model="TXL")
+grnn_linear <-  make_gam_linear_summary(grnn_mean_data) %>% mutate(model="GRNN") 
+
+all_linear <- gpt_linear %>% union(ngram_linear) %>% union(txl_linear) %>% union(grnn_linear) %>% mutate(pvalue=pvalue(pvalue,accuracy=.0001,add_p=T),model=factor(model, levels=c("5-gram", "GRNN", "TXL","GPT-2")))%>% arrange(model) %>% 
+  pivot_wider(names_from=model, values_from=pvalue) %>% write_rds(here("Analysis/models/gams_linearity_test.rds"))
+```
+
+## Pretty interaction pics
+```{r fig.width=6, fig.height=8,}
+
+#gam_gpt_3 <- gam(formula3_interact, data=gpt_mean_data, method="REML")
+
+#gam_gpt_interact <- getViz(gam_gpt_3) %>% write_rds(here("Analysis/models/gam_gpt_interact.rds"))
+
+# can't figure out how to adjust the number of rows cols using the default, so we instead copy their internal functions off github and hack
+
+addDefaultLayers <- function( .l ){
+    .cl <- paste(.l$type, collapse = '')
+    
+    if( grepl("Check", .cl) ){ # [A] Checking plots
+      if("qgam" %in% mcls){ # a.1 Quantile GAMS
+        .l <- switch(.cl, 
+                     "Check0DScalarNumeric" = .l + l_hist() + l_vline(),
+                     "Check0DScalarFactor" = .l + l_hist() + l_vline(),
+                     "Check0DScalarLogical" = .l + l_hist() + l_vline(),
+                     "Check0DVectorNumeric" = .l + l_hist(),
+                     "Check0DVectorFactor" = .l + l_hist(),
+                     "Check0DVectorLogical" = .l + l_hist(),
+                     "Check1DNumeric" =  .l + l_gridQCheck1D() + l_rug(), 
+                     "Check1DFactor" = .l + l_gridQCheck1D() + l_rug(),
+                     "Check1DLogical" = .l + l_gridQCheck1D() + l_rug(),
+                     "Check2DNumericNumeric" = .l + l_gridQCheck2D(),
+                     "Check2DFactorFactor" = .l + l_gridQCheck2D() + l_rug(),
+                     "Check2DFactorNumeric" = .l + l_gridQCheck2D() + l_rug(),
+                     .l
+        )
+      } else { # a.2 Standard GAMS
+        .l <- switch(.cl, 
+                     "Check0DScalarNumeric" = .l + l_hist() + l_vline(),
+                     "Check0DScalarFactor" = .l + l_hist() + l_vline(),
+                     "Check0DScalarLogical" = .l + l_hist() + l_vline(),
+                     "Check0DVectorNumeric" = .l + l_hist(),
+                     "Check0DVectorFactor" = .l + l_hist(),
+                     "Check0DVectorLogical" = .l + l_hist(),
+                     "Check1DNumeric" =  .l + l_dens2D("cond") + l_gridCheck1D(mean, showReps = FALSE), 
+                     "Check1DFactor" = .l + l_gridCheck1D(showReps = FALSE) + l_rug(),
+                     "Check1DLogical" = .l + l_gridCheck1D(showReps = FALSE) + l_rug(),
+                     "Check2DNumericNumeric" = .l + l_gridCheck2D(),
+                     "Check2DFactorFactor" = .l + l_gridCheck2D() + l_rug(),
+                     "Check2DFactorNumeric" = .l + l_gridCheck2D() + l_rug(),
+                     .l
+        )
+      }
+    } else { # [B] Smooth effect plots
+    
+    .l <- switch(.cl, 
+                 "singleIndex1D" = .l + l_fitLine() + l_ciLine() + l_rug(), 
+                 "fs1D" = .l + l_fitLine() + theme(legend.position="none"),
+                 "1D" = .l + l_fitLine() + l_ciLine() + l_rug(),
+                 "2D" = .l + l_fitRaster() + l_fitContour(), 
+                 "MD" = .l + l_fitRaster() + l_fitContour(), 
+                 "MDslice" = .l + l_fitRaster() + l_fitContour(), 
+                 "sos0" = .l + l_fitRaster() + l_fitContour(), 
+                 "sos1" = .l + l_fitRaster() + l_fitContour(),
+                 "randomEffect" = .l + l_fitLine() + l_ciLine() + l_points(), 
+                 "MultiRandomEffect" = .l + l_points(), 
+                 "mrf" = .l + l_poly(), 
+                 "PtermNumeric" = .l + l_fitLine() + l_ciLine() + l_rug(),
+                 "PtermFactor" = .l + l_ciBar() + l_fitPoints() + l_rug(),
+                 "PtermLogical" = .l + l_ciBar() + l_fitPoints() + l_rug(), 
+                 "PtermMatrixNumeric" = .l + l_fitLine() + l_ciLine(),
+                 "Multi1D" = .l + l_fitLine(),
+                 "Multi2D" = .l + l_fitRaster() + l_fitContour(),
+                 "MultiPtermNumeric" = .l + l_ciBar() + l_fitPoints(),
+                 "MultiPtermFactor" = .l + l_ciBar() + l_fitPoints(), 
+                 "ALE1DNumeric" = .l + l_fitLine() + l_ciLine() + l_rug(),
+                 "ALE1DFactor" = .l + l_ciBar() + l_fitPoints() + l_rug(),
+                  .l
+                 )
+    
+    }
+    
+    return( .l )
+  }
+
+g <- read_rds(here("Analysis/models/gam_gpt_interact.rds")) %>% plot()
+g$plots <- lapply(g$plots,   function(.l){
+                         addDefaultLayers(.l)
+                       })
+
+
+
+blah <-  arrangeGrob(grobs=read_rds(here("Analysis/models/draft_grid.rds")), ncol=3, )
+
+ggsave(here("Analysis/models/gam_grid.png"), blah)
+
+
+
 ```
 
 ```{r anovas, eval=T}

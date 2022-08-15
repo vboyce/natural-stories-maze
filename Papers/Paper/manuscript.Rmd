@@ -785,3 +785,38 @@ summ_spr <- read_rds(here("Analysis/models/lmer_spr_summ.rds")) %>%
 knitr::kable(summ_spr, format="latex", position="ht",caption="Predictions from fitted regression models for SPR data. All terms were centered, but not rescaled. Units are in ms. Surprisal is per bit, length per character, and frequency per $log_2$ occurance per billion words. Uncertainty interval is +/- 1.97 standard error.") %>%   kable_styling(font_size = 10)
 
 ```
+
+# Appendix C
+
+```{r gam-linearity-table}
+
+gam_linear <- read_rds(here("Analysis/models/gams_linearity_test.rds")) %>% 
+  mutate(Term=factor(Term, 
+                        levels=c("s(surprisal)",
+                                 "ti(freq)",
+                                 "ti(len)",
+                                 "s(prev_surp)",
+                                 "ti(prev_freq)",
+                                 "ti(prev_len)",
+                                 "(Intercept)",
+                                 "surprisal",
+                                 "prev_surp"
+                                 )
+                                 )) %>% 
+  arrange(Term) %>% filter(Term %in% c("s(surprisal)", "s(prev_surp)", "surprisal","prev_surp")) %>% 
+  mutate(Term=c("Spline Surprisal", "Spline Past Surprisal", "Linear Surprisal", "Linear Past Surprisal")) 
+
+knitr::kable(gam_linear, format="latex", position="ht",caption="Comparison of significances for linear and spline terms of suprisals from a GAM. We fit GAM models with current and past word surprisal as parametric terms, current and past word surprisal and spline terms, and current and past frequence and length as tensors to predict reading time. Here we show the estimated pvalues for the linear and spline surprisal terms at current and past words. The spline terms account for any non-linear surprisal effects.") %>%   kable_styling(font_size = 10)
+
+```
+
+# Appendix D
+(ref:gam-grid) CAPTION GOES HERE
+
+```{r gam-grid, out.height="100%",  fig.pos="ht", fig.cap="(ref:gam-grid)"}
+
+
+knitr::include_graphics(here("Analysis/models/gam_grid.png"))
+
+```
+
