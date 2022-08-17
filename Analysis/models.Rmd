@@ -277,6 +277,13 @@ all_linear <- gpt_linear %>% union(ngram_linear) %>% union(txl_linear) %>% union
   pivot_wider(names_from=model, values_from=pvalue) %>% write_rds(here("Analysis/models/gams_linearity_test.rds"))
 ```
 
+```{r}
+gam_gpt_3 <- gam(formula3_interact, data=gpt_mean_data, method="REML")
+  stable <- summary(gam_gpt_3)$s.table %>% as_tibble(rownames="Term") %>% rename(pvalue=`p-value`, `F-statistic`=`F`) %>% select(Term, `F-statistic`, pvalue) %>% mutate(`F-statistic`=signif(`F-statistic`,digits=4), pvalue=pvalue(pvalue,accuracy=.0001,add_p=T)) %>% 
+    write_rds(here("Analysis/models/gam_gpt_3_summ.rds"))
+
+```
+
 ## Pretty interaction pics
 ```{r fig.width=6, fig.height=8,}
 

@@ -728,6 +728,8 @@ From which country did tulips come to Europe? Turkey, Egypt
 
 # Appendix B
 
+Full numerical results from the fitted regression models are shown in Table \@ref(tab:pre-error) for A-maze and in Table \@ref(tab:spr-table) for SPR. 
+
 ```{r pre-error}
 summ <- read_rds(here("Analysis/models/brms_maze_summ.rds")) %>% pivot_wider(names_from="model", values_from=c(`Estimate`)) %>% 
   mutate(Term=factor(Term, 
@@ -748,7 +750,7 @@ summ <- read_rds(here("Analysis/models/brms_maze_summ.rds")) %>% pivot_wider(nam
                   "Surp x Length", "Freq x Length", "Past Surprisal",
                   "Past Length", "Past Freq", "Past Surp x Length", "Past Freq x Length")) 
 
-knitr::kable(summ, format="latex", position="ht",caption="Predictions from fitted Bayesian regression models. All terms were centered, but not rescaled. Units are in ms. Surprisal is per bit, length per character, and frequency per $log_2$ occurance per billion words. Interval is 2.5th quantile to 97.5th quantile of model draws.")%>%   kable_styling(font_size = 10)
+knitr::kable(summ, format="latex", position="!h",caption="Predictions from fitted Bayesian regression models. All terms were centered, but not rescaled. Units are in ms. Surprisal is per bit, length per character, and frequency per $log_2$ occurance per billion words. Interval is 2.5th quantile to 97.5th quantile of model draws.")%>%   kable_styling(font_size = 10)
 ```
 
 
@@ -786,26 +788,34 @@ summ_spr <- read_rds(here("Analysis/models/lmer_spr_summ.rds")) %>%
                 "2Past Surprisal", "2Past Length", "2Past Freq", "2Past Surp x Length", "2Past Freq x Length",
                 "3Past Surprisal", "3Past Length", "3Past Freq", "3Past Surp x Length", "3Past Freq x Length")) 
 
-knitr::kable(summ_spr, format="latex", position="ht",caption="Predictions from fitted regression models for SPR data. All terms were centered, but not rescaled. Units are in ms. Surprisal is per bit, length per character, and frequency per $log_2$ occurance per billion words. Uncertainty interval is +/- 1.97 standard error.") %>%   kable_styling(font_size = 10)
+knitr::kable(summ_spr, format="latex", position="!h",caption="Predictions from fitted regression models for SPR data. All terms were centered, but not rescaled. Units are in ms. Surprisal is per bit, length per character, and frequency per $log_2$ occurance per billion words. Uncertainty interval is +/- 1.97 standard error.") %>%   kable_styling(font_size = 10)
 
 ```
 
 
 # Appendix C
 
-We use `mgcv`'s `ti()` tensor interaction terms to test all main effects and two-way interactions among frequency, length, and surprisal for the current word and for the previous word. These effects are visualized in Figure \@ref(fig:gam-grid) and `mgcv`'s approximate significance levels are give in Table XXX insert table XXX. Based on these approximate significance levels, the main effects of current and previous word surprisal and length are significant, as are the current-word frequency-by-length and frequency-by-surprisal interactions; other terms are not statistically significant. These significant interactions can be summarized as especially long, infrequent words being especially slow to select; especially frequent and surprising words being especially slow to select; and especially infrequent and surprising words being less slow to select than a main-effects-only model would predict. The data driving these interactions are in the sparse tails of the word length and surprisal distributions, and as the $F$ statistics in Table XXX show, their variance explained is small relative to the large effect of current-word surprisal, so in the main-text analysis we set these interactions aside.
+We use `mgcv`'s `ti()` tensor interaction terms to test all main effects and two-way interactions among frequency, length, and surprisal for the current word and for the previous word. These effects are visualized in Figure \@ref(fig:gam-grid) and `mgcv`'s approximate significance levels are give in Table \@ref(tab:gam-interact-table). Based on these approximate significance levels, the main effects of current and previous word surprisal and length are significant, as are the current-word frequency-by-length and frequency-by-surprisal interactions; other terms are not statistically significant. These significant interactions can be summarized as especially long, infrequent words being especially slow to select; especially frequent and surprising words being especially slow to select; and especially infrequent and surprising words being less slow to select than a main-effects-only model would predict. The data driving these interactions are in the sparse tails of the word length and surprisal distributions, and as the $F$ statistics in Table \@ref(tab:gam-interact-table) show, their variance explained is small relative to the large effect of current-word surprisal, so in the main-text analysis we set these interactions aside.
 
 
-XXX Veronica could we show the "approximate significance of smooth terms" results for gam_gpt_3 in a table in this Appendix as well?
+
+```{r gam-interact-table}
+
+gam_interact <- read_rds(here("Analysis/models/gam_gpt_3_summ.rds"))
+
+knitr::kable(gam_interact, format="latex", position="ht",caption="Significance of Generalized Additive Model main effects and two-way interactions among frequency, length, and surprisal for A-Maze reading of the Natural Stories corpus.") %>%   kable_styling(font_size = 10)
+
+```
 
 (ref:gam-grid) Generalized Additive Model main effects and two-way interactions among frequency, length, and surprisal for A-Maze reading of the Natural Stories corpus. Confidence bands do not take into account the uncertainty associated with `mgcv` hyperparameter estimation (@wood:2006GAMs).
 
-```{r gam-grid, out.height="100%",  fig.pos="ht", fig.cap="(ref:gam-grid)"}
+```{r gam-grid, out.height="90%",  fig.pos="ht", fig.cap="(ref:gam-grid)"}
 
 
 knitr::include_graphics(here("Analysis/models/gam_grid.png"))
 
 ```
+
 
 
 # Appendix D
