@@ -341,10 +341,10 @@ error_plot <- ggplot(data_error_summ, aes(x=pct_correct, y=mean_rt, color=accura
   guides(color="none")
 
 
-comp_comp <- read_rds(here("Analysis/comp.rds")) %>% 
+comp_comp <- read_rds(here("Analysis/models/comp.rds")) %>% 
   filter(source %in% c(">80% correct","<80% correct", "SPR 1st story")) 
 
-comp_tally <- read_rds(here("Analysis/comp.rds")) %>% group_by(source) %>% filter(correct>4) %>% 
+comp_tally <- read_rds(here("Analysis/models/comp.rds")) %>% group_by(source) %>% filter(correct>4) %>% 
   summarize(good=round(sum(pct)*100))
 comp_plot <- ggplot(comp_comp, aes(x=correct,y=pct,fill=source))+
   geom_col(position="dodge")+

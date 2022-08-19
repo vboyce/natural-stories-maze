@@ -296,7 +296,7 @@ maze_good <- data_filt %>% select(subject, num_correct) %>%
   mutate(source=">80% correct") %>% 
   select(source,correct, pct)
 
-to_plot <- all_maze %>% union(maze_bad) %>% union(maze_good)  %>% union(all_spr) %>% union(first_spr) %>% write_rds(here("Analysis/comp.rds"))
+to_plot <- all_maze %>% union(maze_bad) %>% union(maze_good)  %>% union(all_spr) %>% union(first_spr) %>% write_rds(here("Analysis/models/comp.rds"))
 
 ggplot(to_plot, aes(x=correct, y=pct, fill=source))+geom_col(position="dodge")+facet_grid(.~source)+labs(title="Comprehension question accuracy", x="Number correct", y="Percent of participants")
 
