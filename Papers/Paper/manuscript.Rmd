@@ -1,12 +1,11 @@
 ---
 title             : "A-maze of Natural Stories: Comprehension and surprisal in the Maze task"
 shorttitle        : "A-maze of Natural Stories"
-
+shortauthors: Veronica Boyce & Roger Levy
 author: 
   - name          : "Veronica Boyce"
-    affiliation   : "1"
+    affiliation   : "Stanford University"
     corresponding : yes    # Define only one corresponding author
-    address       : "450 Jane Stanford Way, Building 420, Stanford University, Stanford, CA 94305"
     email         : "vboyce@stanford.edu"
     role:         # Contributorship roles (e.g., CRediT, https://casrai.org/credit/)
       - Conceptualization
@@ -16,7 +15,7 @@ author:
       - Writing - Original Draft Preparation
       - Writing - Review & Editing
   - name          : "Roger Levy"
-    affiliation   : "2"
+    affiliation   : "Massachusetts Institute of Technology"
     role:
       - Conceptualization
       - Formal Analysis
@@ -37,30 +36,55 @@ header-includes:
  - \setcounter{bottomnumber}{3}
  - \setcounter{totalnumber}{4}
 
-authornote: |
-   We thank the AMLAP 2020 audience, the Computational Psycholinguistics Lab at MIT, the Language and Cognition Lab at Stanford, the QuantLang Lab at UC Irvine, and Mike Frank for feedback on this work.
-  
+classoption: [times, biblatex]
+#
+# Possible classoptions:
+# - [times] for Times font (default if no option is chosen)
+# - [cm] for Computer Modern font
+# - [lucida] for Lucida font (not freely available)
+# - [brill] open type font, freely downloadable for non-commercial use from
+#   http://www.brill.com/about/brill-fonts; requires xetex
+# - [charis] for CharisSIL font, freely downloadable from http://software.sil.org/charis/
+# - for the Brill an CharisSIL fonts, you have to use the XeLatex
+#   typesetting engine (not pdfLatex)
+# - for headings, tables, captions, etc., Fira Sans is
+#   used: https://www.fontsquirrel.com/fonts/fira-sans
+# - [biblatex] for using biblatex (the default is natbib, DO NOT LOAD the
+#   natbib package in this file, it is loaded automatically via the document
+#   class glossa.cls)
+# - [linguex] loads the linguex example package
+#
+# !!! A note on the use of linguex: in glossed examples, the third line of the
+# example (the translation) needs to be prefixed with \glt. This is to allow a
+# first line with the name of the language and the source of the example. See
+# example (2) in the text for an illustration.
+#
+# !!! A note on the use of bibtex: for PhD dissertations to typeset correctly
+# in the references list, the Address field needs to contain the city
+# (for US cities in the format "Santa Cruz, CA")
+#
+bibliography: ["r-references.bib","refs.bib"]
+biblio-style: "apalike"
+link-citations: true
+# The bibliography style is set automatically by glossa.cls when using
+# either natbib or biblatex.
+# Pandoc's citeproc is not supported.
+#
 abstract: |
    Behavioral measures of word-by-word reading time provide experimental evidence to test theories of language processing. A-maze is a recent method for measuring incremental sentence processing that can localize slowdowns related to syntactic ambiguities in individual sentences. We adapted A-maze for use on longer passages and tested it on the Natural Stories corpus. Participants were able to comprehend these longer text passages that they read via the Maze task.  Moreover, the Maze task yielded useable reaction time data with word predictability effects that were linearly related to surprisal, the same pattern found with other incremental methods. Crucially, Maze reaction times show a tight relationship with properties of the current word, but little spillover of effects from previous words. This superior localization is an advantage of Maze compared with other methods. Overall, we expanded the scope of experimental materials, and thus theoretical questions, that can be studied with the Maze task. 
-
-
-bibliography      : ["r-references.bib","refs.bib"]
-
-floatsintext      : yes
-figurelist        : no
-tablelist         : no
-footnotelist      : no
-linenumbers       : yes
-mask              : no
-draft             : no
-
-documentclass     : "apa6"
-classoption       : "man"
-output            : papaja::apa6_pdf
+# Specify keywords here:
+keywords: stylesheet, glossa, article
+# To add the word count, uncomment the following option and replace the number
+# with the document word count.
+# wordcount: 1000
+output: 
+  bookdown::pdf_book:
+    base_format: rticles::glossa_article
+    number_sections: yes
 ---
 
 ```{r setup, include = FALSE}
-knitr::opts_chunk$set(dev = "png", dev.args = list(type = "cairo-png"))
+knitr::opts_chunk$set(echo=F, warning=F, message=F)#dev = "png", dev.args = list(type = "cairo-png")
  library("papaja")
  library(here)
  library(tidyverse)
@@ -331,7 +355,7 @@ For model comparison, we took by-item averaged data to aid in fast model fitting
 
 (ref:error-cap) A. Participant's accuracy on the Maze task (fraction of words selected correctly) versus their average reaction time (in ms). Many participants (marked in green) chose the correct word >80% of the time; others (in red) appear to be randomly guessing. B. Performance on the comprehension questions. Participants with low accuracy performed poorly on comprehension questions; Participants with >80% task accuracy tended to do well; their performance was roughly comparable to the performance of SPR participants from  @futrellNaturalStoriesCorpus2020 on their first stories. 
 
-```{r errors, out.height="25%", fig.width=8, fig.height=3, fig.pos="ht", fig.cap="(ref:error-cap)"}
+```{r errors, out.width="\\textwidth", fig.width=8, fig.height=3, fig.pos="ht", fig.cap="(ref:error-cap)"}
 error_plot <- ggplot(data_error_summ, aes(x=pct_correct, y=mean_rt, color=accurate))+
   geom_point(size=1)+
   labs(x="Fraction words selected correctly",
@@ -525,7 +549,7 @@ To assess the shape of the RT-surprisal relationship, we then fitted generalized
 
 (ref:gam-cap) GAM results for the effect of current word surprisal (top) or previous word surprisal (bottom) on Maze reaction time (RT). Density of data is shown along the x-axis. The best-fit lines is from the mean estimated effect size across the bootstrap replicates, and the shaded areas indicate a 95\% bootstrap confidence interval on this effect size. For each of the 4 language models used, there is a linear relationship between current word surprisal and RT. The relationship between previous word surprisal and RT is much flatter. 
 
-```{r gam, out.height="40%", fig.width=8, fig.height=3, fig.pos="ht", fig.cap="(ref:gam-cap)"}
+```{r gam, out.width="\\textwidth", fig.width=8, fig.height=3, fig.pos="ht", fig.cap="(ref:gam-cap)"}
 
 gam1 <- read_rds(here("Analysis/models/bootstrapped_GAM_surprisal_predictions.rds")) %>%  ggplot( aes(x=surprisal, y=rt, ymin=CI_lower, ymax=CI_upper))+
   geom_line()+
@@ -556,7 +580,7 @@ The main effects of current and previous word surprisals on RT are shown in Figu
 
 (ref:spr-gam-cap) GAM results for the effect of current word surprisal (top) or the surprisal of an earlier word, up to 3 words back on SPR RT data [@futrellNaturalStoriesCorpus2020]. Density of data is shown along the x-axis. The best-fit lines is from the mean estimated effect size across the bootstrap replicates, and the shaded areas indicate a 95\% bootstrap confidence interval on this effect size. 
 
-```{r spr-gam, out.height="40%", fig.width=8, fig.height=4, fig.pos="ht", fig.cap="(ref:spr-gam-cap)"}
+```{r spr-gam, out.width="\\textwidth", fig.width=8, fig.height=4, fig.pos="ht", fig.cap="(ref:spr-gam-cap)"}
 gam1 <- read_rds(here("Analysis/models/bootstrapped_spr_GAM_surprisal_predictions.rds")) %>%  ggplot( aes(x=surprisal, y=rt, ymin=CI_lower, ymax=CI_upper))+
   geom_line()+
   geom_ribbon(alpha=.3)+
@@ -592,7 +616,7 @@ We modeled reading time as a function of surprisal, frequency, and length as wel
 
 (ref:coeffs) Point estimates and 95% credible intervals for coefficients predicted by fitted Bayesian regression models predicting A-maze RT. Units are in ms. Surprisal is per bit, length per character, and frequency per $log_2$ occurrence per billion words.
 
-```{r coeffs-maze, out.height="35%", fig.width=8, fig.height=3, fig.pos="ht", fig.cap="(ref:coeffs)"}
+```{r coeffs-maze, out.width="\\textwidth", fig.width=8, fig.height=3, fig.pos="ht", fig.cap="(ref:coeffs)"}
 
 
 test_plot <- read_rds(here("Analysis/models/maze_spr_for_graph.rds"))
@@ -626,7 +650,7 @@ Crucially, the effects of previous word predictors are close to zero, and much s
 
 (ref:coeffs-spr) Point estimates and 95% credible intervals for coefficients predicted by fitted Bayesian regression models predicting SPR RT. Units are in ms. Surprisal is per bit, length per character, and frequency per $log_2$ occurrence per billion words.
 
-```{r coeffs-spr, out.height="35%", fig.width=8, fig.height=3, fig.pos="ht", fig.cap="(ref:coeffs-spr)"}
+```{r coeffs-spr, out.width="\\textwidth", fig.width=8, fig.height=3, fig.pos="ht", fig.cap="(ref:coeffs-spr)"}
 test_plot %>% filter(type=="SPR") %>% mutate(time=factor(time, levels=c("Current","Previous","2Previous","3Previous")))%>% ggplot(aes(y=Term, x=Estimate, group=model, color=model, shape=model))+
   ggstance::geom_pointrangeh(aes(xmin = Lower, xmax = Upper), position=position_dodge2(width=.6, reverse=T))+
   facet_grid(.~time)+
@@ -809,7 +833,7 @@ knitr::kable(gam_interact, format="latex", position="ht",caption="Significance o
 
 (ref:gam-grid) Generalized Additive Model main effects and two-way interactions among frequency, length, and surprisal for A-Maze reading of the Natural Stories corpus. Confidence bands do not take into account the uncertainty associated with `mgcv` hyperparameter estimation (@wood:2006GAMs).
 
-```{r gam-grid, out.height="90%",  fig.pos="ht", fig.cap="(ref:gam-grid)"}
+```{r gam-grid, out.width="\\textwidth",  fig.pos="ht", fig.cap="(ref:gam-grid)"}
 
 
 knitr::include_graphics(here("Analysis/models/gam_grid.png"))
@@ -847,4 +871,39 @@ gam_linear <- read_rds(here("Analysis/models/gams_linearity_test.rds")) %>%
 knitr::kable(gam_linear, format="latex", position="ht",caption="Comparison of significances for linear and spline terms of suprisals from a GAM. We fit GAM models with current and past word surprisal as parametric terms, current and past word surprisal and spline terms, and current and past frequence and length as tensors to predict reading time. Here we show the estimated pvalues for the linear and spline surprisal terms at current and past words. The spline terms account for any non-linear surprisal effects.") %>%   kable_styling(font_size = 10)
 
 ```
+
+# Ethics and consent (optional) {#ethics-and-consent-optional .unnumbered}
+
+Research involving human subjects, human material, or human data, must
+have been performed in accordance with the Declaration of Helsinki.
+Where applicable, the studies must have been approved by an appropriate
+ethics committee. In the published paper, the authors should include a
+statement detailing this approval, including the name of the ethics
+committee and reference number of the approval. The identity of the
+research subject(s) should be anonymised whenever possible. For research
+involving human subjects, informed consent to participate in the study
+must be obtained from participants (or their legal guardian).
+
+# Funding information (optional) {#funding-information-optional .unnumbered}
+
+Should the research have received a funding grant, then the grant
+provider and grant number can be detailed in this section.
+
+# Acknowledgements (optional) {#acknowledgements-optional .unnumbered}
+
+ We thank the AMLAP 2020 audience, the Computational Psycholinguistics Lab at MIT, the Language and Cognition Lab at Stanford, the QuantLang Lab at UC Irvine, and Mike Frank for feedback on this work.
+
+# Competing interests (mandatory) {#competing-interests-mandatory .unnumbered}
+
+If any of the authors have any competing interests then these must be
+declared. Consult the [Competing
+Interests](http://www.glossa-journal.org/about/competinginterests/)
+section on the Glossa website for more information. If there are no
+competing interests to declare then the following statement should be
+present: "The author(s) has/have no competing interests to declare".
+
+# Authors' contributions (optional) {#contrib .unnumbered}
+
+Here you can provide a sentence or a short paragraph detailing the
+contribution of each author to the paper.
 
