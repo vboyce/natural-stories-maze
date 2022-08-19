@@ -829,7 +829,7 @@ tibble(Model=c("5-gram","GRNN", "TXL", "GPT-2"), model_str=c(ngram,grnn,txl,gpt)
    mutate(across(`over 5-gram`:`over GPT-2`, ~map2_chr(.x, model_str,do_comparison)),
           `Log Lik`=map_chr(model_str, log_like),
           r_squared=map_chr(model_str, r_squared)) %>% 
-   select(-model_str) %>% write_rds(here("Analysis/maze_model_compare.rds")) %>%  knitr::kable()
+   select(-model_str) %>% write_rds(here("Analysis/models/maze_model_compare.rds")) %>%  knitr::kable()
 
 ```
 
@@ -1372,7 +1372,7 @@ tibble(Model=c("5-gram","GRNN", "TXL", "GPT-2"), model_str=c(ngram,grnn,txl,gpt)
    mutate(across(`over 5-gram`:`over GPT-2`, ~map2_chr(.x, model_str,do_comparison)),
           `Log Lik`=map_chr(model_str, log_like),
           `r_squared`=map_chr(model_str, r_squared)) %>% 
-   select(-model_str)%>% write_rds(here("Analysis/spr_model_compare.rds")) %>% kable() 
+   select(-model_str)%>% write_rds(here("Analysis/models/spr_model_compare.rds")) %>% kable() 
 
 ```
 # SPR LM with freq**2 effects

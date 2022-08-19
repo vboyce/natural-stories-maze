@@ -651,7 +651,7 @@ As shown in Table \@ref(tab:maze-compare), GPT-2 provides a lot of additional pr
 
 ```{r maze-compare}
 
-read_rds(here("Analysis/maze_model_compare.rds")) %>% knitr::kable(format="latex", position="ht",caption="Results of model comparisons on Maze data. Each row shows the additional predictive value gained from adding that model to another model. F values and p values from ANOVA tests between 1-surprisal-source and 2-source models are reported. We also report log likelihoods of models with only one surprisal source and the r-squared correlation between the model's predictions and the data.")
+read_rds(here("Analysis/models/maze_model_compare.rds")) %>% knitr::kable(format="latex", position="ht",caption="Results of model comparisons on Maze data. Each row shows the additional predictive value gained from adding that model to another model. F values and p values from ANOVA tests between 1-surprisal-source and 2-source models are reported. We also report log likelihoods of models with only one surprisal source and the r-squared correlation between the model's predictions and the data.")
 
 
 ```
@@ -659,8 +659,8 @@ read_rds(here("Analysis/maze_model_compare.rds")) %>% knitr::kable(format="latex
 We followed the same process for the SPR data with results shown in Table \@ref(tab:spr-compare).  For SPR, GPT-2 and 5-gram models contain some value over each other model, which is less clear for TXL and GRNN. In terms of log likelihoods, we find that GPT-2 is better than 5-gram is better than GRNN is better than TXL, although differences are small. The relatively good fit of 5-gram models to SPR data compared with neural models matches results from @huSystematicAssessmentSyntactic2020 and @wilcoxPredictivePowerNeural2020, and contrasts with the Maze results, where the 5-gram model had the worst fit and did not provide additional predictive value over the other models. 
 
 ```{r}
-maze <- read_rds(here("Analysis/maze_model_compare.rds"))
-spr <- read_rds(here("Analysis/spr_model_compare.rds"))
+maze <- read_rds(here("Analysis/models/maze_model_compare.rds"))
+spr <- read_rds(here("Analysis/models/spr_model_compare.rds"))
 ```
 
 As an overall measure of fit to data, we calculate multiple R-squared for the single surprisal source models for both A-maze and SPR. The models predict A-maze better than SPR with R-squared values for A-maze ranging from `r maze %>% filter(Model=="5-gram") %>% pull(r_squared)` for the 5-gram model to `r maze %>% filter(Model=="GPT-2") %>% pull(r_squared)` for GPT-2. For SPR, the R-squared values range from from `r spr %>% filter(Model=="5-gram") %>% pull(r_squared)` to `r spr %>% filter(Model=="GPT-2") %>% pull(r_squared)`. This pattern suggests that the effect size differences are not due merely to the larger overall reading time for A-maze, but that instead A-maze is more sensitive to surprisal and length effects. 
@@ -668,7 +668,7 @@ As an overall measure of fit to data, we calculate multiple R-squared for the si
 
 ```{r spr-compare}
 
-read_rds(here("Analysis/spr_model_compare.rds")) %>% knitr::kable(format="latex", position="ht",caption="Results of model comparisons on SPR data. Each row shows the additional predictive value gained from adding that model to another model. F values and p values from ANOVA tests between 1-surprisal-source and 2-source models are reported. We also report log likelihoods of models with only one surprisal source and the r-squared correlation between the model's predictions and the data.")
+read_rds(here("Analysis/models/spr_model_compare.rds")) %>% knitr::kable(format="latex", position="ht",caption="Results of model comparisons on SPR data. Each row shows the additional predictive value gained from adding that model to another model. F values and p values from ANOVA tests between 1-surprisal-source and 2-source models are reported. We also report log likelihoods of models with only one surprisal source and the r-squared correlation between the model's predictions and the data.")
 
 ```
 
