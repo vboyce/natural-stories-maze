@@ -527,7 +527,7 @@ To assess the shape of the RT-surprisal relationship, we then fitted generalized
 
 ```{r gam, out.height="40%", fig.width=8, fig.height=3, fig.pos="ht", fig.cap="(ref:gam-cap)"}
 
-gam1 <- read_rds(here("Analysis/bootstrapped_GAM_surprisal_predictions.rds")) %>%  ggplot( aes(x=surprisal, y=rt, ymin=CI_lower, ymax=CI_upper))+
+gam1 <- read_rds(here("Analysis/models/bootstrapped_GAM_surprisal_predictions.rds")) %>%  ggplot( aes(x=surprisal, y=rt, ymin=CI_lower, ymax=CI_upper))+
   geom_line()+
   geom_ribbon(alpha=.3)+
   #facet_grid(s~model, scales="free_y")+
@@ -557,7 +557,7 @@ The main effects of current and previous word surprisals on RT are shown in Figu
 (ref:spr-gam-cap) GAM results for the effect of current word surprisal (top) or the surprisal of an earlier word, up to 3 words back on SPR RT data [@futrellNaturalStoriesCorpus2020]. Density of data is shown along the x-axis. The best-fit lines is from the mean estimated effect size across the bootstrap replicates, and the shaded areas indicate a 95\% bootstrap confidence interval on this effect size. 
 
 ```{r spr-gam, out.height="40%", fig.width=8, fig.height=4, fig.pos="ht", fig.cap="(ref:spr-gam-cap)"}
-gam1 <- read_rds(here("Analysis/bootstrapped_spr_GAM_surprisal_predictions.rds")) %>%  ggplot( aes(x=surprisal, y=rt, ymin=CI_lower, ymax=CI_upper))+
+gam1 <- read_rds(here("Analysis/models/bootstrapped_spr_GAM_surprisal_predictions.rds")) %>%  ggplot( aes(x=surprisal, y=rt, ymin=CI_lower, ymax=CI_upper))+
   geom_line()+
   geom_ribbon(alpha=.3)+
   facet_grid(s~model)+

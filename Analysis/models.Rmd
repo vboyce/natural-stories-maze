@@ -468,8 +468,8 @@ all_surprisal_predictions <- rbind(bootstrapped_gam_predictions_ngram[[1]],
   mutate(s=ifelse(term=="surprisal","Current","Previous")) %>%
   select(-term)
 
-write_rds(all_bootstrapped_predictions,"bootstrapped_GAM_predictions.rds")
-write_rds(all_surprisal_predictions,"bootstrapped_GAM_surprisal_predictions.rds")
+write_rds(all_bootstrapped_predictions,here("Analysis/models/bootstrapped_GAM_predictions.rds"))
+write_rds(all_surprisal_predictions,here("Analysis/models/bootstrapped_GAM_surprisal_predictions.rds"))
 
 
 dats_for_predictionX <- list(
@@ -552,7 +552,7 @@ all <- a %>% union(b) %>% union(c) %>% union(d) %>% union(e) %>% union(f) %>% un
 
 
 #gam1 <- read_rds(here("Analysis/models/gam_predictions.rds")) %>%  
-gam1 <- read_rds(here("Analysis/bootstrapped_GAM_surprisal_predictions.rds")) %>%  
+gam1 <- read_rds(here("Analysis/models/bootstrapped_GAM_surprisal_predictions.rds")) %>%  
   ggplot( aes(x=surprisal, y=rt, ymin=CI_lower, ymax=CI_upper))+
   geom_line()+
   geom_ribbon(alpha=.3)+
@@ -1067,7 +1067,7 @@ all_bootstrapped_predictions_spr <- list(ngram=bootstrapped_gam_predictions_ngra
                                      grnn=bootstrapped_gam_predictions_grnn_spr,
                                      txl=bootstrapped_gam_predictions_txl_spr,
                                      gpt=bootstrapped_gam_predictions_gpt_spr)
-write_rds(all_bootstrapped_predictions_spr,"bootstrapped_spr_GAM_predictions.rds")
+write_rds(all_bootstrapped_predictions_spr,here("Analysis/models/bootstrapped_spr_GAM_predictions.rds"))
 
 term_conversions <- c("surp"="Current","past_surp"="Previous","past2_surp"="2Previous","past3_surp"="3Previous")
 all_surprisal_predictions_spr <- rbind(rename(bootstrapped_gam_predictions_ngram_spr[[1]],surprisal=surp),
@@ -1089,7 +1089,7 @@ all_surprisal_predictions_spr <- rbind(rename(bootstrapped_gam_predictions_ngram
                                    ) %>%
   mutate(s=factor(term_conversions[term],levels=term_conversions)) %>%
   select(-term)
-write_rds(all_surprisal_predictions_spr,"bootstrapped_spr_GAM_surprisal_predictions.rds")
+write_rds(all_surprisal_predictions_spr,here("Analysis/models/bootstrapped_spr_GAM_surprisal_predictions.rds"))
 
 ```
 
@@ -1139,7 +1139,7 @@ all_mean_spr <-  read_rds(here("Analysis/models/meaned_spr.rds"))
 
 
 #gam1 <- read_rds(here("Analysis/models/spr_gam_predictions.rds")) %>%  
-gam1 <- read_rds(here("Analysis/bootstrapped_spr_GAM_surprisal_predictions.rds")) %>%  
+gam1 <- read_rds(here("Analysis/models/bootstrapped_spr_GAM_surprisal_predictions.rds")) %>%  
   ggplot( aes(x=surprisal, y=rt, ymin=CI_lower, ymax=CI_upper))+
   geom_line()+
   geom_ribbon(alpha=.3)+
