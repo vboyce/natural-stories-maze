@@ -7,19 +7,9 @@ author:
     affiliation   : "Stanford University"
     corresponding : yes    # Define only one corresponding author
     email         : "vboyce@stanford.edu"
-    role:         # Contributorship roles (e.g., CRediT, https://casrai.org/credit/)
-      - Conceptualization
-      - Formal Analysis
-      - Investigation
-      - Software
-      - Writing - Original Draft Preparation
-      - Writing - Review & Editing
+
   - name          : "Roger Levy"
     affiliation   : "Massachusetts Institute of Technology"
-    role:
-      - Conceptualization
-      - Formal Analysis
-      - Writing - Review & Editing
 
 affiliation:
   - id            : "1"
@@ -73,7 +63,7 @@ link-citations: true
 abstract: |
    Behavioral measures of word-by-word reading time provide experimental evidence to test theories of language processing. A-maze is a recent method for measuring incremental sentence processing that can localize slowdowns related to syntactic ambiguities in individual sentences. We adapted A-maze for use on longer passages and tested it on the Natural Stories corpus. Participants were able to comprehend these longer text passages that they read via the Maze task.  Moreover, the Maze task yielded useable reaction time data with word predictability effects that were linearly related to surprisal, the same pattern found with other incremental methods. Crucially, Maze reaction times show a tight relationship with properties of the current word, with little spillover of effects from previous words. This superior localization is an advantage of Maze compared with other methods. Overall, we expanded the scope of experimental materials, and thus theoretical questions, that can be studied with the Maze task. 
 # Specify keywords here:
-keywords: stylesheet, glossa, article
+keywords: A-Maze, reading time measure, surprisal,
 # To add the word count, uncomment the following option and replace the number
 # with the document word count.
 # wordcount: 1000
@@ -592,7 +582,12 @@ To assess the shape of the RT-surprisal relationship, we then fitted generalized
 
 ```{r gam, out.width="\\textwidth", fig.width=8, fig.height=3, fig.pos="ht", fig.cap="(ref:gam-cap)"}
 
-gam1 <- read_rds(here("Analysis/models/bootstrapped_GAM_surprisal_predictions.rds")) %>%  ggplot( aes(x=surprisal, y=rt, ymin=CI_lower, ymax=CI_upper))+
+gam1 <- read_rds(here("Analysis/models/bootstrapped_GAM_surprisal_predictions.rds")) %>% mutate(model=factor(model, 
+                        levels=c("5-gram",
+                                 "GRNN",
+                                 "Transformer-XL",
+                                 "GPT-2"))) %>%
+ ggplot( aes(x=surprisal, y=rt, ymin=CI_lower, ymax=CI_upper))+
   geom_line()+
   geom_ribbon(alpha=.3)+
   #facet_grid(s~model, scales="free_y")+
@@ -600,14 +595,19 @@ gam1 <- read_rds(here("Analysis/models/bootstrapped_GAM_surprisal_predictions.rd
   coord_cartesian(xlim=c(0,28))+
   labs(x="Surprisal (bits)", y="Effect on Reaction Time (ms)")+theme(axis.ticks.x=element_blank(), axis.title.x=element_blank(), axis.text.x=element_blank(), plot.margin=margin(t=0,r=0,b=0,l=0,unit="pt"))
 
-all_mean_data <-  read_rds(here("Analysis/models/meaned_maze.rds"))
+all_mean_data <-  read_rds(here("Analysis/models/meaned_maze.rds")) %>% mutate(model=factor(model, 
+                        levels=c("5-gram",
+                                 "GRNN",
+                                 "TXL",
+                                 "GPT-2"))) 
 
 dens2 <-   ggplot(all_mean_data, aes(x=value))+
   geom_density(fill="gray",)+
   facet_grid(.~model)+
   labs(x="Surprisal (bits)", y="")+
     coord_cartesian(xlim=c(0,28))+
-  theme(axis.text.y = element_blank(), strip.text=element_blank(), axis.ticks.y =element_blank(), axis.title.y=element_blank(), panel.grid=element_blank(), plot.margin = unit(c(0, 0, 0, 0), "cm"))
+  theme(axis.text.y = element_blank(), strip.text=element_blank(), 
+        axis.ticks.y =element_blank(), axis.title.y=element_blank(), panel.grid=element_blank(), plot.margin = unit(c(0, 0, 0, 0), "cm"))
 
 p2 = cowplot::align_plots(gam1, dens2, align = "v", axis="lr")
 plot_grid(p2[[1]], p2[[2]], nrow=2, rel_heights = c(1, .3))
@@ -622,14 +622,24 @@ The main effects of current and previous word surprisals on RT are shown in Figu
 (ref:spr-gam-cap) GAM results for the effect of current word surprisal (top) or the surprisal of an earlier word, up to 3 words back on SPR RT data [@futrellNaturalStoriesCorpus2020]. Density of data is shown along the x-axis. The best-fit lines is from the mean estimated effect size across the bootstrap replicates, and the shaded areas indicate a 95\% bootstrap confidence interval on this effect size. 
 
 ```{r spr-gam, out.width="\\textwidth", fig.width=8, fig.height=4, fig.pos="ht", fig.cap="(ref:spr-gam-cap)"}
-gam1 <- read_rds(here("Analysis/models/bootstrapped_spr_GAM_surprisal_predictions.rds")) %>%  ggplot( aes(x=surprisal, y=rt, ymin=CI_lower, ymax=CI_upper))+
+gam1 <- read_rds(here("Analysis/models/bootstrapped_spr_GAM_surprisal_predictions.rds")) %>%
+  mutate(model=factor(model, 
+                        levels=c("5-gram",
+                                 "GRNN",
+                                 "Transformer-XL",
+                                 "GPT-2"))) %>%
+  ggplot( aes(x=surprisal, y=rt, ymin=CI_lower, ymax=CI_upper))+
   geom_line()+
   geom_ribbon(alpha=.3)+
   facet_grid(s~model)+
   coord_cartesian(xlim=c(0,28))+
   labs(x="Surprisal (bits)", y="Effect on Reaction Time (ms)")+theme(axis.ticks.x=element_blank(), axis.title.x=element_blank(), axis.text.x=element_blank(), plot.margin=margin(t=0,r=0,b=0,l=0,unit="pt"))
 
- all_mean_spr <-  read_rds(here("Analysis/models/meaned_spr.rds"))
+all_mean_spr <-  read_rds(here("Analysis/models/meaned_spr.rds")) %>% mutate(model=factor(model, 
+                        levels=c("5-gram",
+                                 "GRNN",
+                                 "TXL",
+                                 "GPT-2")))
 
 
 dens2 <-   ggplot(all_mean_spr, aes(x=value))+
@@ -637,7 +647,8 @@ dens2 <-   ggplot(all_mean_spr, aes(x=value))+
   facet_grid(.~model)+
   labs(x="Surprisal (bits)", y="")+
     coord_cartesian(xlim=c(0,28))+
-  theme(axis.text.y = element_blank(), strip.text=element_blank(), axis.ticks.y =element_blank(), axis.title.y=element_blank(), panel.grid=element_blank(), plot.margin = unit(c(0, 0, 0, 0), "cm"))
+  theme(axis.text.y = element_blank(), strip.text=element_blank(), 
+        axis.ticks.y =element_blank(), axis.title.y=element_blank(), panel.grid=element_blank(), plot.margin = unit(c(0, 0, 0, 0), "cm"))
 
 p2 = cowplot::align_plots(gam1, dens2, align = "v", axis="lr")
 plot_grid(p2[[1]], p2[[2]], nrow=2, rel_heights = c(1, .2))
@@ -660,7 +671,11 @@ We modeled reading time as a function of surprisal, frequency, and length as wel
 ```{r coeffs-maze, out.width="\\textwidth", fig.width=8, fig.height=3, fig.pos="ht", fig.cap="(ref:coeffs)"}
 
 
-test_plot <- read_rds(here("Analysis/models/maze_spr_for_graph.rds"))
+test_plot <- read_rds(here("Analysis/models/maze_spr_for_graph.rds"))%>% mutate(model=factor(model, 
+                        levels=c("5-gram",
+                                 "GRNN",
+                                 "TXL",
+                                 "GPT-2"))) 
 
 
 # test_plot %>% filter(time %in% c("Current", "Previous")) %>% ggplot(aes(y=Term, x=Estimate, group=model, color=model, shape=model))+
@@ -796,7 +811,8 @@ From which country did tulips come to Europe? Turkey, Egypt
 Full numerical results from the fitted regression models are shown in Table \@ref(tab:pre-error) for A-maze and in Table \@ref(tab:spr-table) for SPR. 
 
 ```{r pre-error}
-summ <- read_rds(here("Analysis/models/brms_maze_summ.rds")) %>% pivot_wider(names_from="model", values_from=c(`Estimate`)) %>% 
+summ <- read_rds(here("Analysis/models/brms_maze_summ.rds")) %>%
+  pivot_wider(names_from="model", values_from=c(`Estimate`)) %>% 
   mutate(Term=factor(Term, 
                         levels=c("Intercept", 
                                  "surprisal",
@@ -813,7 +829,9 @@ summ <- read_rds(here("Analysis/models/brms_maze_summ.rds")) %>% pivot_wider(nam
   arrange(Term) %>% 
   mutate(Term=c("Intercept", "Surprisal", "Length", "Frequency",
                   "Surp x Length", "Freq x Length", "Past Surprisal",
-                  "Past Length", "Past Freq", "Past Surp x Length", "Past Freq x Length")) 
+                  "Past Length", "Past Freq", "Past Surp x Length", 
+                "Past Freq x Length")) %>%
+  select(Term, `5-gram`, GRNN, `Transformer-XL`=TXL,`GPT-2`)
 
 knitr::kable(summ, format="latex", position="!h",caption="Predictions from fitted Bayesian regression models. All terms were centered, but not rescaled. Units are in ms. Surprisal is per bit, length per character, and frequency per $log_2$ occurance per billion words. Interval is 2.5th quantile to 97.5th quantile of model draws.")%>%   kable_styling(font_size = 10)
 ```
@@ -851,7 +869,8 @@ summ_spr <- read_rds(here("Analysis/models/lmer_spr_summ.rds")) %>%
   mutate(Term=c("Intercept", "Surprisal", "Length", "Frequency","Surp x Length", "Freq x Length",
                 "Past Surprisal", "Past Length", "Past Freq", "Past Surp x Length", "Past Freq x Length",
                 "2Past Surprisal", "2Past Length", "2Past Freq", "2Past Surp x Length", "2Past Freq x Length",
-                "3Past Surprisal", "3Past Length", "3Past Freq", "3Past Surp x Length", "3Past Freq x Length")) 
+                "3Past Surprisal", "3Past Length", "3Past Freq", "3Past Surp x Length", "3Past Freq x Length")) %>%
+  select(Term, `5-gram`, GRNN, `Transformer-XL`=TXL,`GPT-2`)
 
 knitr::kable(summ_spr, format="latex", position="!h",caption="Predictions from fitted regression models for SPR data. All terms were centered, but not rescaled. Units are in ms. Surprisal is per bit, length per character, and frequency per $log_2$ occurance per billion words. Uncertainty interval is +/- 1.97 standard error.") %>%   kable_styling(font_size = 10)
 
@@ -907,13 +926,14 @@ gam_linear <- read_rds(here("Analysis/models/gams_linearity_test.rds")) %>%
                                  )
                                  )) %>% 
   arrange(Term) %>% filter(Term %in% c("s(surprisal)", "s(prev_surp)", "surprisal","prev_surp")) %>% 
-  mutate(Term=c("Spline Surprisal", "Spline Past Surprisal", "Linear Surprisal", "Linear Past Surprisal")) 
+  mutate(Term=c("Spline Surprisal", "Spline Past Surprisal", "Linear Surprisal", "Linear Past Surprisal")) %>%
+  select(Term, `5-gram`, GRNN, `Transformer-XL`=TXL,`GPT-2`)
 
 knitr::kable(gam_linear, format="latex", position="ht",caption="Comparison of significances for linear and spline terms of suprisals from a GAM. We fit GAM models with current and past word surprisal as parametric terms, current and past word surprisal and spline terms, and current and past frequence and length as tensors to predict reading time. Here we show the estimated pvalues for the linear and spline surprisal terms at current and past words. The spline terms account for any non-linear surprisal effects.") %>%   kable_styling(font_size = 10)
 
 ```
 
-# Ethics and consent (optional) {#ethics-and-consent-optional .unnumbered}
+<!--# Ethics and consent (optional) {#ethics-and-consent-optional .unnumbered}
 
 Research involving human subjects, human material, or human data, must
 have been performed in accordance with the Declaration of Helsinki.
@@ -924,27 +944,20 @@ committee and reference number of the approval. The identity of the
 research subject(s) should be anonymised whenever possible. For research
 involving human subjects, informed consent to participate in the study
 must be obtained from participants (or their legal guardian).
-
-# Funding information (optional) {#funding-information-optional .unnumbered}
+-->
+<!--# Funding information (optional) {#funding-information-optional .unnumbered}
 
 Should the research have received a funding grant, then the grant
-provider and grant number can be detailed in this section.
+provider and grant number can be detailed in this section.-->
 
-# Acknowledgements (optional) {#acknowledgements-optional .unnumbered}
+# Acknowledgements {#acknowledgements-optional .unnumbered}
 
- We thank the AMLAP 2020 audience, the Computational Psycholinguistics Lab at MIT, the Language and Cognition Lab at Stanford, the QuantLang Lab at UC Irvine, and Mike Frank for feedback on this work.
+We thank the AMLAP 2020 audience, the Computational Psycholinguistics Lab at MIT, the Language and Cognition Lab at Stanford, the QuantLang Lab at UC Irvine, and Mike Frank for feedback on this work.
 
-# Competing interests (mandatory) {#competing-interests-mandatory .unnumbered}
+# Competing interests {#competing-interests-mandatory .unnumbered}
 
-If any of the authors have any competing interests then these must be
-declared. Consult the [Competing
-Interests](http://www.glossa-journal.org/about/competinginterests/)
-section on the Glossa website for more information. If there are no
-competing interests to declare then the following statement should be
-present: "The author(s) has/have no competing interests to declare".
+The authors have no competing interests to declare.
 
-# Authors' contributions (optional) {#contrib .unnumbered}
-
-Here you can provide a sentence or a short paragraph detailing the
-contribution of each author to the paper.
+# Authors' contributions {#contrib .unnumbered}
+Veronica Boyce contributed Conceptualization, Formal Analysis, Investigation, Methodology, Software, and Writing - Original Draft Preparation. Roger Levy contributed Conceptualization, Formal Analysis, Funding Acquisition, Methodology, Supervision, and Writing - Review & Editing.
 
