@@ -63,14 +63,15 @@ link-citations: true
 abstract: |
    Behavioral measures of word-by-word reading time provide experimental evidence to test theories of language processing. A-maze is a recent method for measuring incremental sentence processing that can localize slowdowns related to syntactic ambiguities in individual sentences. We adapted A-maze for use on longer passages and tested it on the Natural Stories corpus. Participants were able to comprehend these longer text passages that they read via the Maze task.  Moreover, the Maze task yielded useable reaction time data with word predictability effects that were linearly related to surprisal, the same pattern found with other incremental methods. Crucially, Maze reaction times show a tight relationship with properties of the current word, with little spillover of effects from previous words. This superior localization is an advantage of Maze compared with other methods. Overall, we expanded the scope of experimental materials, and thus theoretical questions, that can be studied with the Maze task. 
 # Specify keywords here:
-keywords: A-Maze, self-paced reading, incremental processing, reading time measure, surprisal, naturalistic text,
+keywords: A-Maze, self-paced reading, incremental processing, surprisal, naturalistic text
 # To add the word count, uncomment the following option and replace the number
 # with the document word count.
-# wordcount: 1000
+wordcount: 9061
 output: 
-  bookdown::pdf_book:
+   bookdown::pdf_book:
     base_format: rticles::glossa_article
     number_sections: yes
+ #papaja::apa6_pdf
 ---
 
 ```{r setup, include = FALSE}
