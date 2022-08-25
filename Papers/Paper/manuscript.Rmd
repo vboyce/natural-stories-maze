@@ -66,12 +66,12 @@ abstract: |
 keywords: A-Maze, self-paced reading, incremental processing, surprisal, naturalistic text
 # To add the word count, uncomment the following option and replace the number
 # with the document word count.
-wordcount: 9061
+wordcount: 9069
 output: 
    bookdown::pdf_book:
     base_format: rticles::glossa_article
     number_sections: yes
- #papaja::apa6_pdf
+# papaja::apa6_pdf
 ---
 
 ```{r setup, include = FALSE}
