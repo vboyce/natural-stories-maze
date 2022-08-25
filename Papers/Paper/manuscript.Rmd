@@ -1,21 +1,17 @@
 ---
 title             : "A-maze of Natural Stories: Comprehension and surprisal in the Maze task"
 shorttitle        : "A-maze of Natural Stories"
-shortauthors: Veronica Boyce & Roger Levy
+shortauthors: "" #Veronica Boyce & Roger Levy
 author: 
-  - name          : "Veronica Boyce"
-    affiliation   : "Stanford University"
+  - name          : "Anonymous submission" #Veronica Boyce"
+    affiliation   : "" #Stanford University"
     corresponding : yes    # Define only one corresponding author
-    email         : "vboyce@stanford.edu"
+    email         : "" #vboyce@stanford.edu"
 
-  - name          : "Roger P. Levy"
-    affiliation   : "Massachusetts Institute of Technology"
+ # - name          : "Roger P. Levy"
+ #   affiliation   : "Massachusetts Institute of Technology"
 
-affiliation:
-  - id            : "1"
-    institution   : "Stanford University"
-  - id            : "2"
-    institution   : "Massachusetts Institute of Technology"
+
 header-includes:
  - \usepackage{setspace}\singlespacing
  - \renewcommand{\textfraction}{0.00}
@@ -168,7 +164,7 @@ We tweaked the A-maze task to accommodate these longer passages and then had par
 
 # Methods
 
-We constructed A-maze distractors for the Natural Stories corpus [@futrellNaturalStoriesCorpus2020] and recruited 100 crowd-sourced participants to each read a story in the Maze paradigm. The materials, data, and analysis code are all available at https://github.com/vboyce/natural-stories-maze. 
+We constructed A-maze distractors for the Natural Stories corpus [@futrellNaturalStoriesCorpus2020] and recruited 100 crowd-sourced participants to each read a story in the Maze paradigm. The materials, data, and analysis code are all available at https://osf.io/gfs87/?view_only=c04ea31c7ea34d9ba84eb106f88b564a <!--https://github.com/vboyce/natural-stories-maze-->. 
 
   
 ## Task: Error-correction Maze
@@ -187,7 +183,7 @@ However, terminating sentences on errors means that we don't have RTs for words 
 
 The high error rates could be improved by auto-generating better distractors or hand-replacing problematic ones, but that does not solve the fundamental problem with long items. Well-chosen distractors and attentive participants reduce the error rate, but the error rate will still compound over long materials. For instance, with a 1% error rate, `r round(.99**15*100)`%  of participants would complete each 15-word sentence, but only `r round(.99**50*100)`% would complete a 50 word vignette, and `r round(.99**200*100)`% would complete a 200 word passage.  In order to run longer materials, we needed something to do when participants made a mistake other than terminate the entire item.
 
-As a solution, we introduce an *error-correction* variant of Maze shown in Figure \@ref(fig:diagram). When a participant makes an error, they see an error message and must try again to select the correct option, before continuing the sentence as normal. We make error-correction Maze available as an option in a modification of the Ibex Maze implementation introduced in @boyceMazeMadeEasy2020 (https://github.com/vboyce/Ibex-with-Maze). The code records both the RT to the first click and also the total RT until the correct answer is selected as separate values.
+As a solution, we introduce an *error-correction* variant of Maze shown in Figure \@ref(fig:diagram). When a participant makes an error, they see an error message and must try again to select the correct option, before continuing the sentence as normal. We make error-correction Maze available as an option in a modification of the Ibex Maze implementation introduced in @boyceMazeMadeEasy2020 (link obscured for anonymity) <!--(https://github.com/vboyce/Ibex-with-Maze)-->. The code records both the RT to the first click and also the total RT until the correct answer is selected as separate values.
 
 Error-correction Maze expands the types of materials that can be used with Maze to include arbitrarily long passages and cushions the impact of occasional problematic distractors. Error-correction Maze is a change in experimental procedure, and is independent of what types of distractors are used. This error-correction presentation is used here with A-maze, but could also be used with G-maze or I-maze. 
 
@@ -198,7 +194,7 @@ Error-correction Maze expands the types of materials that can be used with Maze 
 ## Materials
 We used the texts from the Natural Stories corpus [@futrellNaturalStoriesCorpus2020] and their corresponding comprehension questions. To familiarize participants with the task, we wrote a short practice passage and corresponding comprehension questions. See Appendix A for an excerpt of one of the stories. 
 
-To generate distractors, we first split the corpora up into sentences, and then ran the sentences through the A-maze generation process. We used an updated version of the codebase from @boyceMazeMadeEasy2020 which had the capability to match the greater variety of punctuation present in the Natural Stories corpus (updated auto-generation code at https://github.com/vboyce/Maze).  We took the auto-generated distractors as they were, without checking  for quality. 
+To generate distractors, we first split the corpora up into sentences, and then ran the sentences through the A-maze generation process. We used an updated version of the codebase from @boyceMazeMadeEasy2020 which had the capability to match the greater variety of punctuation present in the Natural Stories corpus (updated auto-generation code at link obscured for anonymity <!--https://github.com/vboyce/Maze-->).  We took the auto-generated distractors as they were, without checking  for quality. 
 
 
 ## Participants
@@ -783,7 +779,7 @@ While we expect these patterns of results reflect features of the A-maze task, t
 
 ## Future directions
 
-Compared to traditional Maze, error-correction Maze reduces perverse (from the experimenter's point of view) incentives to complete the task as quickly as possible. However, even with error-correction Maze, clicking randomly is still likely faster than doing the task. In discussing this work, we received the suggestion that one way to further disincentivize random clicking would be to add a pause when a participant makes a mistake, forcing them to wait some short period of time (ex 500ms) before correcting their mistake. This delay would make randomly hitting buttons slower than doing the task as intended, and we have made delaying after wrong presses an option in the error-correction Maze implementation at https://github.com/vboyce/Ibex-with-Maze. 
+Compared to traditional Maze, error-correction Maze reduces perverse (from the experimenter's point of view) incentives to complete the task as quickly as possible. However, even with error-correction Maze, clicking randomly is still likely faster than doing the task. In discussing this work, we received the suggestion that one way to further disincentivize random clicking would be to add a pause when a participant makes a mistake, forcing them to wait some short period of time (ex 500ms) before correcting their mistake. This delay would make randomly hitting buttons slower than doing the task as intended, and we have made delaying after wrong presses an option in the error-correction Maze implementation at link obscured for anonymity <!--https://github.com/vboyce/Ibex-with-Maze-->. 
 
 Error-correction Maze records RTs for words after a participant makes a mistake in the sentence. In our analyses, we excluded these post-error data, but we believe it is an open question whether data from after a participant makes a mistake is usable. That is, does it show the same profile as RTs from pre-error words, or are there traces from recovering from the mistake? If there are, how long do these effects take to fade? Whether post-mistake data is high-quality and trustworthy enough to be included in analyses is hard to assess; if it can be used, it would make the Maze task more data efficient.  
 
