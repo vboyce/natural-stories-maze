@@ -1,3 +1,10 @@
+@String{tics = {Trends in Cognitive Sciences}}
+@String{cogsci = {Cognitive Science}}
+@String{pnas = {Proceedings of the National Academy of Sciences}}
+@String{jml = {Journal of Memory and Language}}
+@String{naacl2019 = {Proceedings of the 18th {Annual} {Conference} of the {North} {American} {Chapter} of the {Association} for {Computational} {Linguistics}: {Human} {Language} {Technologies}}}
+@String{emnlp2018 = {Proceedings of the 2018 {Conference} on {Empirical} {Methods} in {Natural} {Language} {Processing}}}
+@String{tacl = {Transactions of the Association for Computational Linguistics}}
 @String{naacl2 = {Proceedings of the Second Meeting of the North American Chapter of the {Association} for {Computational} {Linguistics}}}
 
 
@@ -721,3 +728,118 @@
 	howpublished = {Presentation at the 35th Annual Conference on Human Sentence Processing},
 	title = {Using the {Maze} Task paradigm to test structural priming in comprehension in {L1} and {L2} speakers of {English}},
 	year = {2022}}
+
+
+@article{linzen-etal:2016tacl,
+	author = {Linzen, Tal and Dupoux, Emmanuel and Goldberg, Yoav},
+	date-added = {2017-11-12 00:07:08 +0000},
+	date-modified = {2019-03-05 17:31:56 -0500},
+	journal = tacl,
+	title = {Assessing the ability of {LSTMs} to learn syntax-sensitive dependencies},
+	year = {2016}}
+
+
+@inproceedings{marvin-linzen:2018-targeted,
+	abstract = {We present a data set for evaluating the grammaticality of the predictions of a language model. We automatically construct a large number of minimally different pairs of English sentences, each consisting of a grammatical and an ungrammatical sentence. The sentence pairs represent different variations of structure-sensitive phenomena: subject-verb agreement, reflexive anaphora and negative polarity items. We expect a language model to assign a higher probability to the grammatical sentence than the ungrammatical one. In an experiment using this data set, an LSTM language model performed poorly on many of the constructions. Multi-task training with a syntactic objective (CCG supertagging) improved the LSTM{'}s accuracy, but a large gap remained between its performance and the accuracy of human participants recruited online. This suggests that there is considerable room for improvement over LSTMs in capturing syntax in a language model.},
+	address = {Brussels, Belgium},
+	author = {Marvin, Rebecca and Linzen, Tal},
+	booktitle = emnlp2018,
+	date-added = {2019-05-31 17:57:21 -0400},
+	date-modified = {2019-05-31 20:27:18 -0400},
+	month = oct # {-} # nov,
+	pages = {1192--1202},
+	publisher = {Association for Computational Linguistics},
+	title = {Targeted Syntactic Evaluation of Language Models},
+	url = {https://www.aclweb.org/anthology/D18-1151},
+	year = {2018},
+	bdsk-url-1 = {https://www.aclweb.org/anthology/D18-1151}}
+
+
+@article{warstadt-etal:2020-BLiMP,
+	abstract = {We introduce The Benchmark of Linguistic Minimal Pairs (BLiMP),1 a challenge set for evaluating the linguistic knowledge of language models (LMs) on major grammatical phenomena in English. BLiMP consists of 67 individual datasets, each containing 1,000 minimal pairs{---}that is, pairs of minimally different sentences that contrast in grammatical acceptability and isolate specific phenomenon in syntax, morphology, or semantics. We generate the data according to linguist-crafted grammar templates, and human aggregate agreement with the labels is 96.4{\%}. We evaluate n-gram, LSTM, and Transformer (GPT-2 and Transformer-XL) LMs by observing whether they assign a higher probability to the acceptable sentence in each minimal pair. We find that state-of-the-art models identify morphological contrasts related to agreement reliably, but they struggle with some subtle semantic and syntactic phenomena, such as negative polarity items and extraction islands.},
+	author = {Warstadt, Alex and Parrish, Alicia and Liu, Haokun and Mohananey, Anhad and Peng, Wei and Wang, Sheng-Fu and Bowman, Samuel R.},
+	date-added = {2020-11-03 17:40:30 -0500},
+	date-modified = {2020-11-03 17:40:35 -0500},
+	doi = {10.1162/tacl_a_00321},
+	journal = tacl,
+	pages = {377--392},
+	title = {{BL}i{MP}: The Benchmark of Linguistic Minimal Pairs for {E}nglish},
+	url = {https://www.aclweb.org/anthology/2020.tacl-1.25},
+	volume = {8},
+	year = {2020},
+	bdsk-url-1 = {https://www.aclweb.org/anthology/2020.tacl-1.25},
+	bdsk-url-2 = {https://doi.org/10.1162/tacl_a_00321}}
+
+
+@inproceedings{futrell-etal:2019-neural-language-models,
+	arxivurl = {https://arxiv.org/abs/1903.03260},
+	author = {Richard Futrell and Ethan Wilcox and Takashi Morita and Peng Qian and Miguel Ballesteros and Roger Levy},
+	booktitle = naacl2019,
+	date-added = {2019-02-22 13:47:24 -0500},
+	date-modified = {2020-07-23 15:03:47 -0400},
+	pages = {32--42},
+	rogerslocalurl = {https://www.aclweb.org/anthology/N19-1004.pdf},
+	title = {Neural language models as psycholinguistic subjects: Representations of syntactic state},
+	topic = {Machine learning, Sentence processing},
+	url = {https://www.aclweb.org/anthology/N19-1004},
+	year = {2019},
+	bdsk-url-1 = {https://www.aclweb.org/anthology/N19-1004}}
+
+
+@article{levy-fedorenko-gibson:2013jml,
+	author = {Roger Levy and Evelina Fedorenko and Edward Gibson},
+	date-added = {2011-09-08 19:00:35 +0000},
+	date-modified = {2019-02-14 13:03:15 -0500},
+	doi = {http://dx.doi.org/10.1016/j.jml.2012.10.005},
+	journal = jml,
+	number = {4},
+	pages = {461--495},
+	rogerslocalurl = {papers/levy-fedorenko-gibson-2013-jml-clean.pdf},
+	title = {The syntactic complexity of {Russian} relative clauses},
+	topic = {Sentence processing,Syntax},
+	volume = {69},
+	year = {2013},
+	bdsk-url-1 = {http://dx.doi.org/10.1016/j.jml.2012.10.005}}
+
+
+@article{lewis-etal:2006,
+	author = {Richard L. Lewis and Shravan Vasishth and Julie {Van Dyke}},
+	date-modified = {2013-01-20 20:41:59 +0000},
+	journal = tics,
+	number = {10},
+	pages = {447--454},
+	title = {Computational principles of working memory in sentence comprehension},
+	url = {http://ling.ucsd.edu/~rlevy/lign274/papers/lewis-etal-2006.pdf},
+	volume = {10},
+	year = {2006},
+	bdsk-url-1 = {http://ling.ucsd.edu/~rlevy/lign274/papers/lewis-etal-2006.pdf}}
+
+
+
+@article{levy-etal:2009pnas,
+	author = {Roger Levy and Klinton Bicknell and Tim Slattery and Keith Rayner},
+	date-added = {2009-12-07 16:04:49 -0800},
+	date-modified = {2019-02-14 13:02:55 -0500},
+	doi = {http://dx.doi.org/10.1073/pnas.0907664106},
+	journal = pnas,
+	number = {50},
+	pages = {21086--21090},
+	rogerslocalurl = {papers/levy-etal-2009-pnas.pdf},
+	title = {Eye Movement Evidence that Readers Maintain and Act on Uncertainty about Past Linguistic Input},
+	topic = {Sentence processing,Eye movements in reading},
+	volume = {106},
+	year = {2009},
+	bdsk-file-1 = {YnBsaXN0MDDSAQIDBFxyZWxhdGl2ZVBhdGhZYWxpYXNEYXRhXxA3Li4vLi4vRHJvcGJveCAoUGVyc29uYWwpL3BhcGVycy9sZXZ5LWV0YWwtMjAwOS1wbmFzLnBkZk8RAYgAAAAAAYgAAgAADE1hY2ludG9zaCBIRAAAAAAAAAAAAAAAAAAAAAAAAABCRAAB/////xdsZXZ5LWV0YWwtMjAwOS1wbmFzLnBkZgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD/////AAAAAAAAAAAAAAAAAAIAAwAACiBjdQAAAAAAAAAAAAAAAAAGcGFwZXJzAAIAPy86VXNlcnM6cmxldnk6RHJvcGJveCAoUGVyc29uYWwpOnBhcGVyczpsZXZ5LWV0YWwtMjAwOS1wbmFzLnBkZgAADgAwABcAbABlAHYAeQAtAGUAdABhAGwALQAyADAAMAA5AC0AcABuAGEAcwAuAHAAZABmAA8AGgAMAE0AYQBjAGkAbgB0AG8AcwBoACAASABEABIAPVVzZXJzL3JsZXZ5L0Ryb3Bib3ggKFBlcnNvbmFsKS9wYXBlcnMvbGV2eS1ldGFsLTIwMDktcG5hcy5wZGYAABMAAS8AABUAAgAM//8AAAAIAA0AGgAkAF4AAAAAAAACAQAAAAAAAAAFAAAAAAAAAAAAAAAAAAAB6g==}}
+
+
+@article{van-schijndel-linzen-2021:single-stage-models,
+	author = {Van Schijndel, Marten and Linzen, Tal},
+	date-added = {2021-09-11 06:16:07 -0400},
+	date-modified = {2021-09-11 06:16:18 -0400},
+	journal = {Cognitive Science},
+	number = {6},
+	pages = {e12988},
+	publisher = {Wiley Online Library},
+	title = {Single-Stage Prediction Models Do Not Explain the Magnitude of Syntactic Disambiguation Difficulty},
+	volume = {45},
+	year = {2021}}
