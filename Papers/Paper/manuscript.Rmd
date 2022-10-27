@@ -123,7 +123,7 @@ Some of these theories rely on being able to attribute processing slowdowns to a
 The two most commonly used behavioral methods for studying incremental language processing during reading are tracking eye movements and self-paced reading. While both of these have proven powerful and highly flexible, they both have important limitations as well.
 
 
-In eye-tracking, participants read a text on a screen naturally, while their saccadic eye movements are recorded on a computer-connected camera that is calibrated so that the researcher can reconstruct with high precision where the participant's gaze falls on the screen at all times [@raynerEyeMovementsReading1998]. These eye movements can be used to reconstruct various position-specific reading time measures such as *gaze duration* (the total amount of time the eyes spend on a word the first time it is fixated before saccading to a later word) and *total viewing time* (the total amount of time that the word is fixated). If the eyes skipped the word the first time it was approached to the left, the trial is generally excluded.  Eye tracking data collected with state-of-the-art high-precision recording equipment offers relatively good signal-to-noise ratio, but the difficulty presented by a word can still *spill over* into reading measures on subsequent words, a dynamic that can make it hard to isolate the source of an effect of potential theoretical interest [@raynerEffectsFrequencyPredictability2004; @levyEyeMovementEvidence2009; @frazierMakingCorrectingErrors1982]. Short words such as articles and pronouns are often not fixated directly which makes it harder to study the processing of these words with eye-tracking. Additionally, the equipment is expensive and data collection is laborious and must occur in-lab.
+In eye-tracking, participants read a text on a screen naturally, while their saccadic eye movements are recorded on a computer-connected camera that is calibrated so that the researcher can reconstruct with high precision where the participant's gaze falls on the screen at all times [@raynerEyeMovementsReading1998]. These eye movements can be used to reconstruct various position-specific reading time measures such as *gaze duration* (the total amount of time the eyes spend on a word the first time it is fixated before saccading to a later word) and *total viewing time* (the total amount of time that the word is fixated). If the eyes skipped the word the first time it was approached to the left, the trial is generally excluded.  Eye tracking data collected with state-of-the-art high-precision recording equipment offers relatively good signal-to-noise ratio, but the difficulty presented by a word can still *spill over* into reading measures on subsequent words, a dynamic that can make it hard to isolate the source of an effect of potential theoretical interest [@raynerEffectsFrequencyPredictability2004; @levy-etal:2009pnas; @frazierMakingCorrectingErrors1982]. Short words such as articles and pronouns are often not fixated directly which makes it harder to study the processing of these words with eye-tracking. Additionally, the equipment is expensive and data collection is laborious and must occur in-lab.
 
 Self-paced reading (SPR; @mitchell:1984) is a somewhat less natural paradigm in which the participant manually controls the visual presentation of the text by pressing a button. In its generally preferred variant, moving-window self-paced reading, words are revealed one at a time or one group at a time: every press of the button masks the currently presented word (group) and simultaneously reveals the next. The time spent between button presses is the unique RT measure for that word (group). Self-paced reading requires no special equipment and can be delivered remotely, but the measurements are noisier and even more prone to spillover [@macdonaldInteractionLexicalSyntactic1993; @koornneefUseVerbbasedImplicit2006; @smithEffectWordPredictability2013].
 
@@ -167,7 +167,7 @@ We used the Natural Stories corpus [@futrellNaturalStoriesCorpus2020], a set of 
 We tweaked the A-maze task to accommodate these longer passages and then had participants read the passages in the Maze. We compare our A-maze results with SPR data collected on the Natural Stories corpus by @futrellNaturalStoriesCorpus2020.
 
  
-# Error-correct Maze: Adapting the Maze paradigm for long passages
+# Error-correction Maze
 
 (ref:diagram-cap) Schematic of error-correction Maze. A participant reads a sentence word by word, choosing the correct word at each time point (selections marked in blue ovals). When they make a mistake, an error message is displayed, so the participant can try again and continue with the sentence. 
 
@@ -190,7 +190,7 @@ Error-correction Maze expands the types of materials that can be used with Maze 
 
 # Methods
 
-We constructed A-maze distractors for the Natural Stories corpus [@futrellNaturalStoriesCorpus2020] and recruited 100 crowd-sourced participants to each read a story in the Maze paradigm. The materials, data, and analysis code are all available at https://osf.io/gfs87/?view_only=c04ea31c7ea34d9ba84eb106f88b564a <!--https://github.com/vboyce/natural-stories-maze-->. 
+We constructed A-maze distractors for the Natural Stories corpus [@futrellNaturalStoriesCorpus2020] and recruited 100 crowd-sourced participants to each read a story in the error-correction Maze paradigm. The materials, data, and analysis code are all available at https://osf.io/gfs87/?view_only=c04ea31c7ea34d9ba84eb106f88b564a <!--https://github.com/vboyce/natural-stories-maze-->. 
 
   
 ## Materials
@@ -290,7 +290,7 @@ a <- cite_r("r-references.bib", pkgs=package_list, withhold=F, footnote=T)
 
 ## Modeling approach
 
-Our analytic questions required multiple modeling approaches. To look at the functional form of the relationship between surprisal and RT data, we fit Generalized Additive Models (GAMs) to allow for non-linear relationships [@wood:2006GAMs]. GAM model summaries can be harder to interpret than those for linear models, so to measure effect sizes and assess spillover, we used linear mixed models. Finally, in order to determine which language model best predicts the RT data, we fit additional linear models with predictors from multiple language models to look at their relative contributions. All these models used surprisal, frequency, and length as predictors for RT. We considered these predictors from both the current and past word to account for the possibility of spillover effects in A-maze. For SPR comparisons, we included predictors from the current and past three words to account for known spillover effects. We conducted data processing and analyses using `r a$r`.
+Our analytic questions required multiple modeling approaches. To look at the functional form of the relationship between surprisal and RT data, we fit Generalized Additive Models (GAMs) to allow for non-linear relationships [@wood:2017GAMs]. GAM model summaries can be harder to interpret than those for linear models, so to measure effect sizes and assess spillover, we used linear mixed models. Finally, in order to determine which language model best predicts the RT data, we fit additional linear models with predictors from multiple language models to look at their relative contributions. All these models used surprisal, frequency, and length as predictors for RT. We considered these predictors from both the current and past word to account for the possibility of spillover effects in A-maze. For SPR comparisons, we included predictors from the current and past three words to account for known spillover effects. We conducted data processing and analyses using `r a$r`.
 
 `r a$pkgs`
 
@@ -897,7 +897,7 @@ knitr::kable(gam_interact, format="latex", position="ht",caption="Significance o
 
 ```
 
-(ref:gam-grid) Generalized Additive Model main effects and two-way interactions among frequency, length, and surprisal for A-Maze reading of the Natural Stories corpus. Confidence bands do not take into account the uncertainty associated with `mgcv` hyperparameter estimation (@wood:2006GAMs).
+(ref:gam-grid) Generalized Additive Model main effects and two-way interactions among frequency, length, and surprisal for A-Maze reading of the Natural Stories corpus. Confidence bands do not take into account the uncertainty associated with `mgcv` hyperparameter estimation [@wood:2017GAMs].
 
 ```{r gam-grid, out.width="\\textwidth",  fig.pos="ht", fig.cap="(ref:gam-grid)"}
 
@@ -910,7 +910,7 @@ knitr::include_graphics(here("Analysis/models/gam_grid.png"))
 
 # Appendix D
 
-The `mgcv` package's implementation of Generalized Additive Models [@wood:2006GAMs] allows linear and nonparametric spline effects of the same continuous predictor to be entered simultaneously into a model. Doing so associates only the nonlinear part of the effect to the spline term, allowing for approximate statistical testing of the linear and non-linear components of the effect respectively. We thus test for whether the effect of surprisal on A-Maze RTs is best described as linear or includes a non-linear component, using the `mgcv` formula:
+The `mgcv` package's implementation of Generalized Additive Models [@wood:2017GAMs] allows linear and nonparametric spline effects of the same continuous predictor to be entered simultaneously into a model. Doing so associates only the nonlinear part of the effect to the spline term, allowing for approximate statistical testing of the linear and non-linear components of the effect respectively. We thus test for whether the effect of surprisal on A-Maze RTs is best described as linear or includes a non-linear component, using the `mgcv` formula:
 
 `rt ~ surprisal + s(surprisal, bs="cr", k=20) + ti(freq, bs="cr") + ti(len, bs="cr") + prev_surp + s(prev_surp, bs="cr", k=20) + ti(prev_freq, bs="cr") + ti(prev_len, bs="cr")`
 
