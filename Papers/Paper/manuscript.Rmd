@@ -787,7 +787,8 @@ Error-correction Maze records RTs for words after a participant makes a mistake 
 The Maze task is versatile and can be used or adapted for a wide range of materials and questions of interest. Its forced incrementality makes the Maze task a good target for any question that requires precisely determining the locus of incremental processing difficulty.  We encourage researchers to use Maze as an incremental processing method, alone or in comparison with other methods, and we suggest that the error-correction mode be the default choice for presenting Maze materials. 
 
 # Data Accessibility {.unnumbered}
-Data and materials are available at https://github.com/vboyce/natural-stories-maze. 
+Data and materials are available at https://github.com/vboyce/natural-stories-maze. DOI: 10.5281/zenodo.7783046.
+
 # Ethics and consent {#ethics-and-consent-optional .unnumbered}
 
 This research was approved by MIT’s Committee on the Use of Humans as Experimental Subjects and run under protocol number 1605559077.
