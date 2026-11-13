@@ -1,5 +1,5 @@
 ---
-title             : "A-maze of Natural Stories: Comprehension and surprisal in the Maze task"
+title             : "A-maze of Natural Stories: Comprehension and surprisal in the Maze task\\thanks{Corrected version (November 2026) of the article published in \\textit{Glossa Psycholinguistics} (2023). See the correction notice after the abstract.}"
 shorttitle        : "A-maze of Natural Stories"
 shortauthors: "" #Veronica Boyce & Roger Levy
 author: 
@@ -91,6 +91,32 @@ library(kableExtra)
 theme_set(theme_bw())
 options(knitr.table.format = "pdf")
 ```
+
+\newpage
+
+# Correction notice {-}
+
+An AI audit in November 2026 turned up errors in the analysis code and some claims in the text that the data do not support. The main Maze results are unchanged: comprehension of long passages is feasible, Maze RTs are linearly related to surprisal, and Maze effects are well localized with little spillover. Several comparisons between Maze and SPR are weaker than the published paper says. These errors have been addressed in this version of the manuscript.
+
+Claude Code was used for the AI audit, to fix the issues, and to draft text for this notice.
+
+**Analysis errors**
+
+1. *SPR GPT-2 model.* The SPR model labelled GPT-2 was fit to Transformer-XL surprisals, so the GPT-2 column of Table 4 and the GPT-2 SPR coefficients in Figure 7 duplicated Transformer-XL.
+2. *SPR by-word averages.* Before the SPR model comparisons (Table 2) and the SPR GAMs (Figure 5), RTs were averaged by word *and* by each reader's comprehension score, giving several averages per word instead of one. With one average per word, SPR $R^2$ is 0.015--0.024 (published: 0.007--0.011).
+3. *SPR first-story comprehension.* The "first story" for each SPR participant was not correctly identified. With one first story per participant, 91% of SPR first reads had 5 or 6 comprehension questions correct (published: 83%), compared with 79% for accurate Maze participants. Figure 2B changes.
+4. *Split-half reliability.* The within- and between-method correlations came from a single random split of the participants. We now report the median over 1,000 random splits, with the middle 95% of splits: within SPR 0.32 [$-0.05$, 0.58] (published: 0.23), within Maze 0.30 [0.09, 0.45] (published: 0.36), Maze--SPR 0.25 [0.14, 0.35] (published: 0.25).
+5. *Figure 4 GAMs.* The GAMs behind Figure 4 left out the frequency $\times$ length interaction terms described in the methods. With the model run as described, the curves change by at most 2.7 ms over 0--15 bits.
+
+**Text errors and claims that changed**
+
+1. *Sensitivity.* Because of analysis error 4, the claim that Maze has higher split-half reliability than SPR, and so is more sensitive, is not supported.
+2. *Comprehension.* Because of analysis error 3, accurate Maze participants' comprehension is somewhat lower than SPR participants' (79% vs. 91%), not "broadly similar".
+3. *Language-model comparison.* The log-likelihood order for SPR was misstated. It is GPT-2 > GRNN > 5-gram > Transformer-XL, both in the published table and after the correction. The text also said that for Maze the 5-gram model added no predictive value over the other models, but Table 1 shows that it adds some over Transformer-XL (p = .035). With analysis error 2 corrected, the neural models' advantage over the 5-gram model is smaller for SPR than for Maze, rather than absent for SPR.
+4. *Spillover.* For SPR, previous-word surprisal effects are about half to nearly as large as current-word effects, depending on the language model. The paper described them as "roughly equal". The contrast with Maze, where previous-word effects are 5--14% of current-word effects, still holds.
+5. *Frequency.* The SPR frequency coefficients are positive in all models (more frequent words read more slowly, holding surprisal and length constant), but the Discussion previously interpreted them as facilitation. This interpretation has been dropped.
+
+\newpage
 
 # Introduction
 
@@ -272,7 +298,7 @@ In addition to the texts, @futrellNaturalStoriesCorpus2020 released reading time
 ## SPR--Maze correlation
 We compared the correlations between the Maze and SPR RTs to within-Maze and within-SPR correlations. For Maze, within each story, we split the data in half, randomly assigning subjects into two equal groups. Within each half, we calculated a per-word average RT for each word and then a per-sentence average RT across word averages. We calculated a within-Maze correlation between these two halves. 
 
-For this comparison, we downsampled the SPR data choosing a number of participants equal to the number we have for Maze to avoid differences due to dataset size. We then used the same split-half procedure to get a within-SPR correlation. For between Maze-SPR correlation, we took the average correlation across each of the 4 pairs of Maze half and SPR half.
+For this comparison, we downsampled the SPR data choosing a number of participants equal to the number we have for Maze to avoid differences due to dataset size. We then used the same split-half procedure to get a within-SPR correlation. For between Maze-SPR correlation, we took the average correlation across each of the 4 pairs of Maze half and SPR half. We repeated the procedure, including the downsampling, over 1000 random splits. We report the median and 95% range across the splits. 
 
 
 ```{r}
@@ -299,7 +325,7 @@ not_first <- surps %>% filter(Word_In_Sentence_Num!=1)
 #nrow(not_first)
   
 
-not_na <- not_first %>% filter(across(ends_with("surp"),~!is.na(.x)),
+not_na <- not_first %>% filter(if_all(ends_with("surp"),~!is.na(.x)),
                                !is.na(freq))
 
 
@@ -343,7 +369,7 @@ For model comparisons, we took by-item averaged data to aid in fast model fittin
 
 ## Do participants engage successfully?
 
-(ref:error-cap) A. Accuracy on the Maze task (fraction of words selected correctly) versus their average reaction time (in ms). Many participants (marked in green) chose the correct word >80% of the time; others (in red) appear to be randomly guessing. B. Performance on the comprehension questions. Participants with low accuracy performed poorly on comprehension questions; Participants with >80% task accuracy tended to do well; their performance was roughly comparable to the performance of SPR participants from  @futrellNaturalStoriesCorpus2020 on their first stories. 
+(ref:error-cap) A. Accuracy on the Maze task (fraction of words selected correctly) versus their average reaction time (in ms). Many participants (marked in green) chose the correct word >80% of the time; others (in red) appear to be randomly guessing. B. Performance on the comprehension questions. Participants with low accuracy performed poorly on comprehension questions; Participants with >80% task accuracy tended to do well; their performance was somewhat lower than the performance of SPR participants from  @futrellNaturalStoriesCorpus2020 on their first stories. 
 
 ```{r errors, out.width="\\textwidth", fig.width=8, fig.height=3, fig.pos="ht", fig.cap="(ref:error-cap)"}
 error_plot <- ggplot(data_error_summ, aes(x=pct_correct, y=mean_rt, color=accurate))+
@@ -389,7 +415,7 @@ Another cluster of participants (in red) sped through the task, seemingly clicki
 
 To determine comprehension accuracy, we counted how many of the binary-choice comprehension questions each participant got right (out of 6). As seen in Figure \@ref(fig:errors)B, most participants who were accurate on the task also did well on comprehension questions, while participants who were at chance on the task were also at chance on the comprehension questions. Participants usually answered quickly (within 10 seconds), so we do not believe they were looking up the answers on the Internet. We can't rule out that some participants may have been able to guess the answers without understanding the story. Nonetheless, the accurate answers provide preliminary evidence that people can understand and remember details of stories they read during the Maze task. 
 
-The comprehension question performance of accurate Maze participants is broadly similar to the performance of SPR participants from @futrellNaturalStoriesCorpus2020 on the first story read. Overall, `r comp_tally %>% filter(source=="all Maze") %>% pull(good)`% of Maze participants got 5 or 6 questions right (`r comp_tally %>% filter(source=="<80% correct") %>% pull(good)`% of low-accuracy participants and `r comp_tally %>% filter(source==">80% correct") %>% pull(good)`% of high-accuracy participants) compared to `r comp_tally %>% filter(source=="SPR") %>% pull(good)`% of all SPR reads and `r comp_tally %>% filter(source=="SPR 1st story") %>% pull(good)`% of 1st SPR reads. These differences cannot necessarily be attributed to methods, as the participant populations differed. While both studies were conducted on Mturk, the quality of Mturk data has decreased from 2011 when the SPR was collected to 2020 when the A-maze was collected [@chmielewski2020].
+The comprehension question performance of accurate Maze participants is somewhat lower than the performance of SPR participants from @futrellNaturalStoriesCorpus2020 on the first story read (`r comp_tally %>% filter(source==">80% correct") %>% pull(good)`% vs. `r comp_tally %>% filter(source=="SPR 1st story") %>% pull(good)`% got 5 or 6 questions right). Overall, `r comp_tally %>% filter(source=="all Maze") %>% pull(good)`% of Maze participants got 5 or 6 questions right (`r comp_tally %>% filter(source=="<80% correct") %>% pull(good)`% of low-accuracy participants and `r comp_tally %>% filter(source==">80% correct") %>% pull(good)`% of high-accuracy participants) compared to `r comp_tally %>% filter(source=="SPR") %>% pull(good)`% of all SPR reads and `r comp_tally %>% filter(source=="SPR 1st story") %>% pull(good)`% of 1st SPR reads. These differences cannot necessarily be attributed to methods, as the participant populations differed. While both studies were conducted on Mturk, the quality of Mturk data has decreased from 2011 when the SPR was collected to 2020 when the A-maze was collected [@chmielewski2020].
 
 For the remainder of the analyses, we use task performance as our exclusion metric for A-maze because it is more fine-grained and only analyze data from participants with at least 80% accuracy (in the gap between high-performers and low-performers). For the SPR comparison, we follow @futrellNaturalStoriesCorpus2020's criteria and exclude participants who got less than 5 of the comprehension questions correct. 
 
@@ -410,60 +436,21 @@ spr <- read_rds(here("Data/SPR/first.rds")) %>% left_join(tokenization) %>% left
 maze <- read_rds(here("Data/maze_pre_error.rds")) %>% left_join(labs) %>% select(subject, rt, Story_Num, Sentence_Num, word_num)
 ```
 
-```{r spr-split-half}
-set.seed(42)
-spr_subs <- spr %>% filter(!is.na(Story_Num)) %>% select(WorkerId, Story_Num) %>% unique() %>% sample_n(63) %>%  group_by(Story_Num) %>%
-  mutate(half=ifelse(row_number() <= .5*n(),"spr1", "spr2"))
-#180 participants
+```{r split-half}
+# Split-half correlations over 1000 random splits, computed by Analysis/split_half.R
+# (a single split, as in the original version of this paper, is too noisy to compare methods).
+split_half <- read_rds(here("Analysis/models/split_half_reliability.rds"))
+split_half_summary <- split_half$summary
+# the Methods text says 1,000 splits, typed by hand because it comes before this chunk
+stopifnot(nrow(split_half$splits)==1000)
 
-
-spr_split <- spr %>%
-  inner_join(spr_subs) %>% 
-  group_by(half,Story_Num, Sentence_Num, word_num) %>% summarize(spr=mean(rt)) %>% 
-  pivot_wider(names_from=half, values_from=spr)
-  
-spr_sentence_avg <- spr_split%>% group_by(Story_Num, Sentence_Num) %>% 
-  summarize(spr1=mean(spr1),
-            spr2=mean(spr2))
-
-spr_spr <- cor(spr_sentence_avg$spr1,spr_sentence_avg$spr2, use="complete.obs")
-```
-
-```{r maze-split-half}
-set.seed(42)
-maze_subs <- maze %>% select(subject, Story_Num) %>% unique() %>% sample_n(63)%>% group_by(Story_Num) %>%
-  mutate(half=ifelse(row_number() <= .5*n(),"maze1", "maze2"))
-
-maze_split <- maze %>% 
-  left_join(maze_subs) %>% 
-  group_by(half,Story_Num, Sentence_Num, word_num) %>% summarize(maze=mean(rt)) %>% 
-  pivot_wider(names_from=half, values_from=maze)
-  
-maze_sentence_avg <- maze_split%>% group_by(Story_Num, Sentence_Num) %>% 
-  summarize(maze1=mean(maze1),
-            maze2=mean(maze2))
-
-maze_maze <- cor(maze_sentence_avg$maze1,maze_sentence_avg$maze2, use="complete.obs")
-```
-
-```{r maze-spr}
-summ_spr <- spr %>% inner_join(spr_subs)%>% group_by(Story_Num, Sentence_Num, word_num,half) %>% summarize(spr=mean(rt, na.rm=T)) %>% rename(spr_half=half) %>% filter(!is.na(spr))
-  
-summ <- maze %>% inner_join(maze_subs) %>% group_by(Story_Num, Sentence_Num, word_num, half) %>% summarize(maze=mean(rt, na.rm=T)) %>% rename(maze_half=half) %>% filter(!is.na(maze))%>% inner_join(summ_spr)
-
-sentence_avg <- summ %>% group_by(Story_Num, Sentence_Num, maze_half, spr_half) %>% 
-  summarize(maze=mean(maze),
-            spr=mean(spr))
-
-sentence_avg11 <- sentence_avg %>% filter(maze_half=="maze1" & spr_half=="spr1")
-sentence_avg12 <- sentence_avg %>% filter(maze_half=="maze1" & spr_half=="spr2")
-sentence_avg21 <- sentence_avg %>% filter(maze_half=="maze2" & spr_half=="spr1")
-sentence_avg22 <- sentence_avg %>% filter(maze_half=="maze2" & spr_half=="spr2")
-
-spr_maze <-   mean(c(cor(sentence_avg11$spr,sentence_avg11$maze, use="complete.obs"),
-  cor(sentence_avg12$spr,sentence_avg12$maze, use="complete.obs"),
-  cor(sentence_avg21$spr,sentence_avg21$maze, use="complete.obs"),
-  cor(sentence_avg22$spr,sentence_avg22$maze, use="complete.obs")))
+# "median [2.5th, 97.5th percentile]" across splits, for the text; sprintf keeps the trailing
+# zero that round() drops (0.30, not 0.3)
+split_half_interval <- function(measure_name){
+  measure_row <- split_half_summary %>% filter(measure==measure_name)
+  stopifnot(nrow(measure_row)==1)
+  sprintf("%.2f [%.2f, %.2f]", measure_row$median, measure_row$lower, measure_row$upper)
+}
 ```
 
 (ref:scatter) Correlation between SPR and Maze data. RTs (measured in milliseconds) were averaged across participants per word and then averaged together within each sentence, so that each point represents the average RT in the two methods for one sentence in the corpus. Presented on a fixed scale coordinate system where 1 millisecond of RT takes equal physical space on both axes. Line and confidence interval reflect best linear fit regression of SPR time against Maze time.
@@ -525,7 +512,7 @@ ggplot(both, aes(x=maze, y=spr)) +
 #   #geom_abline(intercept=0,slope=1)
 ```
 
-Our second question was a comparison of the sensitivity (the signal-to-noise ratio) of A-maze and SPR. To assess sensitivity, we conducted split-half comparisons looking at the correlations between and within SPR and A-maze. If the methods picked up on the same effects, we would expect them to be correlated, with sentences that took longer to read in one method also taking longer in the other. We calculated the average RT at the sentence level to reduce variability from spillover patterns. The correlation between Maze and SPR was `r round(spr_maze,2)`, compared to `r round(spr_spr,2)` within SPR and `r round(maze_maze,2)` within Maze. See Figure \@ref(fig:scatter) for a visual comparison of overall Maze versus SPR RTs.  SPR data is about as correlated with Maze as with another sample of SPR data which provides some evidence that Maze and SPR are measuring the same effects. The superior within-method split-half correlation we see for Maze relative to SPR, despite the smaller number of participants, suggests that it is the more sensitive of the two methods (higher signal-to-noise ratio), consistent with the findings of @boyceMazeMadeEasy2020 for factorial experimental designs with isolated-sentence presentation.
+Our second question was a comparison of the sensitivity (the signal-to-noise ratio) of A-maze and SPR. To assess sensitivity, we conducted split-half comparisons looking at the correlations between and within SPR and A-maze. If the methods picked up on the same effects, we would expect them to be correlated, with sentences that took longer to read in one method also taking longer in the other. We calculated the average RT at the sentence level to reduce variability from spillover patterns. Across splits, the median correlation between Maze and SPR was `r split_half_interval("spr_maze")`, compared to `r split_half_interval("spr_spr")` within SPR and `r split_half_interval("maze_maze")` within Maze. See Figure \@ref(fig:scatter) for a visual comparison of overall Maze versus SPR RTs.  The SPR-Maze correlation is only a bit lower than the SPR-SPR and Maze-Maze correlations, providing some evidence that Maze and SPR are measuring the same effects. The within-method split-half correlations were similar for Maze and SPR, so this comparison does not show a difference in sensitivity between the two methods.
 
 ## Are the effects of surprisal linear?
 
@@ -720,7 +707,7 @@ ggthemes::scale_color_solarized(accent="violet")+
 ```
 
 
-We ran similar models for SPR, although to account for known spillover effects, we consider predictors from the current and 3 previous words. Due to issues fitting models, the details of the models differed (see methods).  The SPR coefficients are shown in Figure \@ref(fig:coeffs-spr) (see also Appendix B for a table of coefficients). Surprisal, length, and frequency effects are all evident for the current word and surprisal and frequency show effects from the previous word as well. Unlike for Maze, with SPR there is not a clear diminishing of the size of the effects as one goes from current word to prior word predictors. 
+We ran similar models for SPR, although to account for known spillover effects, we consider predictors from the current and 3 previous words. Due to issues fitting models, the details of the models differed (see methods).  The SPR coefficients are shown in Figure \@ref(fig:coeffs-spr) (see also Appendix B for a table of coefficients). Surprisal, length, and frequency effects are all evident for the current word and surprisal and frequency show effects from the previous word as well. Unlike for Maze, with SPR there is a slower dropoff of the size of the effects as one goes from current word to prior word predictors. 
 
 Whereas Maze showed surprisal effects in the 10 to 25 ms/bit range and length effects in the 15 to 20 ms/character range, SPR effects are about 1 to 2 ms per bit or character. This difference in effect size is disproportionate to the overall speed of the methods; the predicted intercept for the Maze task was roughly 880 ms and for SPR was roughly 360 ms. Thus Maze is 2--3 times as slow as SPR but has roughly 10 times larger effects. 
 
@@ -739,14 +726,14 @@ knitr::kable(format="latex", position="ht",caption="Results of model comparisons
 
 ```
 
-We followed the same process for the SPR data with results shown in Table \@ref(tab:spr-compare).  For SPR, GPT-2 and 5-gram models contain some value over each other model, which is less clear for Transformer-XL and GRNN. In terms of log likelihoods, we find that GPT-2 is better than 5-gram is better than GRNN is better than Transformer-XL, although differences are small. The relatively good fit of 5-gram models to SPR data compared with neural models matches results from @huSystematicAssessmentSyntactic2020 and @wilcoxPredictivePowerNeural2020, and contrasts with the Maze results, where the 5-gram model had the worst fit and did not provide additional predictive value over the other models. While the nature of the generalizations made by these neural network-based models is not fully understood, controlled tests have suggested that their next-word predictions often reflect deeper features of linguistic structure [@warstadt-etal:2020-BLiMP; @huSystematicAssessmentSyntactic2020], such as subject--verb agreement [@marvin-linzen:2018-targeted] and wh-dependencies [@wilcox-etal:2022-using-computational-models], and are sensitive over longer context windows, than n-gram models. The fact that the neural language models dominate the 5-gram models for Maze but not SPR thus suggests that Maze RTs may be more sensitive than SPR RTs to richer language structure-related processes during real-time comprehension.
+We followed the same process for the SPR data with results shown in Table \@ref(tab:spr-compare).  For SPR, GPT-2 contains some value over each other model, and GRNN over 5-gram and Transformer-XL; 5-gram and Transformer-XL add little. In terms of log likelihoods, we find that GPT-2 is better than GRNN is better than 5-gram is better than Transformer-XL, although differences are small. The relatively good fit of 5-gram models to SPR data compared with Transformer-XL matches results from @huSystematicAssessmentSyntactic2020 and @wilcoxPredictivePowerNeural2020, and contrasts with the Maze results, where the 5-gram model had the worst fit and provided little additional predictive value over the other models. While the nature of the generalizations made by these neural network-based models is not fully understood, controlled tests have suggested that their next-word predictions often reflect deeper features of linguistic structure [@warstadt-etal:2020-BLiMP; @huSystematicAssessmentSyntactic2020], such as subject--verb agreement [@marvin-linzen:2018-targeted] and wh-dependencies [@wilcox-etal:2022-using-computational-models], and are sensitive over longer context windows, than n-gram models. The fact that the neural language models dominate the 5-gram models more clearly for Maze than for SPR thus suggests that Maze RTs may be more sensitive than SPR RTs to richer language structure-related processes during real-time comprehension.
 
 ```{r}
 maze <- read_rds(here("Analysis/models/maze_model_compare.rds"))
 spr <- read_rds(here("Analysis/models/spr_model_compare.rds"))
 ```
 
-As an overall measure of fit to data, we calculate multiple R-squared for the single surprisal source models for both A-maze and SPR. The models predict A-maze better than SPR with R-squared values for A-maze ranging from `r maze %>% filter(Model=="5-gram") %>% pull(r_squared)` for the 5-gram model to `r maze %>% filter(Model=="GPT-2") %>% pull(r_squared)` for GPT-2. For SPR, the R-squared values range from from `r spr %>% filter(Model=="5-gram") %>% pull(r_squared)` to `r spr %>% filter(Model=="GPT-2") %>% pull(r_squared)`. This pattern suggests that the effect size differences are not due merely to the larger overall reading time for A-maze, but that instead A-maze is more sensitive to surprisal and length effects. 
+As an overall measure of fit to data, we calculate multiple R-squared for the single surprisal source models for both A-maze and SPR. The models predict A-maze better than SPR with R-squared values for A-maze ranging from `r maze %>% filter(Model=="5-gram") %>% pull(r_squared)` for the 5-gram model to `r maze %>% filter(Model=="GPT-2") %>% pull(r_squared)` for GPT-2. For SPR, the R-squared values range from `r spr %>% filter(Model=="5-gram") %>% pull(r_squared)` to `r spr %>% filter(Model=="GPT-2") %>% pull(r_squared)`. This pattern suggests that the effect size differences are not due merely to the larger overall reading time for A-maze, but that instead A-maze is more sensitive to surprisal and length effects. 
 
 
 ```{r spr-compare}
@@ -762,14 +749,14 @@ We introduced error-correction Maze, a tweak on the presentation of Maze materia
 
 First, we found that participants could read and comprehend the 1000 word stories, despite the slowness and added overhead of reading in the Maze task. This result expands the domain of materials usable with Maze beyond targeted single-sentence items to longer, naturalistic texts with sentence-to-sentence coherency. 
 
-Second, we took advantage of the pre-existing SPR corpus on Natural Stories to compare the RT profiles between Maze and SPR.  Maze and SPR pick up on similar features in words, as shown by the high correlations between Maze and SPR RTs on the sentence level. The correlation within Maze is higher than the Maze to SPR correlation or SPR-SPR correlations, which is evidence that Maze is less noisy than SPR.
+Second, we took advantage of the pre-existing SPR corpus on Natural Stories to compare the RT profiles between Maze and SPR.  Maze and SPR pick up on similar features in words, as shown by the high correlations between Maze and SPR RTs on the sentence level. The within-Maze and within-SPR correlations were similar.
 
 Third, we addressed whether the A-maze RT for a word showed a linear relationship with that word's surprisal. We found that A-maze RTs are linearly related to surprisal, matching the functional profile found with other incremental processing methods. 
 
-Fourth, we compared the spillover profiles between Maze and SPR. For Maze, we found large effects of the current word's surprisal and length, which dwarfed any spillover effects from previous word predictors. In contrast, for SPR, we found effects of roughly equal sizes from the current and previous words^[Furthermore, the typical spillover profile for SPR data may be worse than suggested by the Natural Stories corpus SPR data: for example, @smithEffectWordPredictability2013 found that most of a word's surprisal effect showed up only one to two words downstream.]. Overall, Maze is a slower task than SPR, but it also has much larger effects of length and surprisal, perhaps due to requiring more focus, and thus generating less noisy data. 
-We do not find frequency effects on the Maze data, but we do on the SPR data. This could be explained if frequency effects are a first rough approximation of in-context predictability, before the fuller context-sensitive surprisal information is available. In this case, faster methods like eye-tracking and SPR would show frequency effects (in addition to surprisal), but slower methods like Maze would not as the additional demands slow down the response, allowing more contextual information to be used. While this is a difference between Maze and other incremental processing methods, we do not consider it a flaw for Maze &ndash; indeed, for researchers interested in focusing on context-contingent language processing, it may suggest an advantage for the Maze task. Regardless, these differences highlight the importance of understanding task demands of different incremental processing methods. 
+Fourth, we compared the spillover profiles between Maze and SPR. For Maze, we found large effects of the current word's surprisal and length, which dwarfed any spillover effects from previous word predictors. In contrast, for SPR, we found effects of roughly equal sizes from the current and previous words for some predictors^[Furthermore, the typical spillover profile for SPR data may be worse than suggested by the Natural Stories corpus SPR data: for example, @smithEffectWordPredictability2013 found that most of a word's surprisal effect showed up only one to two words downstream.]. Overall, Maze is a slower task than SPR, but it also has much larger effects of length and surprisal, perhaps due to requiring more focus, and thus generating less noisy data. 
+We do not find frequency effects on the Maze data, but we do on the SPR data, with higher frequency words being read more slowly, once accounting for length and surprisal. While this is a difference between Maze and other incremental processing methods, we do not consider it a flaw for Maze &ndash; indeed, for researchers interested in focusing on context-contingent language processing, it may suggest an advantage for the Maze task. Regardless, these differences highlight the importance of understanding task demands of different incremental processing methods. 
 
-Lastly, we examined how different language models fare at predicting human RT data. We found that overall, the models were more predictive of the A-maze data than SPR data; however, the hierarchy of the model's predictive performance also differed between the A-maze and SPR datasets. This difference suggests that how well a language model predicts human RTs may depend on task. Maze RTs were by far best predicted by neural network language models, whereas SPR RTs were predicted nearly as well by 5-gram models. Our understanding of the linguistic generalization capabilities and performance of these neural network models is still limited, and there are cases where they are known to make more superficial, non-human-like generalizations [@mccoy-etal-2019-right; @chaves-2020-dont], but controlled tests in the NLP literature that analyze their behavior on classic psycholinguistics paradigms [@linzen-etal:2016tacl; @futrell-etal:2019-neural-language-models; @warstadt-etal:2020-BLiMP; @wilcox-etal:2022-using-computational-models] suggest more human-like performance than n-gram models are capable of. These findings further add to the evidence that the Maze task is favorable for RT-based investigations of underlying linguistic processing in the human mind. More broadly, further comparisons between different processing methods on the same materials could be useful for a deeper understanding of how task demands influence language processing [ex. @bartekSearchOnlineLocality2011]. 
+Lastly, we examined how different language models fare at predicting human RT data. We found that overall, the models were more predictive of the A-maze data than SPR data; however, the advantage of the neural network models over the 5-gram model was larger for the A-maze than the SPR dataset. This difference suggests that how well a language model predicts human RTs may depend on task. Maze RTs were by far best predicted by neural network language models, whereas for SPR RTs the differences between models were small. Our understanding of the linguistic generalization capabilities and performance of these neural network models is still limited, and there are cases where they are known to make more superficial, non-human-like generalizations [@mccoy-etal-2019-right; @chaves-2020-dont], but controlled tests in the NLP literature that analyze their behavior on classic psycholinguistics paradigms [@linzen-etal:2016tacl; @futrell-etal:2019-neural-language-models; @warstadt-etal:2020-BLiMP; @wilcox-etal:2022-using-computational-models] suggest more human-like performance than n-gram models are capable of. These findings further add to the evidence that the Maze task is favorable for RT-based investigations of underlying linguistic processing in the human mind. More broadly, further comparisons between different processing methods on the same materials could be useful for a deeper understanding of how task demands influence language processing [ex. @bartekSearchOnlineLocality2011]. 
 
 
 Overall, A-maze has excellent localization, although some models showed small but statistically significant effects of the past word. On the whole, our results support the idea that Maze forces language processing to be close to word-by-word, and thus the Maze task can be used under the assumption that the RT of a word primarily reflects its own properties and not those of earlier words. Correlation analysis between Maze and SPR suggests that Maze is picking up on many of the same patterns as does SPR, but with less noise. 

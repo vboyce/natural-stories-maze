@@ -111,7 +111,7 @@ labelled_pre_error <- data_pre_error %>% inner_join(select_labs, by=c("word_num"
 ```{r maze-item-means}
 
 select_data <- read_rds(here("Data/maze_pre_error.rds")) %>%  select(-starts_with("past2"), -starts_with("past3")) %>% 
-  filter(across(everything(),~!is.na(.x))) 
+  filter(if_all(everything(),~!is.na(.x))) 
 
 
 item_mean_data <- select_data %>% 
@@ -389,24 +389,19 @@ anova(gam_gpt_1,gam_gpt_2, test="Chisq")
 ```{r maze bootstrap code, eval=F}
 require(OpenImageR)
 gam_boot <- function(dat,formula,data_frames_for_prediction,N=100,method="REML",...) {
-  models <- lapply(1:N,function(seed) {
+  # predictions are made inside the loop and each fitted model is then dropped:
+  # holding all N fitted GAMs at once needs several GB of memory for the SPR models
+  predictions_by_replicate <- lapply(1:N,function(seed) {
     set.seed(seed)
-    #dat[[weights_name]] <- tabulate(sample(1:nrow(dat),floor(nrow(dat)/5),replace=TRUE),nbins=nrow(dat))
     dat$mgcv_weights <- tabulate(sample(1:nrow(dat),nrow(dat),replace=TRUE),nbins=nrow(dat))
-    #print(head(dat$mgcv_weights))
-    #print(head(dat[[weights_name]]))
-    #m <- gam(formula,data=dat,weights=dat[[weights_name]],...)
     m <- gam(formula,data=dat,weights=mgcv_weights,method=method,...)
-    #print(m$deviance)
-    return(m)
-  })
-  results <- lapply(names(data_frames_for_prediction),function(term) {
-    predictions <-sapply(models,function(m)
+    lapply(names(data_frames_for_prediction),function(term)
       predict(m,newdata=data_frames_for_prediction[[term]],type="terms",terms=term))
-    #print(dim(predictions))
-    return(predictions)
   })
-  #print(length(results))
+  # one matrix per term: rows are prediction points, columns are bootstrap replicates
+  results <- lapply(seq_along(data_frames_for_prediction),function(i) {
+    sapply(predictions_by_replicate,function(replicate) replicate[[i]])
+  })
   names(results) <- names(data_frames_for_prediction)
   return(results)
 }
@@ -444,13 +439,14 @@ dats_for_prediction <- list(
   'ti(prev_freq)'=dat_for_prev_freq_prediction,
   'ti(prev_len)'=dat_for_prev_len_prediction)
 N_replicates <- 101
-res_ngram <- gam_boot(ngram_mean_data,formula_no_interact,dats_for_prediction,N=N_replicates)
+# Figure 4: formula_interact has the freq x length terms the Methods describe (formula_no_interact omitted them)
+res_ngram <- gam_boot(ngram_mean_data,formula_interact,dats_for_prediction,N=N_replicates)
 bootstrapped_gam_predictions_ngram <- summarize_gam_boot_results(res_ngram,dats_for_prediction,term_names,"5-gram")
-res_grnn <- gam_boot(grnn_mean_data,formula_no_interact,dats_for_prediction,N=N_replicates)
+res_grnn <- gam_boot(grnn_mean_data,formula_interact,dats_for_prediction,N=N_replicates)
 bootstrapped_gam_predictions_grnn <- summarize_gam_boot_results(res_grnn,dats_for_prediction,term_names,"GRNN")
-res_txl <- gam_boot(txl_mean_data,formula_no_interact,dats_for_prediction,N=N_replicates)
+res_txl <- gam_boot(txl_mean_data,formula_interact,dats_for_prediction,N=N_replicates)
 bootstrapped_gam_predictions_txl <- summarize_gam_boot_results(res_txl,dats_for_prediction,term_names,"Transformer-XL")
-res_gpt <- gam_boot(gpt_mean_data,formula_no_interact,dats_for_prediction,N=N_replicates)
+res_gpt <- gam_boot(gpt_mean_data,formula_interact,dats_for_prediction,N=N_replicates)
 bootstrapped_gam_predictions_gpt <- summarize_gam_boot_results(res_gpt,dats_for_prediction,term_names,"GPT-2")
 all_bootstrapped_predictions <- list(ngram=bootstrapped_gam_predictions_ngram,
                                      grnn=bootstrapped_gam_predictions_grnn,
@@ -788,7 +784,7 @@ This is all on meaned data with no mixed effects and predictors of freq x length
 
 ```{r}
 select_data <- read_rds(here("Data/maze_pre_error.rds")) %>%  select(-starts_with("past2"), -starts_with("past3")) %>% 
-  filter(across(everything(),~!is.na(.x))) 
+  filter(if_all(everything(),~!is.na(.x))) 
 
 
 item_mean_data <- select_data %>% 
@@ -843,7 +839,7 @@ Instead, square and then center raw frequency. This also finds the effects, and 
 
 ```{r}
 select_data <- read_rds(here("Data/maze_pre_error.rds")) %>%  select(-starts_with("past2"), -starts_with("past3")) %>% 
-  filter(across(everything(),~!is.na(.x))) 
+  filter(if_all(everything(),~!is.na(.x))) 
 
 
 item_mean_data <- select_data %>% 
@@ -939,14 +935,17 @@ spr_labelled <- select_labs %>% inner_join(tokenization, by=c("word","Word_In_St
 ```{r spr item-means}
 
 select_spr <- read_rds(here("Data/clean_spr.rds")) %>% 
-  filter(across(everything(),~!is.na(.x))) %>% 
+  filter(if_all(everything(),~!is.na(.x))) %>% 
   ungroup()
 
 
-item_mean_spr <- select_spr %>% 
-  group_by(across(c(-subject, -rt))) %>% 
-  summarize(rt=mean(rt)) %>% 
+# `correct` (the reader's comprehension score) varies across readers of a word, so it is excluded
+# from the grouping; otherwise each word is split into one mean per score
+item_mean_spr <- select_spr %>%
+  group_by(across(c(-subject, -rt, -correct))) %>%
+  summarize(rt=mean(rt)) %>%
   ungroup()
+stopifnot(nrow(item_mean_spr)==n_distinct(select_spr$Word_ID))
 
 
 ```
@@ -1166,14 +1165,16 @@ plot_grid(p2[[1]], p2[[2]], nrow=2, rel_heights = c(1, .3))
 ```{r, eval=F}
 
 select_spr <- read_rds(here("Data/clean_spr.rds")) %>% 
-  filter(across(everything(),~!is.na(.x))) %>% 
+  filter(if_all(everything(),~!is.na(.x))) %>% 
   ungroup()
 
 
-item_mean_spr <- select_spr %>% 
-  group_by(across(c(-subject, -rt))) %>% 
-  summarize(rt=mean(rt)) %>% 
+# one mean per word: exclude the reader's comprehension score (`correct`) from the grouping
+item_mean_spr <- select_spr %>%
+  group_by(across(c(-subject, -rt, -correct))) %>%
+  summarize(rt=mean(rt)) %>%
   ungroup()
+stopifnot(nrow(item_mean_spr)==n_distinct(select_spr$Word_ID))
 
 ngram_data <- select_spr %>% rename_with(~str_replace_all(.x, "ngram", "surp"))%>% 
   select(rt, surp_center, freq_center, length_center,
@@ -1193,7 +1194,7 @@ txl_data <- select_spr %>% rename_with(~str_replace_all(.x, "txl", "surp"))%>%
          past2_surp_center, past2_freq_center, past2_length_center,
          past3_surp_center, past3_freq_center, past3_length_center, subject, Word_ID) %>% mutate(model="TXL")
 
-gpt_data <-select_spr %>% rename_with(~str_replace_all(.x, "txl", "surp"))%>% 
+gpt_data <-select_spr %>% rename_with(~str_replace_all(.x, "gpt", "surp"))%>% 
   select(rt, surp_center, freq_center, length_center,
          past_surp_center, past_freq_center, past_length_center,
          past2_surp_center, past2_freq_center, past2_length_center,
@@ -1220,7 +1221,7 @@ txl_mean_data <- item_mean_spr %>% rename_with(~str_replace_all(.x, "txl", "surp
          past2_surp_center, past2_freq_center, past2_length_center,
          past3_surp_center, past3_freq_center, past3_length_center, Word_ID) %>% mutate(model="TXL")
 
-gpt_mean_data <-item_mean_spr %>% rename_with(~str_replace_all(.x, "txl", "surp"))%>% 
+gpt_mean_data <-item_mean_spr %>% rename_with(~str_replace_all(.x, "gpt", "surp"))%>% 
   select(rt, surp_center, freq_center, length_center,
          past_surp_center, past_freq_center, past_length_center,
          past2_surp_center, past2_freq_center, past2_length_center,
@@ -1324,14 +1325,16 @@ This is all on meaned data with no mixed effects and predictors of freq x length
 
 ```{r}
 select_spr <- read_rds(here("Data/clean_spr.rds")) %>% 
-  filter(across(everything(),~!is.na(.x))) %>% 
+  filter(if_all(everything(),~!is.na(.x))) %>% 
   ungroup()
 
 
+# one mean per word: exclude the reader's comprehension score (`correct`) from the grouping
 item_mean_spr <- select_spr %>% 
-  group_by(across(c(-subject, -rt))) %>% 
+  group_by(across(c(-subject, -rt, -correct))) %>% 
   summarize(rt=mean(rt)) %>% 
   ungroup()
+stopifnot(nrow(item_mean_spr)==n_distinct(select_spr$Word_ID))
 
 
 no_surp <- "rt ~ freq_center * length_center + 
@@ -1379,14 +1382,16 @@ tibble(Model=c("5-gram","GRNN", "TXL", "GPT-2"), model_str=c(ngram,grnn,txl,gpt)
 
 ```{r}
 select_spr <- read_rds(here("Data/clean_spr.rds")) %>% 
-  filter(across(everything(),~!is.na(.x))) %>% 
+  filter(if_all(everything(),~!is.na(.x))) %>% 
   ungroup()
 
 
+# one mean per word: exclude the reader's comprehension score (`correct`) from the grouping
 item_mean_spr <- select_spr %>% 
-  group_by(across(c(-subject, -rt))) %>% 
+  group_by(across(c(-subject, -rt, -correct))) %>% 
   summarize(rt=mean(rt)) %>% 
   ungroup()
+stopifnot(nrow(item_mean_spr)==n_distinct(select_spr$Word_ID))
 
 
 

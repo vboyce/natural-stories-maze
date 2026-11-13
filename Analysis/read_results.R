@@ -4,24 +4,19 @@ library(urltools)
 read_in_data <- function(filename){
   #reads data in generically because different format for different controllers
 #filename="../Data/raw_data"
-  data <- read_csv(filename, comment="#", col_names=c("time", "MD5", "controller", "item", "elem",
-                                                      "type", "group", "col_8", "col_9", "col_10", "col_11", "col_12", "col_13", "col_14", "col_15"), col_types=cols(
-                                                        time=col_integer(),
-                                                        MD5=col_character(),
-                                                        controller=col_character(),
-                                                        item=col_integer(),
-                                                        elem=col_integer(),
-                                                        type=col_character(),
-                                                        group=col_character(),
-                                                        col_8=col_character(),
-                                                        col_9=col_character(),
-                                                        col_10=col_character(),
-                                                        col_11=col_character(),
-                                                        col_12=col_character(),
-                                                        col_13=col_character(),
-                                                        col_14=col_character(),
-                                                        col_15=col_character()
-                                                      )) %>% mutate_all(url_decode) #deal with %2C issue
+  # Rows have different numbers of fields (8 to 15). readr >= 2 sizes the table from the first
+  # data row and silently drops columns 9-15, so we read with base read.csv(fill=TRUE) instead.
+  # read.csv would wrap a row with more than 15 fields onto a new row, so check that first.
+  column_names <- c("time", "MD5", "controller", "item", "elem",
+                    "type", "group", "col_8", "col_9", "col_10", "col_11", "col_12", "col_13", "col_14", "col_15")
+  max_fields <- max(count.fields(filename, sep=",", quote="", comment.char="#"), na.rm=T)
+  stopifnot(max_fields <= length(column_names))
+  data <- read.csv(filename, header=F, comment.char="#", fill=T, quote="",
+                   col.names=column_names, colClasses="character", na.strings=character(0)) %>%
+    as_tibble() %>%
+    mutate(across(everything(), ~na_if(.x, ""))) %>%
+    mutate(time=as.integer(time), item=as.integer(item), elem=as.integer(elem)) %>%
+    mutate_all(url_decode) #deal with %2C issue
   
   #split off non-maze, participant level stuff and process them
   other <- filter(data, type %in% c("questionnaire")) %>% 

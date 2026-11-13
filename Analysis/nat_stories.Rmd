@@ -254,12 +254,18 @@ all_spr <- d.raw %>% group_by(correct) %>%
   mutate(source="SPR") %>% 
   select(source,correct,pct)
 
-first_spr <- d.raw %>% 
-  group_by(WorkerId,correct) %>% 
-  mutate(num=row_number()) %>% 
-  filter(num==1) %>% 
-  select(-num) %>% 
-  group_by(correct) %>% 
+# one first story per worker (first row in file order), chosen as in the first-story chunk of models.Rmd;
+# grouping by worker and score would instead keep one story per score a worker ever got
+first_story_scores <- d.raw %>%
+  group_by(WorkerId) %>%
+  mutate(num=row_number()) %>%
+  filter(num==1) %>%
+  select(-num) %>%
+  ungroup()
+stopifnot(nrow(first_story_scores)==n_distinct(d.raw$WorkerId))
+
+first_spr <- first_story_scores %>%
+  group_by(correct) %>%
   tally() %>% 
   mutate(pct=n/sum(n)) %>% 
   mutate(source="SPR 1st story") %>% 
